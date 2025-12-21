@@ -94,11 +94,11 @@ async function getBrowser() {
 async function fetchPage({
   url,
   waitForSelector,
-  waitUntil = "networkidle2",
-  timeoutMs = 20000,
+  waitUntil = "networkidle0",
+  timeoutMs = 60000,
   keepPageOpen = true,
   closeAfterSuccess = false,
-  autoCloseMs = 300000,
+  autoCloseMs = 0,
   authWaitSelector,
   authWaitTimeoutMs,
   reuseLastKeptPage = true,
@@ -108,10 +108,28 @@ async function fetchPage({
 }) {
   const browser = await getBrowser();
   let page = null;
+  
+  // Smart tab reuse: only reuse if same domain (preserves auth within domain)
   if (reuseLastKeptPage && lastKeptPage && !lastKeptPage.isClosed()) {
-    page = lastKeptPage;
-    await page.bringToFront().catch(() => {});
-  } else {
+    const newHostname = new URL(url).hostname;
+    const currentUrl = lastKeptPage.url();
+    
+    if (currentUrl) {
+      try {
+        const currentHostname = new URL(currentUrl).hostname;
+        // Reuse tab only if same domain (keeps auth session alive)
+        if (currentHostname === newHostname) {
+          page = lastKeptPage;
+          await page.bringToFront().catch(() => {});
+        }
+      } catch {
+        // If URL parsing fails, create new tab
+      }
+    }
+  }
+  
+  // Create new tab if no reuse
+  if (!page) {
     page = await browser.newPage();
   }
 
@@ -133,16 +151,17 @@ async function fetchPage({
   try {
     await page.goto(url, { waitUntil, timeout: timeoutMs });
     
-    // Auto-detect auth redirects: if we're not on the target domain, wait for redirect back
+    // Auto-detect auth redirects: if we're not on the target domain, assume it's auth and wait for redirect back
     const targetHostname = new URL(url).hostname;
     const currentHostname = new URL(page.url()).hostname;
-    const authDomains = ['login.microsoftonline.com', 'login.live.com', 'account.microsoft.com'];
-    const isOnAuthPage = authDomains.some(domain => page.url().includes(domain));
+    // Common auth/login patterns (case-insensitive)
+    const authPatterns = [/login/i, /auth/i, /signin/i, /sign-in/i, /sso/i, /oauth/i, /saml/i, /account/i];
+    const isOnAuthPage = currentHostname !== targetHostname || authPatterns.some(pattern => pattern.test(page.url()));
     
     if (isOnAuthPage || (waitForUrlPattern && !new RegExp(waitForUrlPattern).test(page.url()))) {
       // We hit an auth page or don't match target pattern - wait for redirect
       const pattern = waitForUrlPattern ? new RegExp(waitForUrlPattern) : null;
-      const pollTimeout = urlPatternTimeoutMs || 180000; // default 3 minutes
+      const pollTimeout = urlPatternTimeoutMs || 600000; // default 10 minutes
       const pollInterval = urlPatternPollMs;
       const deadline = Date.now() + pollTimeout;
       
@@ -175,7 +194,7 @@ async function fetchPage({
     }
     
     if (authWaitSelector) {
-      const waitTimeout = authWaitTimeoutMs || 180000; // default 3 minutes to allow manual auth
+      const waitTimeout = authWaitTimeoutMs || 600000; // default 10 minutes to allow manual auth
       try {
         await page.waitForSelector(authWaitSelector, { timeout: waitTimeout });
       } catch (err) {
@@ -200,8 +219,8 @@ async function fetchPage({
     return {
       success: true,
       url: page.url(),
-      text: truncate(text, 200000),
-      html: truncate(html, 200000),
+      text: truncate(text, 2000000),
+      html: truncate(html, 2000000),
     };
   } catch (err) {
     shouldKeepOpen = shouldKeepOpen || keepPageOpen;
@@ -236,7 +255,7 @@ async function main() {
   const tools = [
     {
       name: "fetch_and_extract",
-      description: "Fetch an authenticated page via local Chrome (DevTools) and return text+html",
+      description: "Fetch an authenticated page via local Chrome (DevTools) and return text+html. Default settings wait for network idle and handle auth redirects automatically. If page is loading, tool will wait - do NOT retry manually, trust the timeout settings.",
       inputSchema: {
         type: "object",
         properties: {
@@ -244,17 +263,17 @@ async function main() {
           waitForSelector: { type: "string" },
           waitUntil: {
             type: "string",
-            description: "Puppeteer goto waitUntil option (load, domcontentloaded, networkidle0, networkidle2)",
+            description: "Puppeteer goto waitUntil option (default: networkidle0 - waits for network idle, best for SPAs). Options: load, domcontentloaded, networkidle0, networkidle2",
           },
-          timeoutMs: { type: "number" },
+          timeoutMs: { type: "number", description: "Navigation timeout in ms (default: 60000 = 1 min)" },
           waitForUrlPattern: { type: "string", description: "Regex pattern for target URL; polls until URL matches (for auth redirects)" },
-          urlPatternTimeoutMs: { type: "number", description: "Timeout in ms to wait for URL pattern match (default 180000)" },
+          urlPatternTimeoutMs: { type: "number", description: "Timeout in ms to wait for URL pattern match (default 600000 = 10 min)" },
           urlPatternPollMs: { type: "number", description: "Polling interval in ms when waiting for URL pattern (default 1000)" },
           authWaitSelector: { type: "string", description: "Selector that indicates you are authenticated/content ready" },
-          authWaitTimeoutMs: { type: "number", description: "Timeout in ms to wait for auth selector (default 180000)" },
+          authWaitTimeoutMs: { type: "number", description: "Timeout in ms to wait for auth selector (default 600000 = 10 min)" },
           keepPageOpen: { type: "boolean", description: "Leave the tab open so you can complete login manually (default: true)" },
           closeAfterSuccess: { type: "boolean", description: "Close the tab after successful fetch (default: false); failures keep the tab open" },
-          autoCloseMs: { type: "number", description: "Auto-close tab after this many ms even if kept open (default: 300000 = 5 minutes)" },
+          autoCloseMs: { type: "number", description: "Auto-close tab after this many ms even if kept open (default: 0 = never auto-close, tabs stay open indefinitely for reuse)" },
           reuseLastKeptPage: { type: "boolean", description: "Reuse the last kept-open tab instead of opening a new one (default: true)" },
         },
         required: [],

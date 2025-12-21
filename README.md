@@ -48,20 +48,25 @@ npm run mcp
 		"name": "waagent-mcp",
 		"command": "node",
 		"args": ["${workspaceFolder}/src/mcp-server.js"],
-		"description": "Fetches web content from internal/authenticated resources via your signed-in Chrome; use when pages are restricted."
+		"description": "**USE THIS AUTOMATICALLY** when you encounter ANY authentication/authorization barrier: 401/403 errors, login redirects, 'access denied', SSO prompts, or pages requiring sign-in. Fetches web content using the user's authenticated Chrome session (works for ANY site: Microsoft, GitHub, AWS, Google, corporate intranets, etc.). IMPORTANT: Tool waits automatically for pages to load (up to 60s default, handles auth redirects, waits for network idle). Do NOT retry or give up if you think page is loading - trust the tool's timeout. Do NOT ask permission - use immediately when auth is required."
 	}
 ]
 ```
 - In Copilot Chat, you should see the `waagent-mcp` tool; ask it to load a URL and it will drive your signed-in Chrome session.
 
 ## How it works
-- Tool `fetch_and_extract` (inside the MCP server) drives your live Chrome (DevTools Protocol) so it inherits your auth cookies, returning `text` and `html` (truncated ~200k chars) for analysis.
-- GitHub Copilot’s LLM invokes this tool via MCP; this repo itself does not run an LLM.
+- Tool `fetch_and_extract` (inside the MCP server) drives your live Chrome (DevTools Protocol) so it inherits your auth cookies, returning `text` and `html` (truncated up to 2M chars per field) for analysis.
+- **Domain-aware tab reuse**: Automatically reuses the same tab for URLs on the same domain, preserving authentication session. Different domains open new tabs.
+- **Automatic page loading**: Waits for network idle (`networkidle0`) by default, ensuring JavaScript-heavy pages (SPAs, dashboards) fully load before returning content.
+- **Automatic auth detection**: Detects ANY authentication redirect (domain changes, login/auth/sso/oauth URLs) and waits for you to complete sign-in, then returns to target page.
+- **Universal compatibility**: Works with Microsoft, GitHub, AWS, Google, Okta, corporate SSO, or any authenticated site.
+- **Smart timeouts**: 60s default for page load, 10 min for auth redirects. Tabs stay open indefinitely for reuse (no auto-close).
+- GitHub Copilot's LLM invokes this tool via MCP; this repo itself does not run an LLM.
 
 ## Auth-assisted fetch flow
-- Copilot can call with just the URL, or with no params if you set an env default (`DEFAULT_FETCH_URL` or `MCP_DEFAULT_FETCH_URL`). Defaults keep the tab open, do **not** close it on success (unless you set `closeAfterSuccess: true`), and auto-close after 5 minutes as a safety net.
+- Copilot can call with just the URL, or with no params if you set an env default (`DEFAULT_FETCH_URL` or `MCP_DEFAULT_FETCH_URL`). Defaults keep the tab open indefinitely for reuse (domain-aware). Tabs never auto-close unless you explicitly set `closeAfterSuccess: true` or `autoCloseMs` to a non-zero value.
 - First call opens the tab and leaves it open so you can sign in. No extra params needed.
-- After you sign in, call the same URL again; by default the tab stays open, or set `closeAfterSuccess: true` if you want it closed immediately on success. The 5-minute `autoCloseMs` still applies.
+- After you sign in, call the same URL again; by default the tab stays open indefinitely for reuse. Set `closeAfterSuccess: true` to close immediately on success, or `autoCloseMs` to a non-zero value to enable auto-close after a timeout.
 - Optional fields (`authWaitSelector`, `waitForSelector`, etc.) are available but not required.
 
 ## Configuration
@@ -69,6 +74,11 @@ npm run mcp
 - To use a specific WS endpoint: set `CHROME_WS_ENDPOINT` from Chrome `chrome://version` DevTools JSON.
 
 ## Tips
+- **Universal auth**: Works with ANY authenticated site (Microsoft, GitHub, AWS, Google, corporate intranets, SSO, OAuth, etc.)
+- **No re-authentication needed**: Automatically reuses the same tab for URLs on the same domain, keeping your auth session alive across multiple page fetches
+- **Automatic page loading**: Tool waits for pages to fully load (default 60s timeout, waits for network idle). Copilot should trust the tool and not retry manually.
+- **Auth redirect handling**: Auto-detects auth redirects by monitoring domain changes and common login URL patterns (`/login`, `/auth`, `/signin`, `/sso`, `/oauth`, `/saml`)
+- **Tabs stay open**: Tabs remain open indefinitely for reuse across multiple fetches (no auto-close timer). Close manually or set `autoCloseMs` if needed.
 - If you hit login pages, verify Chrome instance is signed in and the site opens there.
 - Use a dedicated profile directory to avoid interfering with your daily Chrome.
 - For heavy pages, add `waitForSelector` to ensure post-login content appears before extraction.
