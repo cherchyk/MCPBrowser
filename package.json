@@ -4,8 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "mcp": "node src/mcp-server.js",
-    "chrome": "node src/launch-chrome.js"
+    "mcp": "node src/mcp-browser.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",

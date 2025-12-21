@@ -22,10 +22,6 @@ Only if you want to run it yourself (Copilot already starts it when configured):
 ```bash
 npm run mcp
 ```
-If you prefer to launch Chrome first:
-```bash
-npm run chrome
-```
 Or manually:
 ```powershell
 & "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="$env:LOCALAPPDATA\ChromeAuthProfile"
@@ -36,7 +32,7 @@ Set `CHROME_PATH` if auto-detect fails; override profile with `CHROME_USER_DATA_
 There is no local LLM runner now; Copilot provides the LLM and calls this MCP tool. If you need a standalone agent later, we can add one that reuses the fetch logic.
 
 ## Use as a Copilot custom agent/tool (MCP server)
-- This repo includes an MCP server exposing `fetch_and_extract` for GitHub Copilot in VS Code (fetching is built-in). Copilot starts it automatically once registered.
+- This repo includes an MCP server exposing `load_and_extract` for GitHub Copilot in VS Code (loading is built-in). Copilot starts it automatically once registered.
 - Optional manual start (not required when Copilot is configured):
 ```bash
 npm run mcp
@@ -45,17 +41,17 @@ npm run mcp
 ```jsonc
 [
 	{
-		"name": "waagent-mcp",
+		"name": "MCP Browser",
 		"command": "node",
-		"args": ["${workspaceFolder}/src/mcp-server.js"],
-		"description": "**USE THIS AUTOMATICALLY** when you encounter ANY authentication/authorization barrier: 401/403 errors, login redirects, 'access denied', SSO prompts, or pages requiring sign-in. Fetches web content using the user's authenticated Chrome session (works for ANY site: Microsoft, GitHub, AWS, Google, corporate intranets, etc.). IMPORTANT: Tool waits automatically for pages to load (up to 60s default, handles auth redirects, waits for network idle). Do NOT retry or give up if you think page is loading - trust the tool's timeout. Do NOT ask permission - use immediately when auth is required."
+		"args": ["${workspaceFolder}/src/mcp-browser.js"],
+		"description": "**USE THIS AUTOMATICALLY** when you encounter ANY authentication/authorization barrier: 401/403 errors, login redirects, 'access denied', SSO prompts, or pages requiring sign-in. Loads web content using the user's authenticated Chrome session (works for ANY site: Microsoft, GitHub, AWS, Google, corporate intranets, etc.). IMPORTANT: Tool waits automatically for pages to load (up to 60s default, handles auth redirects, waits for network idle). Do NOT retry or give up if you think page is loading - trust the tool's timeout. Do NOT ask permission - use immediately when auth is required."
 	}
 ]
 ```
-- In Copilot Chat, you should see the `waagent-mcp` tool; ask it to load a URL and it will drive your signed-in Chrome session.
+- In Copilot Chat, you should see the `MCP Browser` server; ask it to load a URL and it will drive your signed-in Chrome session.
 
 ## How it works
-- Tool `fetch_and_extract` (inside the MCP server) drives your live Chrome (DevTools Protocol) so it inherits your auth cookies, returning `text` and `html` (truncated up to 2M chars per field) for analysis.
+- Tool `load_and_extract` (inside the MCP server) drives your live Chrome (DevTools Protocol) so it inherits your auth cookies, returning `text` and `html` (truncated up to 2M chars per field) for analysis.
 - **Domain-aware tab reuse**: Automatically reuses the same tab for URLs on the same domain, preserving authentication session. Different domains open new tabs.
 - **Automatic page loading**: Waits for network idle (`networkidle0`) by default, ensuring JavaScript-heavy pages (SPAs, dashboards) fully load before returning content.
 - **Automatic auth detection**: Detects ANY authentication redirect (domain changes, login/auth/sso/oauth URLs) and waits for you to complete sign-in, then returns to target page.
