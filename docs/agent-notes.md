@@ -15,6 +15,10 @@
 - Configure VS Code (Copilot Chat) to attach the MCP server command `node src/mcp-server.js`.
 - Copilot handles the LLM; this server only supplies the authenticated fetch tool.
 
+## Auth flow usage
+- Use `keepPageOpen: true` on the first call to leave the tab open and complete login.
+- Optional: `authWaitSelector` + `authWaitTimeoutMs` to wait for a post-login element before fetching text/html; on timeout the tab stays open so you can finish auth and retry.
+
 ## Chrome/auth assumptions
 - MCP server will auto-launch Chrome/Edge with remote debugging if none is running (defaults: port 9222, `%LOCALAPPDATA%/ChromeAuthProfile`).
 - If you start Chrome manually, use `--remote-debugging-port=9222 --user-data-dir=%LOCALAPPDATA%/ChromeAuthProfile` and ensure you are logged in to target sites.
