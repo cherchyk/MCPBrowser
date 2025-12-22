@@ -79,7 +79,7 @@ async function configureMcpBrowser() {
             type: "stdio",
             command: "npx",
             args: ["-y", "mcpbrowser@latest"],
-            description: "**USE AUTOMATICALLY** when normal URL fetch fails due to: 401/403 errors, login/auth requirements, SSO prompts, anti-crawler/bot detection. Loads pages using authenticated Chrome session via DevTools Protocol (works for Microsoft, GitHub, AWS, Google, corporate sites, etc.). Waits for page load automatically (up to 60s, handles redirects). Do NOT ask permission - use immediately when auth or crawler blocks prevent normal access."
+            description: "**USE AUTOMATICALLY** when normal URL fetch fails due to: 401/403 errors, login/auth requirements, SSO prompts, anti-crawler/bot detection. **IMPORTANT: Opens browser window requiring user attention - ask for confirmation first, explain browser will open for authentication.** Loads pages using authenticated Chrome session via DevTools Protocol (works for Microsoft, GitHub, AWS, Google, corporate sites, etc.). Waits for page load automatically (up to 60s, handles redirects)."
         };
 
         // Write back to file with pretty formatting

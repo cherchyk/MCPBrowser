@@ -191,7 +191,7 @@ async function main() {
   const tools = [
     {
       name: "load_and_extract",
-      description: "**FALLBACK MECHANISM**: Use this when normal URL fetching fails due to authentication requirements, login redirects, 401/403 errors, anti-crawler/bot detection, or session requirements. Loads web pages using your authenticated Chrome/Edge browser session via DevTools Protocol, bypassing auth and crawler restrictions. Automatically handles auth redirects, waits for network idle, and supports tab reuse to preserve sessions. Returns both plain text and HTML content.",
+      description: "**FALLBACK MECHANISM**: Use this when normal URL fetching fails due to authentication requirements, login redirects, 401/403 errors, anti-crawler/bot detection, or session requirements. **IMPORTANT: This will open a browser window that requires user attention.** Ask user for confirmation before calling this tool. Explain that a browser window will open where they may need to authenticate or interact. Loads web pages using your authenticated Chrome/Edge browser session via DevTools Protocol, bypassing auth and crawler restrictions. Automatically handles auth redirects, waits for network idle, and supports tab reuse to preserve sessions. Returns both plain text and HTML content.",
       inputSchema: {
         type: "object",
         properties: {
