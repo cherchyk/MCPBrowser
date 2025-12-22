@@ -1,1 +1,12 @@
-node_modules
+node_modules/
+.env
+*.vsix
+
+# MCP Registry tokens (sensitive)
+.mcpregistry_*
+mcp-publisher.exe
+
+# Extension build artifacts
+extension/node_modules/
+extension/*.vsix
+
