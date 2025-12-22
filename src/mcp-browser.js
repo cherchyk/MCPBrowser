@@ -14,13 +14,49 @@ dotenv.config();
 const chromeHost = process.env.CHROME_REMOTE_DEBUG_HOST || "127.0.0.1";
 const chromePort = Number(process.env.CHROME_REMOTE_DEBUG_PORT || 9222);
 const explicitWSEndpoint = process.env.CHROME_WS_ENDPOINT;
-const userDataDir = process.env.CHROME_USER_DATA_DIR || path.join(os.homedir(), "AppData/Local/ChromeAuthProfile");
+
+// Use default Chrome profile if not explicitly set
+function getDefaultUserDataDir() {
+  const platform = os.platform();
+  const home = os.homedir();
+  
+  if (platform === "win32") {
+    return path.join(home, "AppData/Local/Google/Chrome/User Data");
+  } else if (platform === "darwin") {
+    return path.join(home, "Library/Application Support/Google/Chrome");
+  } else {
+    return path.join(home, ".config/google-chrome");
+  }
+}
+
+const userDataDir = process.env.CHROME_USER_DATA_DIR || getDefaultUserDataDir();
 const chromePathEnv = process.env.CHROME_PATH;
-const defaultChromePaths = [
-  "C:/Program Files/Google/Chrome/Application/chrome.exe",
-  "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
-  "C:/Program Files/Microsoft/Edge/Application/msedge.exe",
-];
+
+function getDefaultChromePaths() {
+  const platform = os.platform();
+  
+  if (platform === "win32") {
+    return [
+      "C:/Program Files/Google/Chrome/Application/chrome.exe",
+      "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
+      "C:/Program Files/Microsoft/Edge/Application/msedge.exe",
+    ];
+  } else if (platform === "darwin") {
+    return [
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+      "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    ];
+  } else {
+    return [
+      "/usr/bin/google-chrome",
+      "/usr/bin/chromium-browser",
+      "/usr/bin/chromium",
+    ];
+  }
+}
+
+const defaultChromePaths = getDefaultChromePaths();
 
 let cachedBrowser = null;
 let lastKeptPage = null; // reuse the same tab when requested
