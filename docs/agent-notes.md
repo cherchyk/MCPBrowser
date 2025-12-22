@@ -10,11 +10,16 @@
 
 ## Distribution
 MCPBrowser is available through three channels:
-1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) - One-click automated configuration
-2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.1 - Use with `npx mcpbrowser@latest`
-3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.1 - Discoverable in the official registry
+1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.1.4 - One-click automated configuration
+2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.3 - Use with `npx mcpbrowser@latest`
+3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.3 - Discoverable in the official registry
 
 All three methods configure the same underlying MCP server.
+
+## Smart Confirmation
+- **First access**: Copilot asks user confirmation when accessing a new domain for the first time - explains browser will open for authentication
+- **Subsequent requests**: Automatic usage without prompting (browser session preserved for same domain)
+- This provides better UX - one login per site, then seamless access
 
 ## Components
 - `src/mcp-browser.js`: MCP server exposing `load_and_extract`; connects to Chrome via CDP and fetches pages. Single implementation file.

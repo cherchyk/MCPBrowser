@@ -1,3 +1,15 @@
+# Sensitive files - CRITICAL
+.mcpregistry_github_token
+.mcpregistry_registry_token
+*_token
+*.token
+.env
+.env.*
+
+# Extension builds - NOT needed in npm package
+extension/*.vsix
+extension/node_modules
+
 # Development files
 .git
 .gitignore
