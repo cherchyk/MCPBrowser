@@ -1,0 +1,15 @@
+# Development files
+.git
+.gitignore
+.env.example
+docs/
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*

@@ -2,13 +2,40 @@
   "name": "mcpbrowser",
   "version": "0.2.0",
   "type": "module",
-  "private": true,
+  "description": "MCP server that loads authenticated web pages using Chrome DevTools Protocol",
+  "main": "src/mcp-browser.js",
+  "bin": {
+    "mcpbrowser": "src/mcp-browser.js"
+  },
   "scripts": {
     "mcp": "node src/mcp-browser.js"
   },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "chrome",
+    "puppeteer",
+    "authentication",
+    "web-scraping",
+    "github-copilot"
+  ],
+  "author": "cherchyk",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cherchyk/MCPBrowser.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cherchyk/MCPBrowser/issues"
+  },
+  "homepage": "https://github.com/cherchyk/MCPBrowser#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
     "dotenv": "^16.4.5",
     "puppeteer-core": "^23.4.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

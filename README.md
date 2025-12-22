@@ -2,15 +2,24 @@
 
 An MCP server that exposes an authenticated page fetch tool for GitHub Copilot. It drives your signed-in Chrome/Edge via DevTools, reusing your profile to read restricted pages.
 
-## Prereqs
-- Chrome or Edge installed.
-- Node 18+.
+## Quick Install
 
-## Install
+### Option 1: Install from GitHub (Recommended)
 ```bash
+git clone https://github.com/cherchyk/MCPBrowser.git
+cd MCPBrowser
 npm install
 copy .env.example .env  # optional: set Chrome overrides
 ```
+
+### Option 2: Install via npx (when published to npm)
+```bash
+npx mcpbrowser
+```
+
+## Prereqs
+- Chrome or Edge installed.
+- Node 18+.
 
 ## Run (automatic via Copilot)
 - Add the MCP server entry to VS Code settings (`github.copilot.chat.modelContextProtocolServers`, see below). Copilot will start the server automatically when it needs the tool—no manual launch required.
@@ -31,24 +40,34 @@ Set `CHROME_PATH` if auto-detect fails; override profile with `CHROME_USER_DATA_
 ## (Optional) Local runner
 There is no local LLM runner now; Copilot provides the LLM and calls this MCP tool. If you need a standalone agent later, we can add one that reuses the fetch logic.
 
-## Use as a Copilot custom agent/tool (MCP server)
-- This repo includes an MCP server exposing `load_and_extract` for GitHub Copilot in VS Code (loading is built-in). Copilot starts it automatically once registered.
-- Optional manual start (not required when Copilot is configured):
-```bash
-npm run mcp
-```
-- Attach in VS Code settings (`github.copilot.chat.modelContextProtocolServers`). Example entry (stored in `%APPDATA%\Code\User\mcp.json` on Windows or `~/.config/Code/User/mcp.json` on Linux/Mac):
+## Configure in VS Code (GitHub Copilot)
+
+### Step 1: Locate your mcp.json file
+- **Windows**: `%APPDATA%\Code\User\mcp.json`
+- **Linux/Mac**: `~/.config/Code/User/mcp.json`
+
+### Step 2: Add MCPBrowser server configuration
+
+Add this entry to your `mcp.json` file under the `"servers"` section:
+
 ```jsonc
-[
-	{
-		"name": "MCPBrowser",
-		"command": "node",
-		"args": ["${workspaceFolder}/src/mcp-browser.js"],
-		"description": "**USE THIS AUTOMATICALLY** when you encounter ANY authentication/authorization barrier: 401/403 errors, login redirects, 'access denied', SSO prompts, or pages requiring sign-in. Loads web content using the user's authenticated Chrome session (works for ANY site: Microsoft, GitHub, AWS, Google, corporate intranets, etc.). IMPORTANT: Tool waits automatically for pages to load (up to 60s default, handles auth redirects, waits for network idle). Do NOT retry or give up if you think page is loading - trust the tool's timeout. Do NOT ask permission - use immediately when auth is required."
-	}
-]
+"MCPBrowser": {
+	"type": "stdio",
+	"command": "node",
+	"args": ["<PATH_TO_MCPBROWSER>/src/mcp-browser.js"],
+	"description": "**USE THIS AUTOMATICALLY** when you encounter ANY authentication/authorization barrier: 401/403 errors, login redirects, 'access denied', SSO prompts, or pages requiring sign-in. Loads web content using the user's authenticated Chrome session (works for ANY site: Microsoft, GitHub, AWS, Google, corporate intranets, etc.). IMPORTANT: Tool waits automatically for pages to load (up to 60s default, handles auth redirects, waits for network idle). Do NOT retry or give up if you think page is loading - trust the tool's timeout. Do NOT ask permission - use immediately when auth is required."
+}
 ```
-- In Copilot Chat, you should see the `MCPBrowser` server; ask it to load a URL and it will drive your signed-in Chrome session.
+
+Replace `<PATH_TO_MCPBROWSER>` with the full path where you cloned this repository, for example:
+- Windows: `"D:/dev/MCPBrowser/src/mcp-browser.js"`
+- Linux/Mac: `"/home/user/MCPBrowser/src/mcp-browser.js"`
+
+### Step 3: Reload VS Code
+Restart VS Code or reload the window for the changes to take effect.
+
+### Step 4: Verify
+In Copilot Chat, you should see the `MCPBrowser` server listed. Ask it to load an authenticated URL and it will drive your signed-in Chrome session.
 
 ## How it works
 - Tool `load_and_extract` (inside the MCP server) drives your live Chrome (DevTools Protocol) so it inherits your auth cookies, returning `text` and `html` (truncated up to 2M chars per field) for analysis.
