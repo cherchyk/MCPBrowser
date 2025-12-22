@@ -1,6 +1,41 @@
 # MCPBrowser (MCP fetch tool with authenticated Chrome)
 
+[![npm version](https://img.shields.io/npm/v/mcpbrowser.svg)](https://www.npmjs.com/package/mcpbrowser)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 An MCP server that exposes an authenticated page fetch tool for GitHub Copilot. It drives your signed-in Chrome/Edge via DevTools, reusing your profile to read restricted pages.
+
+## 🚀 One-Click Install for VS Code
+
+<details>
+<summary><b>📋 Click to copy the configuration snippet</b></summary>
+
+Add this to your VS Code `mcp.json` file:
+
+**Location:**
+- Windows: `%APPDATA%\Code\User\mcp.json`
+- Mac/Linux: `~/.config/Code/User/mcp.json`
+
+```jsonc
+"MCPBrowser": {
+  "type": "stdio",
+  "command": "npx",
+  "args": ["-y", "mcpbrowser@latest"],
+  "description": "Loads authenticated web pages using your Chrome session"
+}
+```
+
+Or clone from GitHub:
+```jsonc
+"MCPBrowser": {
+  "type": "stdio",
+  "command": "npx",
+  "args": ["-y", "github:cherchyk/MCPBrowser"],
+  "description": "Loads authenticated web pages using your Chrome session"
+}
+```
+
+</details>
 
 ## Quick Install
 
