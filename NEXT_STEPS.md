@@ -3,7 +3,7 @@
 ## What's Been Done
 
 ✅ **Complete VS Code Extension Created**
-- Name: MCPBrowser
+- Name: MCP Browser
 - Package: `mcpbrowser`
 - Features: One-click configuration for GitHub Copilot MCP
 

@@ -1,7 +1,7 @@
-# MCPBrowser notes
+# MCP Browser notes
 
 ## 🚨 DEPLOYMENT CHECKLIST (CRITICAL - DO ALWAYS)
-When deploying ANY update to MCPBrowser, you MUST deploy to ALL THREE platforms together:
+When deploying ANY update to MCP Browser, you MUST deploy to ALL THREE platforms together:
 
 1. **npm**: Bump version in `package.json` and `server.json` → `npm publish`
 2. **Git**: Commit all changes → `git push`
@@ -18,7 +18,7 @@ When deploying ANY update to MCPBrowser, you MUST deploy to ALL THREE platforms 
 - Copilot supplies the LLM; this tool only provides alternative fetch capability
 
 ## Distribution
-MCPBrowser is available through three channels:
+MCP Browser is available through three channels:
 1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.1.4 - One-click automated configuration
 2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.3 - Use with `npx mcpbrowser@latest`
 3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.3 - Discoverable in the official registry

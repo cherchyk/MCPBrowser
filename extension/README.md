@@ -1,13 +1,12 @@
-# MCPBrowser
+# MCP Browser
 
-Alternative web fetcher for GitHub Copilot when normal URL access fails due to authentication or anti-crawler restrictions.
+**Extends GitHub Copilot's web access to protected pages** - handles login-protected pages, corporate SSO, and anti-crawler restrictions that normal fetching can't handle.
 
 ## Features
 
-- 🚀 **One-Click Setup**: Installs npm package and configures mcp.json automatically
-- 🔐 **Bypass Authentication**: Opens pages in your Chrome/Edge browser - you authenticate if needed, MCPBrowser waits and fetches the final page content
-- 🤖 **Beat Anti-Crawler**: Works when sites block Copilot's normal fetching
-- ⚙️ **Auto-Configuration**: Complete setup with a single click
+- 🚀 **One-Click Setup**: Installs npm package and configures mcp.json automatically - complete setup with a single click
+- 🔐 **Authentication Support**: Opens pages in your Chrome/Edge browser - authenticate once, reuse sessions automatically
+- 🤖 **Bypass Anti-Crawler**: Access sites that block automated tools
 
 ## How It Works
 

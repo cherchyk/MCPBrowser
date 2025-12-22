@@ -1,6 +1,6 @@
-# MCPBrowser VS Code Extension
+# MCP Browser VS Code Extension
 
-Professional one-click configuration extension for MCPBrowser.
+Professional one-click configuration extension for MCP Browser.
 
 ## Development Setup
 
@@ -14,8 +14,8 @@ npm install
 1. Open the `extension` folder in VS Code
 2. Press F5 to launch Extension Development Host
 3. Test the commands:
-   - `Ctrl+Shift+P` → "Configure MCPBrowser for GitHub Copilot"
-   - `Ctrl+Shift+P` → "Remove MCPBrowser from GitHub Copilot"
+   - `Ctrl+Shift+P` → "Configure MCP Browser for GitHub Copilot"
+   - `Ctrl+Shift+P` → "Remove MCP Browser from GitHub Copilot"
 
 ## Publishing to VS Code Marketplace
 
@@ -77,7 +77,7 @@ Install in VS Code:
 
 ## Features
 
-✅ **Automatic Detection** - Shows notification when MCPBrowser is available  
+✅ **Automatic Detection** - Shows notification when MCP Browser is available  
 ✅ **One-Click Setup** - Configures mcp.json automatically  
 ✅ **Smart Updates** - Handles existing configurations  
 ✅ **Easy Removal** - Clean uninstall option  

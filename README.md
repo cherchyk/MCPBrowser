@@ -1,10 +1,10 @@
-# MCPBrowser (MCP fetch tool with authenticated Chrome)
+# MCP Browser (MCP fetch for protected web resources)
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/cherchyk.mcpbrowser.svg)](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 [![npm version](https://img.shields.io/npm/v/mcpbrowser.svg)](https://www.npmjs.com/package/mcpbrowser)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Alternative web fetcher for GitHub Copilot when normal URL access fails due to authentication or anti-crawler restrictions. Uses your Chrome/Edge browser session via DevTools Protocol to bypass login requirements and bot detection.
+**Extends GitHub Copilot's web access to protected pages** - handles login-protected pages, corporate SSO, and anti-crawler restrictions that normal fetching can't handle. Uses your Chrome/Edge browser session via DevTools Protocol.
 
 ## 🚀 Installation Options
 

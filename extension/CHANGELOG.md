@@ -2,6 +2,13 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.1.6] - 2025-12-22
+
+### Changed
+- Updated display name from "MCPBrowser" to "MCP Browser" for better readability
+- All user-facing text now uses "MCP Browser" (technical identifiers remain unchanged)
+- Improved marketplace presentation with proper spacing
+
 ## [0.1.5] - 2025-12-22
 
 ### Changed
@@ -40,9 +47,9 @@ All notable changes to the "mcpbrowser" extension will be documented in this fil
 
 ### Added
 - Initial release
-- One-click MCPBrowser configuration for GitHub Copilot
+- One-click MCP Browser configuration for GitHub Copilot
 - Automatic detection and notification prompt
-- Command to add MCPBrowser to mcp.json
-- Command to remove MCPBrowser from mcp.json
+- Command to add MCP Browser to mcp.json
+- Command to remove MCP Browser from mcp.json
 - Smart handling of existing configurations
 - Cross-platform support (Windows, macOS, Linux)
