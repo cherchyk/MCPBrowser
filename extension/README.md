@@ -5,9 +5,18 @@ Alternative web fetcher for GitHub Copilot when normal URL access fails due to a
 ## Features
 
 - 🚀 **One-Click Setup**: Installs npm package and configures mcp.json automatically
-- 🔐 **Bypass Authentication**: Access pages requiring login using your Chrome session
+- 🔐 **Bypass Authentication**: Opens pages in your Chrome/Edge browser - you authenticate if needed, MCPBrowser waits and fetches the final page content
 - 🤖 **Beat Anti-Crawler**: Works when sites block Copilot's normal fetching
 - ⚙️ **Auto-Configuration**: Complete setup with a single click
+
+## How It Works
+
+When Copilot needs to access an authenticated or protected page:
+1. MCPBrowser opens the URL in your Chrome/Edge browser
+2. If authentication is required, you log in normally in the browser
+3. MCPBrowser waits for the page to fully load (handles redirects automatically)
+4. Once loaded, it extracts the content and returns it to Copilot
+5. The browser tab stays open to reuse your session for future requests
 
 ## Usage
 
