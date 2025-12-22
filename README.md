@@ -9,20 +9,25 @@ An MCP server that exposes an authenticated page fetch tool for GitHub Copilot. 
 
 ### Option 1: VS Code Extension (Easiest - One Click)
 
-**GitHub Release (Available Now):**
-Download from [GitHub Releases](https://github.com/cherchyk/MCPBrowser/releases/tag/extension-v0.1.0) and install:
+**From VS Code Marketplace:**
+```bash
+code --install-extension cherchyk.mcpbrowser-config
+```
+Or search "MCPBrowser" in VS Code Extensions view.
+
+**From GitHub Release:**
+Download from [GitHub Releases](https://github.com/cherchyk/MCPBrowser/releases/tag/extension-v0.1.0):
 ```bash
 code --install-extension mcpbrowser-config-0.1.0.vsix
 ```
-
-**VS Code Marketplace (Coming Soon):**
-Will be available at [marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser-config](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser-config)
 
 The extension automatically:
 - Detects if MCPBrowser is configured
 - Prompts you to configure it on first startup
 - Adds the correct `mcp.json` configuration
 - Keeps your configuration up to date
+
+📦 [View on Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser-config)
 
 ### Option 2: npm Package (Recommended for Manual Setup)
 Published on npm as [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.1.
