@@ -79,7 +79,7 @@ async function configureMcpBrowser() {
             type: "stdio",
             command: "npx",
             args: ["-y", "mcpbrowser@latest"],
-            description: "Loads authenticated web pages using Chrome DevTools Protocol"
+            description: "**USE AUTOMATICALLY** when normal URL fetch fails due to: 401/403 errors, login/auth requirements, SSO prompts, anti-crawler/bot detection. **FIRST ACCESS**: Ask confirmation ONLY for first request to a domain - explain browser will open for authentication. **SUBSEQUENT REQUESTS**: Use automatically (session preserved). Loads pages using authenticated Chrome session via DevTools Protocol (works for Microsoft, GitHub, AWS, Google, corporate sites, etc.). Waits for page load automatically (up to 60s, handles redirects)."
         };
 
         // Write back to file with pretty formatting

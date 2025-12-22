@@ -191,7 +191,7 @@ async function main() {
   const tools = [
     {
       name: "load_and_extract",
-      description: "Fetch and extract content from authenticated web pages using a local Chrome/Edge browser via DevTools Protocol. Automatically detects auth redirects by waiting for network idle. Supports smart tab reuse within the same domain to preserve authentication sessions. Returns both plain text and HTML content.",
+      description: "**FALLBACK MECHANISM**: Use this when normal URL fetching fails due to authentication requirements, login redirects, 401/403 errors, anti-crawler/bot detection, or session requirements. **FIRST ACCESS ONLY**: Ask user for confirmation ONLY if this is the first request to this domain/site - explain a browser window will open where they may need to authenticate. **SUBSEQUENT REQUESTS**: Use automatically without asking - browser session is already authenticated. Loads web pages using your authenticated Chrome/Edge browser session via DevTools Protocol, bypassing auth and crawler restrictions. Automatically handles auth redirects, waits for network idle, and supports tab reuse to preserve sessions. Returns both plain text and HTML content.",
       inputSchema: {
         type: "object",
         properties: {

@@ -1,9 +1,10 @@
 # MCPBrowser (MCP fetch tool with authenticated Chrome)
 
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/cherchyk.mcpbrowser.svg)](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 [![npm version](https://img.shields.io/npm/v/mcpbrowser.svg)](https://www.npmjs.com/package/mcpbrowser)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An MCP server that exposes an authenticated page fetch tool for GitHub Copilot. It drives your signed-in Chrome/Edge via DevTools, reusing your profile to read restricted pages.
+Alternative web fetcher for GitHub Copilot when normal URL access fails due to authentication or anti-crawler restrictions. Uses your Chrome/Edge browser session via DevTools to bypass login requirements and bot detection.
 
 ## 🚀 Installation Options
 
@@ -18,19 +19,18 @@ Or search "MCPBrowser" in VS Code Extensions view.
 **From GitHub Release:**
 Download from [GitHub Releases](https://github.com/cherchyk/MCPBrowser/releases):
 ```bash
-code --install-extension mcpbrowser-0.1.1.vsix
+code --install-extension mcpbrowser-0.1.4.vsix
 ```
 
 The extension automatically:
-- Detects if MCPBrowser is configured
-- Prompts you to configure it on first startup
-- Adds the correct `mcp.json` configuration
-- Keeps your configuration up to date
+- Installs the MCPBrowser npm package globally
+- Configures mcp.json for GitHub Copilot
+- Complete one-click setup - no manual steps needed
 
 📦 [View on Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 
 ### Option 2: npm Package (Recommended for Manual Setup)
-Published on npm as [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.1.
+Published on npm as [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.2.
 
 Add to your `mcp.json`:
 ```jsonc
@@ -47,7 +47,7 @@ Add to your `mcp.json`:
 - Mac/Linux: `~/.config/Code/User/mcp.json`
 
 ### Option 3: MCP Registry
-Available in the [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.cherchyk/browser` v0.2.1.
+Available in the [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.cherchyk/browser` v0.2.2.
 
 Search for "browser" in the registry to find configuration instructions.
 
@@ -106,8 +106,8 @@ There is no local LLM runner now; Copilot provides the LLM and calls this MCP to
 MCPBrowser is available through three channels:
 
 1. **VS Code Extension** (easiest): [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) - One-click configuration
-2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.1 - Use with npx
-3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.1 - Discoverable in registry
+2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.2 - Use with npx
+3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.2 - Discoverable in registry
 
 All three methods configure the same underlying MCP server that drives Chrome via DevTools Protocol.
 

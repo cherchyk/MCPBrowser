@@ -1,8 +1,8 @@
 {
   "name": "mcpbrowser",
   "displayName": "MCPBrowser",
-  "description": "Installs and configures MCPBrowser for authenticated web browsing in GitHub Copilot",
-  "version": "0.1.2",
+  "description": "Alternative web fetcher for Copilot when auth/crawler blocks prevent normal access. Installs and configures MCPBrowser",
+  "version": "0.1.4",
   "publisher": "cherchyk",
   "icon": "icon.png",
   "engines": {
