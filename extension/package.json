@@ -1,8 +1,8 @@
 {
-  "name": "mcpbrowser-config",
-  "displayName": "MCPBrowser Configurator",
+  "name": "mcpbrowser",
+  "displayName": "MCPBrowser",
   "description": "One-click configuration for MCPBrowser MCP server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "cherchyk",
   "icon": "icon.png",
   "engines": {
