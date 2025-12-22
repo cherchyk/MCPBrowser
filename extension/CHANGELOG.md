@@ -2,6 +2,15 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.1.5] - 2025-12-22
+
+### Changed
+- Updated to mcpbrowser@0.2.5 with improved VS Code confirmation experience
+- Added proper tool title annotation ("Access Authenticated Web Page")
+- Enhanced description with warning emoji for clarity
+- Uses default Chrome profile with saved passwords, extensions, and authenticated sessions
+- Cross-platform support (Windows, macOS, Linux)
+
 ## [0.1.4] - 2025-12-22
 
 ### Added

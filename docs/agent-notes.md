@@ -1,5 +1,14 @@
 # MCPBrowser notes
 
+## 🚨 DEPLOYMENT CHECKLIST (CRITICAL - DO ALWAYS)
+When deploying ANY update to MCPBrowser, you MUST deploy to ALL THREE platforms together:
+
+1. **npm**: Bump version in `package.json` and `server.json` → `npm publish`
+2. **Git**: Commit all changes → `git push`
+3. **VS Code Marketplace**: Bump version in `extension/package.json` → Update `extension/CHANGELOG.md` → Build `.vsix` → Publish to marketplace
+
+**Never deploy to just one platform** - all three must be updated together to keep versions synchronized.
+
 ## What this project does
 - Alternative web fetcher for GitHub Copilot when normal URL access fails due to authentication or anti-crawler restrictions
 - **Use when**: Copilot's default fetch returns 401/403, requires login, triggers bot detection, or is blocked by crawler restrictions
