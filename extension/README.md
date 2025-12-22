@@ -1,4 +1,4 @@
-# MCPBrowser Configurator
+# MCPBrowser
 
 One-click VS Code extension to configure MCPBrowser for GitHub Copilot.
 

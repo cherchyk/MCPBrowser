@@ -3,13 +3,13 @@
 ## What's Been Done
 
 ✅ **Complete VS Code Extension Created**
-- Name: MCPBrowser Configurator
-- Package: `mcpbrowser-config`
+- Name: MCPBrowser
+- Package: `mcpbrowser`
 - Features: One-click configuration for GitHub Copilot MCP
 
 ✅ **Extension Successfully Packaged**
-- File: `extension/mcpbrowser-config-0.1.0.vsix`
-- Size: 9.61 KB
+- File: `extension/mcpbrowser-0.1.1.vsix`
+- Size: 13.01 KB
 - Ready to install and test
 
 ✅ **Publishing Tools Installed**
@@ -46,7 +46,7 @@ magick icon.svg -resize 128x128 icon.png
 cd extension
 
 # Install locally
-code --install-extension mcpbrowser-config-0.1.0.vsix
+code --install-extension mcpbrowser-0.1.1.vsix
 
 # Or use VS Code UI:
 # Extensions → ... → Install from VSIX → select .vsix file
@@ -86,7 +86,7 @@ vsce publish
 ```
 
 ### 5. Verify (5 minutes)
-- Marketplace: https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser-config
+- Marketplace: https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser
 - Search in VS Code Extensions
 - Install from marketplace and test
 
@@ -96,7 +96,7 @@ You now have **3 ways** for users to get MCPBrowser:
 
 ### 1. VS Code Extension (Best UX) 🌟
 ```
-Install "MCPBrowser Configurator" from VS Code Extensions
+Install "MCPBrowser" from VS Code Extensions
 → Click "Configure Now"
 → Done!
 ```
@@ -151,7 +151,7 @@ Publish:
 ```powershell
 # Test locally
 cd extension
-code --install-extension mcpbrowser-config-0.1.0.vsix
+code --install-extension mcpbrowser-0.1.1.vsix
 
 # Package
 vsce package

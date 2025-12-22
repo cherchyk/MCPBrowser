@@ -1,6 +1,6 @@
 # Change Log
 
-All notable changes to the "mcpbrowser-config" extension will be documented in this file.
+All notable changes to the "mcpbrowser" extension will be documented in this file.
 
 ## [0.1.0] - 2025-12-22
 

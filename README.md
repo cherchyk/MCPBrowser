@@ -105,7 +105,7 @@ There is no local LLM runner now; Copilot provides the LLM and calls this MCP to
 
 MCPBrowser is available through three channels:
 
-1. **VS Code Extension** (easiest): [cherchyk.mcpbrowser-config](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser-config) - One-click configuration
+1. **VS Code Extension** (easiest): [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) - One-click configuration
 2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.1 - Use with npx
 3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.1 - Discoverable in registry
 

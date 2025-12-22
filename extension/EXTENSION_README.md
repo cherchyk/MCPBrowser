@@ -73,7 +73,7 @@ vsce package
 
 Install in VS Code:
 1. Extensions sidebar → ... → Install from VSIX
-2. Select the generated `mcpbrowser-config-0.1.0.vsix`
+2. Select the generated `mcpbrowser-0.1.1.vsix`
 
 ## Features
 
@@ -116,4 +116,4 @@ extension/
 
 ## Marketplace Link
 
-Once published: https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser-config
+Once published: https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser

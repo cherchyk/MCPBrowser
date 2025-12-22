@@ -136,7 +136,7 @@ async function showConfigurationPrompt(context) {
  * Extension activation
  */
 async function activate(context) {
-    console.log('MCPBrowser Configurator extension is now active');
+    console.log('MCPBrowser extension is now active');
 
     // Register configure command
     let configureCommand = vscode.commands.registerCommand('mcpbrowser.configure', async () => {

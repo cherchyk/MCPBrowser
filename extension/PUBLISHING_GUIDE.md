@@ -132,7 +132,7 @@ vsce publish 1.0.0
 ### 7. Verify Publication
 
 1. Check marketplace page (wait 5-10 minutes for indexing):
-   - https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser-config
+   - https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser
 
 2. Search in VS Code:
    - Extensions → Search "MCPBrowser"
@@ -152,7 +152,7 @@ git push origin extension-v0.1.0
 On GitHub:
 1. Go to Releases → "Create a new release"
 2. Tag: extension-v0.1.0
-3. Title: "MCPBrowser Configurator v0.1.0"
+3. Title: "MCPBrowser v0.1.0"
 4. Description: Copy from CHANGELOG.md
 5. Attach the .vsix file
 6. Publish release
@@ -163,7 +163,7 @@ Add extension link to main project README:
 ## Installation
 
 ### Option 1: VS Code Extension (Recommended)
-Install [MCPBrowser Configurator](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser-config) from the VS Code Marketplace.
+Install [MCPBrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) from the VS Code Marketplace.
 ```
 
 ### 9. Troubleshooting
@@ -194,7 +194,7 @@ Install [MCPBrowser Configurator](https://marketplace.visualstudio.com/items?ite
 
 **Unpublishing (if needed):**
 ```bash
-vsce unpublish cherchyk.mcpbrowser-config
+vsce unpublish cherchyk.mcpbrowser
 ```
 
 ### Quick Reference
