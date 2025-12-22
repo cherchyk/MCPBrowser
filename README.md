@@ -37,7 +37,7 @@ There is no local LLM runner now; Copilot provides the LLM and calls this MCP to
 ```bash
 npm run mcp
 ```
-- Attach in VS Code settings (`github.copilot.chat.modelContextProtocolServers`). Example entry (stored in [C:/Users/bocherch/AppData/Roaming/Code/User/mcp.json](C:/Users/bocherch/AppData/Roaming/Code/User/mcp.json)):
+- Attach in VS Code settings (`github.copilot.chat.modelContextProtocolServers`). Example entry (stored in `%APPDATA%\Code\User\mcp.json` on Windows or `~/.config/Code/User/mcp.json` on Linux/Mac):
 ```jsonc
 [
 	{
