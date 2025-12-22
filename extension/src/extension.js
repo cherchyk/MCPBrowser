@@ -2,6 +2,9 @@ const vscode = require('vscode');
 const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
+const { exec } = require('child_process');
+const util = require('util');
+const execPromise = util.promisify(exec);
 
 /**
  * Get the path to VS Code's mcp.json configuration file
@@ -25,6 +28,25 @@ async function isMcpBrowserConfigured() {
         return config.servers && config.servers.MCPBrowser !== undefined;
     } catch (error) {
         // File doesn't exist or can't be read
+        return false;
+    }
+}
+
+/**
+ * Install MCPBrowser npm package globally
+ */
+async function installMcpBrowser() {
+    try {
+        vscode.window.showInformationMessage('Installing MCPBrowser npm package...');
+        
+        // Install globally so npx can find it reliably
+        await execPromise('npm install -g mcpbrowser@latest');
+        
+        vscode.window.showInformationMessage('MCPBrowser package installed successfully!');
+        return true;
+    } catch (error) {
+        console.error('Error installing MCPBrowser:', error);
+        vscode.window.showErrorMessage(`Failed to install MCPBrowser: ${error.message}`);
         return false;
     }
 }
@@ -154,7 +176,14 @@ async function activate(context) {
                     return;
                 }
             }
-
+            
+            // Step 1: Install npm package
+            const installed = await installMcpBrowser();
+            if (!installed) {
+                return; // Installation failed, abort
+            }
+            
+            // Step 2: Configure mcp.json
             await configureMcpBrowser();
             
             const restart = await vscode.window.showInformationMessage(
