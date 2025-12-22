@@ -4,6 +4,7 @@
   "description": "One-click configuration for MCPBrowser MCP server",
   "version": "0.1.0",
   "publisher": "cherchyk",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.107.0"
   },

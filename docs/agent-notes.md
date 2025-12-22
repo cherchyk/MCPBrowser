@@ -7,9 +7,19 @@
 - Auto-detects auth redirects by monitoring domain changes and common login URL patterns (`/login`, `/auth`, `/signin`, `/sso`, `/oauth`, `/saml`)
 - No local LLM runs here; Copilot supplies the LLM and invokes this tool.
 
+## Distribution
+MCPBrowser is available through three channels:
+1. **VS Code Extension**: [cherchyk.mcpbrowser-config](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser-config) - One-click automated configuration
+2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.1 - Use with `npx mcpbrowser@latest`
+3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.1 - Discoverable in the official registry
+
+All three methods configure the same underlying MCP server.
+
 ## Components
 - `src/mcp-browser.js`: MCP server exposing `load_and_extract`; connects to Chrome via CDP and fetches pages. Single implementation file.
-- `README.md`: Run instructions.
+- `extension/`: VS Code extension for automated mcp.json configuration
+- `README.md`: Complete installation and usage guide.
+- `server.json`: MCP Registry metadata file.
 
 ## Copilot integration concept
 - GitHub Copilot in VS Code can attach MCP servers. This repo provides `npm run mcp` to start the server exposing the fetch tool.
