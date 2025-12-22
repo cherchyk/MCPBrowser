@@ -1,0 +1,55 @@
+{
+  "name": "mcpbrowser-config",
+  "displayName": "MCPBrowser Configurator",
+  "description": "One-click configuration for MCPBrowser MCP server",
+  "version": "0.1.0",
+  "publisher": "cherchyk",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "github-copilot",
+    "browser",
+    "authentication"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "mcpbrowser.configure",
+        "title": "Configure MCPBrowser for GitHub Copilot"
+      },
+      {
+        "command": "mcpbrowser.remove",
+        "title": "Remove MCPBrowser from GitHub Copilot"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cherchyk/MCPBrowser.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cherchyk/MCPBrowser/issues"
+  },
+  "homepage": "https://github.com/cherchyk/MCPBrowser#readme",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.19.27",
+    "@types/vscode": "^1.107.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "type": "commonjs"
+}
