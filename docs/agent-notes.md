@@ -1,4 +1,4 @@
-# WAAgent notes
+# MCPBrowser notes
 
 ## What this project does
 - Provides an MCP server exposing a `load_and_extract` tool so GitHub Copilot can load authenticated web pages through your Chrome profile.
@@ -8,7 +8,7 @@
 - No local LLM runs here; Copilot supplies the LLM and invokes this tool.
 
 ## Components
-- `src/mcp-browser.js`: MCP server exposing `load_and_extract`; connects to Chrome via CDP and fetches pages.
+- `src/mcp-browser.js`: MCP server exposing `load_and_extract`; connects to Chrome via CDP and fetches pages. Single implementation file.
 - `README.md`: Run instructions.
 
 ## Copilot integration concept
@@ -18,8 +18,12 @@
 - Copilot handles the LLM; this server only supplies the authenticated fetch tool.
 
 ## Auth flow usage
-- Use `keepPageOpen: true` on the first call to leave the tab open and complete login.
-- Optional: `authWaitSelector` + `authWaitTimeoutMs` to wait for a post-login element before fetching text/html; on timeout the tab stays open so you can finish auth and retry.
+- **Default behavior**: Tabs stay open indefinitely and are reused for same-domain requests to preserve auth sessions.
+- Use `keepPageOpen: true` (default) on the first call to leave the tab open and complete login.
+- Set `keepPageOpen: false` to close the tab immediately after successful fetch.
+- **Domain-aware tab reuse**: Same-domain requests reuse the existing tab; different domains automatically close the old tab and open a new one.
+- Optional: `authWaitSelector` to wait for a post-login element (10 min timeout); on timeout the tab stays open so you can finish auth and retry.
+- Optional: `waitForUrlPattern` to specify exact URL pattern for auth redirect completion.
 
 ## Chrome/auth assumptions
 - MCP server will auto-launch Chrome/Edge with remote debugging if none is running (defaults: port 9222, `%LOCALAPPDATA%/ChromeAuthProfile`).

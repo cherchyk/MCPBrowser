@@ -1,4 +1,4 @@
-# WAAgent (MCP fetch tool with authenticated Chrome)
+# MCPBrowser (MCP fetch tool with authenticated Chrome)
 
 An MCP server that exposes an authenticated page fetch tool for GitHub Copilot. It drives your signed-in Chrome/Edge via DevTools, reusing your profile to read restricted pages.
 
@@ -41,14 +41,14 @@ npm run mcp
 ```jsonc
 [
 	{
-		"name": "MCP Browser",
+		"name": "MCPBrowser",
 		"command": "node",
 		"args": ["${workspaceFolder}/src/mcp-browser.js"],
 		"description": "**USE THIS AUTOMATICALLY** when you encounter ANY authentication/authorization barrier: 401/403 errors, login redirects, 'access denied', SSO prompts, or pages requiring sign-in. Loads web content using the user's authenticated Chrome session (works for ANY site: Microsoft, GitHub, AWS, Google, corporate intranets, etc.). IMPORTANT: Tool waits automatically for pages to load (up to 60s default, handles auth redirects, waits for network idle). Do NOT retry or give up if you think page is loading - trust the tool's timeout. Do NOT ask permission - use immediately when auth is required."
 	}
 ]
 ```
-- In Copilot Chat, you should see the `MCP Browser` server; ask it to load a URL and it will drive your signed-in Chrome session.
+- In Copilot Chat, you should see the `MCPBrowser` server; ask it to load a URL and it will drive your signed-in Chrome session.
 
 ## How it works
 - Tool `load_and_extract` (inside the MCP server) drives your live Chrome (DevTools Protocol) so it inherits your auth cookies, returning `text` and `html` (truncated up to 2M chars per field) for analysis.
@@ -60,10 +60,10 @@ npm run mcp
 - GitHub Copilot's LLM invokes this tool via MCP; this repo itself does not run an LLM.
 
 ## Auth-assisted fetch flow
-- Copilot can call with just the URL, or with no params if you set an env default (`DEFAULT_FETCH_URL` or `MCP_DEFAULT_FETCH_URL`). Defaults keep the tab open indefinitely for reuse (domain-aware). Tabs never auto-close unless you explicitly set `closeAfterSuccess: true` or `autoCloseMs` to a non-zero value.
+- Copilot can call with just the URL, or with no params if you set an env default (`DEFAULT_FETCH_URL` or `MCP_DEFAULT_FETCH_URL`). By default tabs stay open indefinitely for reuse (domain-aware).
 - First call opens the tab and leaves it open so you can sign in. No extra params needed.
-- After you sign in, call the same URL again; by default the tab stays open indefinitely for reuse. Set `closeAfterSuccess: true` to close immediately on success, or `autoCloseMs` to a non-zero value to enable auto-close after a timeout.
-- Optional fields (`authWaitSelector`, `waitForSelector`, etc.) are available but not required.
+- After you sign in, call the same URL again; tab stays open for reuse. Set `keepPageOpen: false` to close immediately on success.
+- Optional fields (`authWaitSelector`, `waitForSelector`, `waitForUrlPattern`, etc.) are available but not required.
 
 ## Configuration
 - `.env`: optional overrides for `CHROME_WS_ENDPOINT`, `CHROME_REMOTE_DEBUG_HOST/PORT`, `CHROME_PATH`, `CHROME_USER_DATA_DIR`.
@@ -74,7 +74,8 @@ npm run mcp
 - **No re-authentication needed**: Automatically reuses the same tab for URLs on the same domain, keeping your auth session alive across multiple page fetches
 - **Automatic page loading**: Tool waits for pages to fully load (default 60s timeout, waits for network idle). Copilot should trust the tool and not retry manually.
 - **Auth redirect handling**: Auto-detects auth redirects by monitoring domain changes and common login URL patterns (`/login`, `/auth`, `/signin`, `/sso`, `/oauth`, `/saml`)
-- **Tabs stay open**: Tabs remain open indefinitely for reuse across multiple fetches (no auto-close timer). Close manually or set `autoCloseMs` if needed.
+- **Tabs stay open**: By default tabs remain open indefinitely for reuse. Set `keepPageOpen: false` to close immediately after successful fetch.
+- **Smart domain switching**: When switching domains, automatically closes the old tab and opens a new one to prevent tab accumulation
 - If you hit login pages, verify Chrome instance is signed in and the site opens there.
 - Use a dedicated profile directory to avoid interfering with your daily Chrome.
 - For heavy pages, add `waitForSelector` to ensure post-login content appears before extraction.
