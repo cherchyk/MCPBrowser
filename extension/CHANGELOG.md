@@ -2,6 +2,14 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.7] - 2025-12-22
+
+### Changed
+- Synced extension version with npm package (now both 0.2.7)
+- Versions will now always match for easier tracking
+
+## [0.2.6] - 2025-12-22 (skipped for extension)
+
 ## [0.1.6] - 2025-12-22
 
 ### Changed
