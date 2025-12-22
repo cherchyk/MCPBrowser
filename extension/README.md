@@ -20,12 +20,14 @@ When Copilot needs to access an authenticated or protected page:
 
 ## Usage
 
-### Installation (Automatic)
+### Installation Steps
 
 1. Install this extension from VS Code marketplace
-2. Click "Configure Now" when prompted
-3. Extension installs npm package and configures mcp.json automatically
-4. Restart VS Code
+2. You'll see a notification: **"MCPBrowser is available! Would you like to configure it for GitHub Copilot?"**
+3. Click **"Configure Now"**
+4. Wait for "Installing MCPBrowser npm package..." to complete
+5. When you see **"MCPBrowser configured successfully!"**, click **"Restart Now"**
+6. After restart, MCPBrowser is ready to use with Copilot!
 
 ### Using with GitHub Copilot
 
