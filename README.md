@@ -18,14 +18,13 @@ Or search "MCPBrowser" in VS Code Extensions view.
 **From GitHub Release:**
 Download from [GitHub Releases](https://github.com/cherchyk/MCPBrowser/releases):
 ```bash
-code --install-extension mcpbrowser-0.1.1.vsix
+code --install-extension mcpbrowser-0.1.2.vsix
 ```
 
 The extension automatically:
-- Detects if MCPBrowser is configured
-- Prompts you to configure it on first startup
-- Adds the correct `mcp.json` configuration
-- Keeps your configuration up to date
+- Installs the MCPBrowser npm package globally
+- Configures mcp.json for GitHub Copilot
+- Complete one-click setup - no manual steps needed
 
 📦 [View on Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 
