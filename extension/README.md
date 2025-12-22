@@ -1,13 +1,13 @@
 # MCPBrowser
 
-One-click VS Code extension to configure MCPBrowser for GitHub Copilot.
+Alternative web fetcher for GitHub Copilot when normal URL access fails due to authentication or anti-crawler restrictions.
 
 ## Features
 
-- 🚀 **One-Click Setup**: Configure MCPBrowser for GitHub Copilot with a single click
-- 🔄 **Automatic Detection**: Detects when MCPBrowser is available and offers to configure it
-- 🗑️ **Easy Removal**: Remove configuration just as easily
-- ⚙️ **Smart Configuration**: Automatically modifies your `mcp.json` file
+- 🚀 **One-Click Setup**: Installs npm package and configures mcp.json automatically
+- 🔐 **Bypass Authentication**: Access pages requiring login using your Chrome session
+- 🤖 **Beat Anti-Crawler**: Works when sites block Copilot's normal fetching
+- ⚙️ **Auto-Configuration**: Complete setup with a single click
 
 ## Usage
 

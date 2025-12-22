@@ -1,11 +1,12 @@
 # MCPBrowser notes
 
 ## What this project does
-- Provides an MCP server exposing a `load_and_extract` tool so GitHub Copilot can load authenticated web pages through your Chrome profile.
-- **Universal auth handling**: Automatically detects and handles authentication for ANY site (Microsoft, GitHub, AWS, Google, corporate SSO, OAuth, etc.)
-- Fetch uses Chrome DevTools Protocol (CDP) to reuse your logged-in Chrome (no creds stored) and returns page text/html to the caller.
-- Auto-detects auth redirects by monitoring domain changes and common login URL patterns (`/login`, `/auth`, `/signin`, `/sso`, `/oauth`, `/saml`)
-- No local LLM runs here; Copilot supplies the LLM and invokes this tool.
+- Alternative web fetcher for GitHub Copilot when normal URL access fails due to authentication or anti-crawler restrictions
+- **Use when**: Copilot's default fetch returns 401/403, requires login, triggers bot detection, or is blocked by crawler restrictions
+- Uses Chrome DevTools Protocol (CDP) to reuse your logged-in Chrome session (no credentials stored)
+- **Universal auth handling**: Works with Microsoft, GitHub, AWS, Google, corporate SSO, OAuth, SAML, etc.
+- Auto-detects auth redirects by monitoring domain changes and common login URL patterns
+- Copilot supplies the LLM; this tool only provides alternative fetch capability
 
 ## Distribution
 MCPBrowser is available through three channels:
