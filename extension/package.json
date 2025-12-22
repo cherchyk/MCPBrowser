@@ -2,7 +2,7 @@
   "name": "mcpbrowser",
   "displayName": "MCPBrowser",
   "description": "Alternative web fetcher for Copilot when auth/crawler blocks prevent normal access. Installs and configures MCPBrowser",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "publisher": "cherchyk",
   "icon": "icon.png",
   "engines": {
