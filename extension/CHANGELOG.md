@@ -2,6 +2,12 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.18] - 2025-12-23
+
+### Changed
+- Re-deployment with complete checklist compliance
+- All version references synchronized across project
+
 ## [0.2.17] - 2025-12-23
 
 ### Changed
