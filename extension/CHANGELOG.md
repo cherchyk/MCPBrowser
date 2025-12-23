@@ -2,6 +2,13 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.12] - 2025-12-22
+
+### Changed
+- Updated deployment checklist order
+- Added Chrome flags to suppress first-run prompts (--no-first-run, --no-default-browser-check, --disable-sync)
+- Fixed Chrome "Sign in to Chrome" prompt appearing with dedicated debug profile
+
 ## [0.2.7] - 2025-12-22
 
 ### Changed

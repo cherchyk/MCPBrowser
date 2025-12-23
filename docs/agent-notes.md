@@ -22,9 +22,9 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 
 ## Distribution
 MCP Browser is available through three channels:
-1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.11 - One-click automated configuration
-2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.11 - Use with `npx mcpbrowser@latest`
-3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.11 - Discoverable in the official registry
+1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.12 - One-click automated configuration
+2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.12 - Use with `npx mcpbrowser@latest`
+3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.12 - Discoverable in the official registry
 
 All three methods configure the same underlying MCP server.
 
