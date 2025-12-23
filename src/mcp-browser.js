@@ -60,6 +60,7 @@ const defaultChromePaths = getDefaultChromePaths();
 
 let cachedBrowser = null;
 let lastKeptPage = null; // reuse the same tab when requested
+let chromeLaunchPromise = null; // prevent multiple simultaneous launches
 
 async function devtoolsAvailable() {
   try {
@@ -80,24 +81,47 @@ function findChromePath() {
 
 async function launchChromeIfNeeded() {
   if (explicitWSEndpoint) return; // user provided explicit endpoint; assume managed externally
+  
+  // If Chrome is already available, don't launch
   if (await devtoolsAvailable()) return;
-
-  const chromePath = findChromePath();
-  if (!chromePath) {
-    throw new Error("Chrome/Edge not found. Set CHROME_PATH to your browser executable.");
+  
+  // If a launch is already in progress, wait for it
+  if (chromeLaunchPromise) {
+    return await chromeLaunchPromise;
   }
+  
+  // Create a new launch promise to prevent multiple simultaneous launches
+  chromeLaunchPromise = (async () => {
+    try {
+      // Double-check after acquiring the launch lock
+      if (await devtoolsAvailable()) return;
 
-  const args = [`--remote-debugging-port=${chromePort}`, `--user-data-dir=${userDataDir}`];
-  const child = spawn(chromePath, args, { detached: true, stdio: "ignore" });
-  child.unref();
+      const chromePath = findChromePath();
+      if (!chromePath) {
+        throw new Error("Chrome/Edge not found. Set CHROME_PATH to your browser executable.");
+      }
 
-  // Wait for DevTools to come up
-  const deadline = Date.now() + 20000;
-  while (Date.now() < deadline) {
-    if (await devtoolsAvailable()) return;
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error("Chrome did not become available on DevTools port; check CHROME_PATH/port/profile.");
+      const args = [
+        `--remote-debugging-port=${chromePort}`, 
+        `--user-data-dir=${userDataDir}`,
+        'about:blank' // Open with a blank page
+      ];
+      const child = spawn(chromePath, args, { detached: true, stdio: "ignore" });
+      child.unref();
+
+      // Wait for DevTools to come up
+      const deadline = Date.now() + 20000;
+      while (Date.now() < deadline) {
+        if (await devtoolsAvailable()) return;
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      throw new Error("Chrome did not become available on DevTools port; check CHROME_PATH/port/profile.");
+    } finally {
+      chromeLaunchPromise = null;
+    }
+  })();
+  
+  return await chromeLaunchPromise;
 }
 
 async function resolveWSEndpoint() {
@@ -173,9 +197,17 @@ async function fetchPage({
     }
   }
   
-  // Create new tab if no reuse
+  // Try to reuse existing pages first (when Chrome opened with profile)
   if (!page) {
-    page = await browser.newPage();
+    const pages = await browser.pages();
+    // Find an existing page that's not being used
+    if (pages.length > 0) {
+      // Use the first available page (usually the blank tab Chrome opens with)
+      page = pages[0];
+    } else {
+      // Create new tab if no existing pages
+      page = await browser.newPage();
+    }
   }
 
   let shouldKeepOpen = keepPageOpen || page === lastKeptPage;
