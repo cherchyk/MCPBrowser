@@ -20,12 +20,13 @@ function getDefaultUserDataDir() {
   const platform = os.platform();
   const home = os.homedir();
   
+  // Use a dedicated debugging profile directory
   if (platform === "win32") {
-    return path.join(home, "AppData/Local/Google/Chrome/User Data");
+    return path.join(home, "AppData/Local/MCPBrowser/ChromeDebug");
   } else if (platform === "darwin") {
-    return path.join(home, "Library/Application Support/Google/Chrome");
+    return path.join(home, "Library/Application Support/MCPBrowser/ChromeDebug");
   } else {
-    return path.join(home, ".config/google-chrome");
+    return path.join(home, ".config/MCPBrowser/ChromeDebug");
   }
 }
 
@@ -104,7 +105,10 @@ async function launchChromeIfNeeded() {
       const args = [
         `--remote-debugging-port=${chromePort}`, 
         `--user-data-dir=${userDataDir}`,
-        'about:blank' // Open with a blank page
+        '--no-first-run',              // Skip first run experience
+        '--no-default-browser-check',  // Skip default browser check
+        '--disable-sync',              // Disable Chrome sync prompts
+        'about:blank'                  // Open with a blank page
       ];
       const child = spawn(chromePath, args, { detached: true, stdio: "ignore" });
       child.unref();
@@ -197,36 +201,37 @@ async function fetchPage({
     }
   }
   
-  // Try to reuse existing pages first (when Chrome opened with profile)
+  // Create new tab if no reuse
   if (!page) {
-    const pages = await browser.pages();
-    // Filter out pages that might not be controllable
-    const controllablePages = [];
-    for (const p of pages) {
-      try {
-        const url = p.url();
-        // Skip chrome:// pages and other internal pages
-        if (!url.startsWith('chrome://') && !url.startsWith('chrome-extension://')) {
-          controllablePages.push(p);
-        }
-      } catch {
-        // Skip pages we can't access
-      }
-    }
-    
-    // Use first controllable page or create new one
-    if (controllablePages.length > 0) {
-      page = controllablePages[0];
-    } else {
-      // Create new tab if no controllable pages
+    try {
       page = await browser.newPage();
+    } catch (error) {
+      // If newPage() fails (can happen with some profiles), try to reuse existing page
+      const pages = await browser.pages();
+      for (const p of pages) {
+        try {
+          const pageUrl = p.url();
+          // Skip chrome:// pages and other internal pages
+          if (!pageUrl.startsWith('chrome://') && !pageUrl.startsWith('chrome-extension://')) {
+            page = p;
+            break;
+          }
+        } catch {
+          // Skip pages we can't access
+        }
+      }
+      if (!page) {
+        throw new Error('Unable to create or find a controllable page');
+      }
     }
   }
 
   let shouldKeepOpen = keepPageOpen || page === lastKeptPage;
   let wasSuccess = false;
   try {
+    console.error(`[MCPBrowser] Navigating to: ${url}`);
     await page.goto(url, { waitUntil, timeout: timeoutMs });
+    console.error(`[MCPBrowser] Navigation completed: ${page.url()}`);
     
     // Extract content
     const text = await page.evaluate(() => document.body?.innerText || "");
