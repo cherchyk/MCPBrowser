@@ -272,12 +272,12 @@ function truncate(str, max) {
 }
 
 async function main() {
-  const server = new Server({ name: "MCPBrowser", version: "0.2.0" }, { capabilities: { tools: {} } });
+  const server = new Server({ name: "MCPBrowser", version: "0.2.13" }, { capabilities: { tools: {} } });
 
   const tools = [
     {
       name: "load_and_extract",
-      description: "⚠️ BROWSER ACCESS: Opens pages in your Chrome browser with your default profile (saved passwords, extensions, authenticated sessions). Use when normal URL fetching fails due to authentication requirements, login redirects, 401/403 errors, anti-crawler/bot detection, or session requirements. Automatically handles auth redirects, waits for network idle, and supports tab reuse to preserve sessions. Returns both plain text and HTML content.",
+      description: "🌐 PRIMARY BROWSER TOOL for authenticated/protected websites: Opens pages in your Chrome browser with your actual user profile (saved passwords, extensions, active sessions). **USE THIS FIRST** for: internal/corporate sites (*.microsoft.com, *.eng.ms, etc.), login-required pages, SSO/OAuth protected content, paywalled sites, anti-bot protected pages, or any 401/403/authentication errors. Automatically handles login redirects, waits for content to load, supports session persistence via tab reuse. Returns both plain text and HTML even from login/auth pages. Always prefer this over generic URL fetchers for authenticated content.",
       inputSchema: {
         type: "object",
         properties: {

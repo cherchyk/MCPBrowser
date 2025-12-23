@@ -2,6 +2,14 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.13] - 2025-12-22
+
+### Changed
+- **Improved tool description** to make MCPBrowser the PRIMARY choice for authenticated/protected websites
+- Tool now explicitly mentions common use cases: internal/corporate sites (*.microsoft.com, *.eng.ms), SSO/OAuth pages, paywalled content
+- Enhanced guidance for AI agents to prefer MCPBrowser over generic URL fetchers for authenticated content
+- Better automatic tool selection by GitHub Copilot for protected resources
+
 ## [0.2.12] - 2025-12-22
 
 ### Changed
