@@ -200,12 +200,25 @@ async function fetchPage({
   // Try to reuse existing pages first (when Chrome opened with profile)
   if (!page) {
     const pages = await browser.pages();
-    // Find an existing page that's not being used
-    if (pages.length > 0) {
-      // Use the first available page (usually the blank tab Chrome opens with)
-      page = pages[0];
+    // Filter out pages that might not be controllable
+    const controllablePages = [];
+    for (const p of pages) {
+      try {
+        const url = p.url();
+        // Skip chrome:// pages and other internal pages
+        if (!url.startsWith('chrome://') && !url.startsWith('chrome-extension://')) {
+          controllablePages.push(p);
+        }
+      } catch {
+        // Skip pages we can't access
+      }
+    }
+    
+    // Use first controllable page or create new one
+    if (controllablePages.length > 0) {
+      page = controllablePages[0];
     } else {
-      // Create new tab if no existing pages
+      // Create new tab if no controllable pages
       page = await browser.newPage();
     }
   }
