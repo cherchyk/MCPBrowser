@@ -39,8 +39,21 @@ async function installMcpBrowser() {
     try {
         vscode.window.showInformationMessage('Installing MCPBrowser npm package...');
         
-        // Install globally so npx can find it reliably
-        await execPromise('npm install -g mcpbrowser@latest');
+        // Try with sudo if in Linux/Mac environment (like dev containers)
+        let installCmd = 'npm install -g mcpbrowser@latest';
+        
+        // Check if we need sudo (Linux/Mac and not running as root)
+        if (process.platform !== 'win32' && process.getuid && process.getuid() !== 0) {
+            // Check if sudo is available
+            try {
+                await execPromise('which sudo');
+                installCmd = 'sudo ' + installCmd;
+            } catch {
+                // sudo not available, try without it
+            }
+        }
+        
+        await execPromise(installCmd);
         
         vscode.window.showInformationMessage('MCPBrowser package installed successfully!');
         return true;
