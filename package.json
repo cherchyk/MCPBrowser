@@ -1,5 +1,5 @@
 {  "name": "mcpbrowser",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "mcpName": "io.github.cherchyk/browser",
   "type": "module",
   "description": "MCP server that loads authenticated web pages using Chrome DevTools Protocol",
