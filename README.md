@@ -4,7 +4,7 @@
 [![npm version](https://img.shields.io/npm/v/mcpbrowser.svg)](https://www.npmjs.com/package/mcpbrowser)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Extends GitHub Copilot's web access to protected pages** - handles login-protected pages, corporate SSO, and anti-crawler restrictions that normal fetching can't handle. Uses your Chrome/Edge browser session via DevTools Protocol.
+**Enables GitHub Copilot to fetch protected web pages** - handles login-protected web pages, corporate SSO, and anti-crawler restrictions that normal fetching can't handle. Uses your Chrome/Edge browser session via DevTools Protocol.
 
 ## 🚀 Installation Options
 
@@ -38,7 +38,7 @@ Add to your `mcp.json`:
   "type": "stdio",
   "command": "npx",
   "args": ["-y", "mcpbrowser@latest"],
-  "description": "Loads authenticated web pages using your Chrome session"
+  "description": "Fetches authenticated web pages using your Chrome session"
 }
 ```
 
@@ -102,7 +102,7 @@ Add this entry to your `mcp.json` file under the `"servers"` section:
 	"type": "stdio",
 	"command": "node",
 	"args": ["<PATH_TO_MCPBROWSER>/src/mcp-browser.js"],
-	"description": "**USE THIS AUTOMATICALLY** when you encounter ANY authentication/authorization barrier: 401/403 errors, login redirects, 'access denied', SSO prompts, or pages requiring sign-in. Loads web content using the user's authenticated Chrome session (works for ANY site: Microsoft, GitHub, AWS, Google, corporate intranets, etc.). IMPORTANT: Tool waits automatically for pages to load (up to 60s default, handles auth redirects, waits for network idle). Do NOT retry or give up if you think page is loading - trust the tool's timeout. Do NOT ask permission - use immediately when auth is required."
+	"description": "**USE THIS AUTOMATICALLY** when you encounter ANY authentication/authorization barrier: 401/403 errors, login redirects, 'fetch denied', SSO prompts, or web pages requiring sign-in. Fetches web content using the user's authenticated Chrome session (works for ANY site: Microsoft, GitHub, AWS, Google, corporate intranets, etc.). IMPORTANT: Tool waits automatically for web pages to fetch (up to 60s default, handles auth redirects, waits for network idle). Do NOT retry or give up if you think web page is loading - trust the tool's timeout. Do NOT ask permission - use immediately when auth is required."
 }
 ```
 
@@ -114,16 +114,16 @@ Replace `<PATH_TO_MCPBROWSER>` with the full path where you cloned this reposito
 Restart VS Code or reload the window for the changes to take effect.
 
 ### Step 4: Verify
-In Copilot Chat, you should see the `MCPBrowser` server listed. Ask it to load an authenticated URL and it will drive your signed-in Chrome session.
+In Copilot Chat, you should see the `MCPBrowser` server listed. Ask it to fetch an authenticated URL and it will drive your signed-in Chrome session.
 
 ## How it works
 - Tool `fetch_webpage_protected` (inside the MCP server) drives your live Chrome (DevTools Protocol) so it inherits your auth cookies, returning `text` and `html` (truncated up to 2M chars per field) for analysis.
 - **Smart confirmation**: Copilot asks for confirmation ONLY on first request to a new domain - explains browser will open for authentication. Subsequent requests to same domain work automatically (session preserved).
 - **Domain-aware tab reuse**: Automatically reuses the same tab for URLs on the same domain, preserving authentication session. Different domains open new tabs.
-- **Automatic page loading**: Waits for network idle (`networkidle0`) by default, ensuring JavaScript-heavy pages (SPAs, dashboards) fully load before returning content.
-- **Automatic auth detection**: Detects ANY authentication redirect (domain changes, login/auth/sso/oauth URLs) and waits for you to complete sign-in, then returns to target page.
+- **Automatic web page fetching**: Waits for network idle (`networkidle0`) by default, ensuring JavaScript-heavy web pages (SPAs, dashboards) fully load before returning content.
+- **Automatic auth detection**: Detects ANY authentication redirect (domain changes, login/auth/sso/oauth URLs) and waits for you to complete sign-in, then returns to target web page.
 - **Universal compatibility**: Works with Microsoft, GitHub, AWS, Google, Okta, corporate SSO, or any authenticated site.
-- **Smart timeouts**: 60s default for page load, 10 min for auth redirects. Tabs stay open indefinitely for reuse (no auto-close).
+- **Smart timeouts**: 60s default for web page fetch, 10 min for auth redirects. Tabs stay open indefinitely for reuse (no auto-close).
 - GitHub Copilot's LLM invokes this tool via MCP; this repo itself does not run an LLM.
 
 ## Auth-assisted fetch flow
@@ -138,11 +138,11 @@ In Copilot Chat, you should see the `MCPBrowser` server listed. Ask it to load a
 
 ## Tips
 - **Universal auth**: Works with ANY authenticated site (Microsoft, GitHub, AWS, Google, corporate intranets, SSO, OAuth, etc.)
-- **No re-authentication needed**: Automatically reuses the same tab for URLs on the same domain, keeping your auth session alive across multiple page fetches
-- **Automatic page loading**: Tool waits for pages to fully load (default 60s timeout, waits for network idle). Copilot should trust the tool and not retry manually.
+- **No re-authentication needed**: Automatically reuses the same tab for URLs on the same domain, keeping your auth session alive across multiple web page fetches
+- **Automatic web page fetching**: Tool waits for web pages to fully load (default 60s timeout, waits for network idle). Copilot should trust the tool and not retry manually.
 - **Auth redirect handling**: Auto-detects auth redirects by monitoring domain changes and common login URL patterns (`/login`, `/auth`, `/signin`, `/sso`, `/oauth`, `/saml`)
 - **Tabs stay open**: By default tabs remain open indefinitely for reuse. Set `keepPageOpen: false` to close immediately after successful fetch.
 - **Smart domain switching**: When switching domains, automatically closes the old tab and opens a new one to prevent tab accumulation
-- If you hit login pages, verify Chrome instance is signed in and the site opens there.
+- If you hit login web pages, verify Chrome instance is signed in and the site opens there.
 - Use a dedicated profile directory to avoid interfering with your daily Chrome.
-- For heavy pages, add `waitForSelector` to ensure post-login content appears before extraction.
+- For heavy web pages, add `waitForSelector` to ensure post-login content appears before extraction.

@@ -1,19 +1,19 @@
 # MCP Browser
 
-**Extends GitHub Copilot's web access to protected pages** - handles login-protected pages, corporate SSO, and anti-crawler restrictions that normal fetching can't handle.
+**Lightweight MCP server-extension that allows Copilot to fetch protected web pages you can authenticate to via browser.** Handles login-protected web pages, corporate SSO, and anti-crawler restrictions that normal fetching can't handle. Should be used when standard fetch_webpage fails.
 
 ## Features
 
 - 🚀 **One-Click Setup**: Installs npm package and configures mcp.json automatically - complete setup with a single click
-- 🔐 **Authentication Support**: Opens pages in your Chrome/Edge browser - authenticate once, reuse sessions automatically
-- 🤖 **Bypass Anti-Crawler**: Access sites that block automated tools
+- 🔐 **Authentication Support**: Fetches web pages in your Chrome/Edge browser - authenticate once, reuse sessions automatically
+- 🤖 **Bypass Anti-Crawler**: Fetch sites that block automated tools
 
 ## How It Works
 
-When Copilot needs to access an authenticated or protected page:
+When Copilot needs to fetch an authenticated or protected web page:
 1. MCPBrowser opens the URL in your Chrome/Edge browser
 2. If authentication is required, you log in normally in the browser
-3. MCPBrowser waits for the page to fully load (handles redirects automatically)
+3. MCPBrowser waits for the web page to fully load (handles redirects automatically)
 4. Once loaded, it extracts the content and returns it to Copilot
 5. The browser tab stays open to reuse your session for future requests
 
@@ -34,14 +34,14 @@ Once configured, Copilot will automatically use MCPBrowser when it encounters au
 
 **Example prompts:**
 ```
-Read https://internal.company.com/docs (I'm already logged in)
+Fetch https://internal.company.com/docs (I'm already logged in)
 
-Load the content from https://portal.azure.com/resources - use my authenticated session
+Fetch the content from https://portal.azure.com/resources - use my authenticated session
 
 Fetch https://github.com/private-repo/issues using MCPBrowser
 ```
 
-Copilot will use your Chrome/Edge browser session to access these pages, bypassing authentication and anti-crawler restrictions.
+Copilot will use your Chrome/Edge browser session to fetch these pages, bypassing authentication and anti-crawler restrictions.
 
 ### Manual Commands
 
@@ -51,7 +51,7 @@ Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P`):
 
 ## About MCPBrowser
 
-Alternative web fetcher for GitHub Copilot when normal URL access fails. Uses Chrome DevTools Protocol to access authenticated and crawler-protected pages through your browser session.
+Alternative web fetcher for GitHub Copilot when normal URL fetch fails. Uses Chrome DevTools Protocol to fetch authenticated and crawler-protected web pages through your browser session.
 
 Learn more: [MCPBrowser on GitHub](https://github.com/cherchyk/MCPBrowser)
 

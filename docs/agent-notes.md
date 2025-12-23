@@ -19,7 +19,7 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 **Critical**: ALL files must be updated and committed BEFORE publishing to npm/marketplace. Never deploy to just one platform - all three must be updated together to keep versions synchronized.
 
 ## What this project does
-- Alternative web fetcher for GitHub Copilot when normal URL access fails due to authentication or anti-crawler restrictions
+- Alternative web fetcher for GitHub Copilot when normal URL fetch fails due to authentication or anti-crawler restrictions
 - **Use when**: Copilot's default fetch returns 401/403, requires login, triggers bot detection, or is blocked by crawler restrictions
 - Uses Chrome DevTools Protocol (CDP) to reuse your logged-in Chrome session (no credentials stored)
 - **Universal auth handling**: Works with Microsoft, GitHub, AWS, Google, corporate SSO, OAuth, SAML, etc.
@@ -28,19 +28,19 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 
 ## Distribution
 MCP Browser is available through three channels:
-1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.16 - One-click automated configuration
-2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.16 - Use with `npx mcpbrowser@latest`
-3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.16 - Discoverable in the official registry
+1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.17 - One-click automated configuration
+2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.17 - Use with `npx mcpbrowser@latest`
+3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.17 - Discoverable in the official registry
 
 All three methods configure the same underlying MCP server.
 
 ## Smart Confirmation
-- **First access**: Copilot asks user confirmation when accessing a new domain for the first time - explains browser will open for authentication
+- **First fetch**: Copilot asks user confirmation when fetching a new domain for the first time - explains browser will open for authentication
 - **Subsequent requests**: Automatic usage without prompting (browser session preserved for same domain)
-- This provides better UX - one login per site, then seamless access
+- This provides better UX - one login per site, then seamless fetch
 
 ## Components
-- `src/mcp-browser.js`: MCP server exposing `fetch_webpage_protected`; connects to Chrome via CDP and fetches pages. Single implementation file.
+- `src/mcp-browser.js`: MCP server exposing `fetch_webpage_protected`; connects to Chrome via CDP and fetches web pages. Single implementation file.
 - `extension/`: VS Code extension for automated mcp.json configuration
 - `README.md`: Complete installation and usage guide.
 - `server.json`: MCP Registry metadata file.
@@ -48,7 +48,7 @@ All three methods configure the same underlying MCP server.
 ## Copilot integration concept
 - GitHub Copilot in VS Code can attach MCP servers. This repo provides `npm run mcp` to start the server exposing the fetch tool.
 - Configure VS Code (Copilot Chat) to attach the MCP server command `node src/mcp-browser.js`.
-- **Configured to auto-trigger**: mcp.json description instructs Copilot to use this tool automatically on ANY auth barrier (401/403, login redirects, SSO, access denied)
+- **Configured to auto-trigger**: mcp.json description instructs Copilot to use this tool automatically on ANY auth barrier (401/403, login redirects, SSO, fetch denied)
 - Copilot handles the LLM; this server only supplies the authenticated fetch tool.
 
 ## Auth flow usage
@@ -66,16 +66,16 @@ All three methods configure the same underlying MCP server.
 
 ## Next improvements
 
-### Persistent Retry Strategy for Authenticated Pages
+### Persistent Retry Strategy for Authenticated Web Pages
 **Priority**: High  
-**Version**: Future (post-0.2.16)
+**Version**: Future (post-0.2.17)
 
 **Current Behavior**:
 - Tool description suggests "retry 2-3 times with delays"
 - Copilot may give up after a few attempts and suggest alternatives
 
 **Problem**:
-If user explicitly requests an authenticated page (e.g., "read https://eng.ms/docs/products/geneva"), giving up after 2-3 retries defeats the purpose. The requested page is critical - skipping it or suggesting workarounds is not acceptable.
+If user explicitly requests an authenticated web page (e.g., "fetch https://eng.ms/docs/products/geneva"), giving up after 2-3 retries defeats the purpose. The requested web page is critical - skipping it or suggesting workarounds is not acceptable.
 
 **Proposed Solution**:
 - Change retry guidance from "2-3 times" to **persistent retry until success**
@@ -86,15 +86,15 @@ If user explicitly requests an authenticated page (e.g., "read https://eng.ms/do
 **Updated Guidance for Copilot**:
 ```
 AUTHENTICATION FLOW:
-1. First call with keepPageOpen=true may return login page (EXPECTED)
+1. First call with keepPageOpen=true may return login web page (EXPECTED)
 2. Keep retrying the same URL every 10-30 seconds
 3. DO NOT conclude "manual authentication required" - user IS authenticating
 4. DO NOT suggest alternatives or give up - keep retrying the original request
-5. Page will eventually return content once authentication completes in background
+5. Web page will eventually return content once authentication completes in background
 ```
 
 **Benefits**:
-- Honors user's explicit request for specific page
+- Honors user's explicit request for specific web page
 - Leverages keepPageOpen=true to maintain authenticated session
 - Prevents Copilot from prematurely falling back to local files or other workarounds
 - Better user experience - tool actually delivers the requested content

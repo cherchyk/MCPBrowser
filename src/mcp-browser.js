@@ -160,6 +160,7 @@ async function getBrowser() {
 async function fetchPage({
   url,
   keepPageOpen = true,
+  outputFormat = "HTML",
 }) {
   // Hardcoded smart defaults
   const waitUntil = "networkidle0";
@@ -233,9 +234,19 @@ async function fetchPage({
     await page.goto(url, { waitUntil, timeout: timeoutMs });
     console.error(`[MCPBrowser] Navigation completed: ${page.url()}`);
     
-    // Extract content
-    const text = await page.evaluate(() => document.body?.innerText || "");
-    const html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+    // Extract content based on outputFormat
+    const result = { success: true, url: page.url() };
+    
+    if (outputFormat === "HTML" || outputFormat === "BOTH") {
+      const html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+      result.html = truncate(html, 2000000);
+    }
+    
+    if (outputFormat === "TEXT" || outputFormat === "BOTH") {
+      const text = await page.evaluate(() => document.body?.innerText || "");
+      result.text = truncate(text, 2000000);
+    }
+    
     wasSuccess = true;
     if (keepPageOpen && lastKeptPage !== page) {
       // Close old kept page if we're keeping a different one
@@ -244,12 +255,7 @@ async function fetchPage({
       }
       lastKeptPage = page;
     }
-    return {
-      success: true,
-      url: page.url(),
-      text: truncate(text, 2000000),
-      html: truncate(html, 2000000),
-    };
+    return result;
   } catch (err) {
     shouldKeepOpen = shouldKeepOpen || keepPageOpen;
     const hint = shouldKeepOpen
@@ -272,23 +278,24 @@ function truncate(str, max) {
 }
 
 async function main() {
-  const server = new Server({ name: "MCPBrowser", version: "0.2.16" }, { capabilities: { tools: {} } });
+  const server = new Server({ name: "MCPBrowser", version: "0.2.17" }, { capabilities: { tools: {} } });
 
   const tools = [
     {
       name: "fetch_webpage_protected",
-      description: "🌐 PRIMARY BROWSER TOOL for authenticated/protected websites: Opens pages in your Chrome browser with your actual user profile (saved passwords, extensions, active sessions). **USE THIS FIRST** for: internal/corporate sites (*.microsoft.com, *.eng.ms, etc.), login-required pages, SSO/OAuth protected content, paywalled sites, anti-bot protected pages, or any 401/403/authentication errors. **AUTHENTICATION FLOW**: First call with keepPageOpen=true may return login page (EXPECTED - user is authenticating in browser). WAIT 10-30 seconds, then RETRY the same URL - authentication completes in background. DO NOT give up after seeing login page - retry 2-3 times with delays. Returns both plain text and HTML. Tab reuse preserves sessions across requests. Always prefer this over generic URL fetchers for authenticated content.",
+      description: "BROWSER ACCESS FOR AUTHENTICATED WEB PAGES: Fetches web pages in Chrome browser using real user profile (with saved passwords, active sessions, extensions). Automatically handles login redirects, SSO, OAuth, and anti-crawler protections.\n\nWHEN TO USE: Login-required web pages, SSO/OAuth content, paywalled sites, 401/403 errors, or any auth-protected resources.\n\nAUTHENTICATION BEHAVIOR: First request to authenticated site returns login web page - this is EXPECTED. User authenticates in browser (10-30s). Retry same URL to get content. Keep retrying until success - authentication completes in background. Tab stays open to preserve session.\n\nCRITICAL RULES: (1) Process ONE URL at a time - never parallel requests. (2) Never give up or suggest alternatives - keep retrying until content retrieved. (3) Requested web page is critical - skipping not acceptable. (4) Skip and continue if web page returns 404 - web page doesn't exist.\n\nReturns: Configurable output format (HTML, TEXT, or BOTH). Tab reuse preserves sessions across same-domain requests.",
       inputSchema: {
         type: "object",
         properties: {
           url: { type: "string", description: "The URL to fetch" },
-          keepPageOpen: { type: "boolean", description: "Keep the tab open after fetching for manual auth or reuse (default: true)" },
+          keepPageOpen: { type: "boolean", description: "Keep tab open to reuse for subsequent same-domain requests - preserves auth session (default: true)" },
+          outputFormat: { type: "string", enum: ["HTML", "TEXT", "BOTH"], description: "Output format: HTML for full markup with links/structure, TEXT for clean readable content (more token-efficient), BOTH for complete data (default: HTML)" },
         },
         required: ["url"],
         additionalProperties: false,
       },
       annotations: {
-        title: "Access Authenticated Web Page"
+        title: "Fetch Protected Web Page"
       }
     },
   ];

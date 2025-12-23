@@ -1,12 +1,12 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.cherchyk/browser",
-  "description": "Alternative web fetcher for authenticated and crawler-protected pages. Bypasses login requirements and anti-bot restrictions using Chrome DevTools Protocol",
+  "description": "Alternative web fetcher for authenticated and crawler-protected web pages. Bypasses login requirements and anti-bot restrictions using Chrome DevTools Protocol",
   "repository": {
     "url": "https://github.com/cherchyk/MCPBrowser",
     "source": "github"
   },
-  "version": "0.2.7",
+  "version": "0.2.17",
   "packages": [
     {
       "registryType": "npm",

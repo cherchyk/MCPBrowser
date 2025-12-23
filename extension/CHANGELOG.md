@@ -2,6 +2,21 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.17] - 2025-12-23
+
+### Changed
+- **Complete terminology standardization**: Unified all verbs to "fetch" and all nouns to "web page" (two words) across entire project
+  - Replaced: load/access/read/open → fetch
+  - Replaced: page/pages/webpage → web page/web pages
+  - Affects: mcp-browser.js, README.md, extension/README.md, package.json files, agent-notes.md, extension.js, CHANGELOG.md
+- **Scope accuracy improvement**: Updated tool annotation title from "Fetch Authenticated Web Page" → "Fetch Protected Web Page"
+  - Better reflects capability: handles authentication, SSO, anti-crawler, paywalls
+- **Enhanced parameter descriptions**:
+  - `keepPageOpen`: Now explains WHEN to use (subsequent same-domain requests preserve auth)
+  - `outputFormat`: Added use-case guidance (HTML for structure, TEXT for token efficiency, BOTH for complete data)
+- **Updated descriptions**: Changed "authenticated web pages" → "protected web pages" for accuracy
+- **Added usage guidance**: "Should be used when standard fetch_webpage fails"
+
 ## [0.2.16] - 2025-12-22
 
 ### Changed
@@ -59,7 +74,7 @@ All notable changes to the "mcpbrowser" extension will be documented in this fil
 
 ### Changed
 - Updated to mcpbrowser@0.2.5 with improved VS Code confirmation experience
-- Added proper tool title annotation ("Access Authenticated Web Page")
+- Added proper tool title annotation ("Fetch Protected Web Page")
 - Enhanced description with warning emoji for clarity
 - Uses default Chrome profile with saved passwords, extensions, and authenticated sessions
 - Cross-platform support (Windows, macOS, Linux)
@@ -67,7 +82,7 @@ All notable changes to the "mcpbrowser" extension will be documented in this fil
 ## [0.1.4] - 2025-12-22
 
 ### Added
-- Smart confirmation: Only asks user on first access to a domain
+- Smart confirmation: Only asks user on first fetch to a domain
 - Subsequent authenticated requests work automatically (session preserved)
 - Updated tool description for better UX
 

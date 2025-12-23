@@ -1,8 +1,8 @@
 {
   "name": "mcpbrowser",
   "displayName": "MCP Browser",
-  "description": "Extends Copilot's web access to protected pages - handles login, SSO, and anti-crawler restrictions",
-  "version": "0.2.16",
+  "description": "Lightweight MCP server-extension that allows Copilot to fetch protected web pages you can authenticate to via browser - handles login, SSO, and anti-crawler restrictions. Should be used when standard fetch_webpage fails",
+  "version": "0.2.17",
   "publisher": "cherchyk",
   "icon": "icon.png",
   "engines": {
