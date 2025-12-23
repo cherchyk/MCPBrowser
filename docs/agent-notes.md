@@ -6,6 +6,7 @@ When deploying ANY update to MCP Browser, you MUST deploy to ALL THREE platforms
 1. **npm**: Bump version in `package.json` and `server.json` → `npm publish`
 2. **Git**: Commit all changes → `git push`
 3. **VS Code Marketplace**: Bump version in `extension/package.json` → Update `extension/CHANGELOG.md` → Build `.vsix` → Publish to marketplace
+4. **Docs**: Update version numbers in ALL documentation files (`README.md`, `agent-notes.md`, etc.) - search for old version numbers in examples and update to current version
 
 **Never deploy to just one platform** - all three must be updated together to keep versions synchronized.
 
@@ -19,9 +20,9 @@ When deploying ANY update to MCP Browser, you MUST deploy to ALL THREE platforms
 
 ## Distribution
 MCP Browser is available through three channels:
-1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.1.4 - One-click automated configuration
-2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.3 - Use with `npx mcpbrowser@latest`
-3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.3 - Discoverable in the official registry
+1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.11 - One-click automated configuration
+2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.11 - Use with `npx mcpbrowser@latest`
+3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.11 - Discoverable in the official registry
 
 All three methods configure the same underlying MCP server.
 
