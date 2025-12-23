@@ -19,7 +19,7 @@ Or search "MCPBrowser" in VS Code Extensions view.
 **From GitHub Release:**
 Download from [GitHub Releases](https://github.com/cherchyk/MCPBrowser/releases):
 ```bash
-code --install-extension mcpbrowser-0.2.13.vsix
+code --install-extension mcpbrowser-0.2.14.vsix
 ```
 
 The extension automatically:
@@ -30,7 +30,7 @@ The extension automatically:
 📦 [View on Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 
 ### Option 2: npm Package (Recommended for Manual Setup)
-Published on npm as [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.13.
+Published on npm as [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.14.
 
 Add to your `mcp.json`:
 ```jsonc
@@ -47,7 +47,7 @@ Add to your `mcp.json`:
 - Mac/Linux: `~/.config/Code/User/mcp.json`
 
 ### Option 3: MCP Registry
-Available in the [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.cherchyk/browser` v0.2.13.
+Available in the [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.cherchyk/browser` v0.2.14.
 
 Search for "browser" in the registry to find configuration instructions.
 

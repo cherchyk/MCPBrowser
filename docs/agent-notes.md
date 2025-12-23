@@ -3,6 +3,12 @@
 ## 🚨 DEPLOYMENT CHECKLIST (CRITICAL - DO ALWAYS)
 When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 
+**⚠️ BEFORE STARTING DEPLOYMENT:**
+- **ASK USER**: "Ready to deploy?" - Get explicit confirmation before proceeding with deployment steps
+- **EXCEPTION**: Skip asking only if user explicitly requested deployment in their message (e.g., "deploy now", "publish this", "release version X")
+- **DO NOT** automatically deploy just because changes were made - user may have additional changes planned
+
+**DEPLOYMENT STEPS:**
 1. **Version Bump**: Update version number in `package.json`, `server.json`, and `extension/package.json`
 2. **Update Docs**: Update version numbers in ALL documentation files (`README.md`, `agent-notes.md`, etc.) - search for old version numbers in examples and update to current version
 3. **Update Changelog**: Update `extension/CHANGELOG.md` with changes
@@ -22,9 +28,9 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 
 ## Distribution
 MCP Browser is available through three channels:
-1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.12 - One-click automated configuration
-2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.12 - Use with `npx mcpbrowser@latest`
-3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.12 - Discoverable in the official registry
+1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.14 - One-click automated configuration
+2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.14 - Use with `npx mcpbrowser@latest`
+3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.14 - Discoverable in the official registry
 
 All three methods configure the same underlying MCP server.
 

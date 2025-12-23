@@ -2,6 +2,13 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.14] - 2025-12-22
+
+### Changed
+- **Improved deployment checklist**: Added requirement to ask user for deployment confirmation before proceeding
+- Prevents automatic deployment when user may have additional changes planned
+- Deployment only proceeds without asking when explicitly requested
+
 ## [0.2.13] - 2025-12-22
 
 ### Changed
