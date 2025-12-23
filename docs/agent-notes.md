@@ -1,14 +1,16 @@
 # MCP Browser notes
 
 ## 🚨 DEPLOYMENT CHECKLIST (CRITICAL - DO ALWAYS)
-When deploying ANY update to MCP Browser, you MUST deploy to ALL THREE platforms together:
+When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 
-1. **npm**: Bump version in `package.json` and `server.json` → `npm publish`
-2. **Git**: Commit all changes → `git push`
-3. **VS Code Marketplace**: Bump version in `extension/package.json` → Update `extension/CHANGELOG.md` → Build `.vsix` → Publish to marketplace
-4. **Docs**: Update version numbers in ALL documentation files (`README.md`, `agent-notes.md`, etc.) - search for old version numbers in examples and update to current version
+1. **Version Bump**: Update version number in `package.json`, `server.json`, and `extension/package.json`
+2. **Update Docs**: Update version numbers in ALL documentation files (`README.md`, `agent-notes.md`, etc.) - search for old version numbers in examples and update to current version
+3. **Update Changelog**: Update `extension/CHANGELOG.md` with changes
+4. **Git**: Commit all changes → `git push origin main`
+5. **npm**: `npm publish`
+6. **VS Code Marketplace**: `cd extension` → `vsce package` → `vsce publish`
 
-**Never deploy to just one platform** - all three must be updated together to keep versions synchronized.
+**Critical**: ALL files must be updated and committed BEFORE publishing to npm/marketplace. Never deploy to just one platform - all three must be updated together to keep versions synchronized.
 
 ## What this project does
 - Alternative web fetcher for GitHub Copilot when normal URL access fails due to authentication or anti-crawler restrictions
