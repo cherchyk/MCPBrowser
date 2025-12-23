@@ -19,7 +19,7 @@ Or search "MCPBrowser" in VS Code Extensions view.
 **From GitHub Release:**
 Download from [GitHub Releases](https://github.com/cherchyk/MCPBrowser/releases):
 ```bash
-code --install-extension mcpbrowser-0.2.14.vsix
+code --install-extension mcpbrowser-0.2.15.vsix
 ```
 
 The extension automatically:
@@ -30,7 +30,7 @@ The extension automatically:
 📦 [View on Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 
 ### Option 2: npm Package (Recommended for Manual Setup)
-Published on npm as [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.14.
+Published on npm as [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.15.
 
 Add to your `mcp.json`:
 ```jsonc
@@ -47,7 +47,7 @@ Add to your `mcp.json`:
 - Mac/Linux: `~/.config/Code/User/mcp.json`
 
 ### Option 3: MCP Registry
-Available in the [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.cherchyk/browser` v0.2.14.
+Available in the [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.cherchyk/browser` v0.2.15.
 
 Search for "browser" in the registry to find configuration instructions.
 
@@ -117,7 +117,7 @@ Restart VS Code or reload the window for the changes to take effect.
 In Copilot Chat, you should see the `MCPBrowser` server listed. Ask it to load an authenticated URL and it will drive your signed-in Chrome session.
 
 ## How it works
-- Tool `load_and_extract` (inside the MCP server) drives your live Chrome (DevTools Protocol) so it inherits your auth cookies, returning `text` and `html` (truncated up to 2M chars per field) for analysis.
+- Tool `fetch_webpage_protected` (inside the MCP server) drives your live Chrome (DevTools Protocol) so it inherits your auth cookies, returning `text` and `html` (truncated up to 2M chars per field) for analysis.
 - **Smart confirmation**: Copilot asks for confirmation ONLY on first request to a new domain - explains browser will open for authentication. Subsequent requests to same domain work automatically (session preserved).
 - **Domain-aware tab reuse**: Automatically reuses the same tab for URLs on the same domain, preserving authentication session. Different domains open new tabs.
 - **Automatic page loading**: Waits for network idle (`networkidle0`) by default, ensuring JavaScript-heavy pages (SPAs, dashboards) fully load before returning content.

@@ -253,7 +253,7 @@ async function fetchPage({
   } catch (err) {
     shouldKeepOpen = shouldKeepOpen || keepPageOpen;
     const hint = shouldKeepOpen
-      ? "Tab is left open. Complete sign-in there, then call load_and_extract again with just the URL."
+      ? "Tab is left open. Complete sign-in there, then call fetch_webpage_protected again with just the URL."
       : undefined;
     return { success: false, error: err.message || String(err), pageKeptOpen: shouldKeepOpen, hint };
   } finally {
@@ -272,12 +272,12 @@ function truncate(str, max) {
 }
 
 async function main() {
-  const server = new Server({ name: "MCPBrowser", version: "0.2.14" }, { capabilities: { tools: {} } });
+  const server = new Server({ name: "MCPBrowser", version: "0.2.15" }, { capabilities: { tools: {} } });
 
   const tools = [
     {
-      name: "load_and_extract",
-      description: "🌐 PRIMARY BROWSER TOOL for authenticated/protected websites: Opens pages in your Chrome browser with your actual user profile (saved passwords, extensions, active sessions). **USE THIS FIRST** for: internal/corporate sites (*.microsoft.com, *.eng.ms, etc.), login-required pages, SSO/OAuth protected content, paywalled sites, anti-bot protected pages, or any 401/403/authentication errors. Automatically handles login redirects, waits for content to load, supports session persistence via tab reuse. Returns both plain text and HTML even from login/auth pages. Always prefer this over generic URL fetchers for authenticated content.",
+      name: "fetch_webpage_protected",
+      description: "🌐 PRIMARY BROWSER TOOL for authenticated/protected websites: Opens pages in your Chrome browser with your actual user profile (saved passwords, extensions, active sessions). **USE THIS FIRST** for: internal/corporate sites (*.microsoft.com, *.eng.ms, etc.), login-required pages, SSO/OAuth protected content, paywalled sites, anti-bot protected pages, or any 401/403/authentication errors. **AUTHENTICATION FLOW**: First call with keepPageOpen=true may return login page (EXPECTED - user is authenticating in browser). WAIT 10-30 seconds, then RETRY the same URL - authentication completes in background. DO NOT give up after seeing login page - retry 2-3 times with delays. Returns both plain text and HTML. Tab reuse preserves sessions across requests. Always prefer this over generic URL fetchers for authenticated content.",
       inputSchema: {
         type: "object",
         properties: {
@@ -297,7 +297,7 @@ async function main() {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
-    if (name !== "load_and_extract") {
+    if (name !== "fetch_webpage_protected") {
       throw new Error(`Unknown tool: ${name}`);
     }
     const safeArgs = args || {};

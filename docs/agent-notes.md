@@ -28,9 +28,9 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 
 ## Distribution
 MCP Browser is available through three channels:
-1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.14 - One-click automated configuration
-2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.14 - Use with `npx mcpbrowser@latest`
-3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.14 - Discoverable in the official registry
+1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.15 - One-click automated configuration
+2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.15 - Use with `npx mcpbrowser@latest`
+3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.15 - Discoverable in the official registry
 
 All three methods configure the same underlying MCP server.
 
@@ -40,7 +40,7 @@ All three methods configure the same underlying MCP server.
 - This provides better UX - one login per site, then seamless access
 
 ## Components
-- `src/mcp-browser.js`: MCP server exposing `load_and_extract`; connects to Chrome via CDP and fetches pages. Single implementation file.
+- `src/mcp-browser.js`: MCP server exposing `fetch_webpage_protected`; connects to Chrome via CDP and fetches pages. Single implementation file.
 - `extension/`: VS Code extension for automated mcp.json configuration
 - `README.md`: Complete installation and usage guide.
 - `server.json`: MCP Registry metadata file.

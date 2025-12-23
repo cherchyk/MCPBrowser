@@ -2,6 +2,15 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.15] - 2025-12-22
+
+### Changed
+- **Renamed tool**: `load_and_extract` → `fetch_webpage_protected` for better alignment with standard `fetch_webpage` tool
+- Tool name now clearly indicates it's the protected/authenticated version of webpage fetching
+- Makes it easier for Copilot to recognize when to use this tool vs standard fetch
+- **Enhanced retry guidance**: Added explicit instructions for AI agents to retry 2-3 times with 10-30s delays when encountering login pages
+- Prevents premature "authentication required" failures when user is actively authenticating
+
 ## [0.2.14] - 2025-12-22
 
 ### Changed

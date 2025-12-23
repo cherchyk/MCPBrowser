@@ -2,7 +2,7 @@
   "name": "mcpbrowser",
   "displayName": "MCP Browser",
   "description": "Extends Copilot's web access to protected pages - handles login, SSO, and anti-crawler restrictions",
-  "version": "0.2.14",
+  "version": "0.2.15",
   "publisher": "cherchyk",
   "icon": "icon.png",
   "engines": {
