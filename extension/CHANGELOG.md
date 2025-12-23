@@ -2,6 +2,13 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.16] - 2025-12-22
+
+### Changed
+- Documentation cleanup: Removed outdated NEXT_STEPS.md and EXTENSION_README.md
+- Improved .vscodeignore to exclude package-lock.json from extension package
+- Enhanced agent-notes.md with detailed persistent retry strategy planning
+
 ## [0.2.15] - 2025-12-22
 
 ### Changed

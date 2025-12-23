@@ -28,9 +28,9 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 
 ## Distribution
 MCP Browser is available through three channels:
-1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.15 - One-click automated configuration
-2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.15 - Use with `npx mcpbrowser@latest`
-3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.15 - Discoverable in the official registry
+1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.16 - One-click automated configuration
+2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.16 - Use with `npx mcpbrowser@latest`
+3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.16 - Discoverable in the official registry
 
 All three methods configure the same underlying MCP server.
 
@@ -65,6 +65,46 @@ All three methods configure the same underlying MCP server.
 - MCP fetch connects to that Chrome instance, so cookies/sessions are reused.
 
 ## Next improvements
+
+### Persistent Retry Strategy for Authenticated Pages
+**Priority**: High  
+**Version**: Future (post-0.2.16)
+
+**Current Behavior**:
+- Tool description suggests "retry 2-3 times with delays"
+- Copilot may give up after a few attempts and suggest alternatives
+
+**Problem**:
+If user explicitly requests an authenticated page (e.g., "read https://eng.ms/docs/products/geneva"), giving up after 2-3 retries defeats the purpose. The requested page is critical - skipping it or suggesting workarounds is not acceptable.
+
+**Proposed Solution**:
+- Change retry guidance from "2-3 times" to **persistent retry until success**
+- Tool should keep retrying every 10-30 seconds until:
+  - ✅ Authentication succeeds and content is retrieved, OR
+  - ❌ Technical error occurs (timeout, network failure, etc.)
+
+**Updated Guidance for Copilot**:
+```
+AUTHENTICATION FLOW:
+1. First call with keepPageOpen=true may return login page (EXPECTED)
+2. Keep retrying the same URL every 10-30 seconds
+3. DO NOT conclude "manual authentication required" - user IS authenticating
+4. DO NOT suggest alternatives or give up - keep retrying the original request
+5. Page will eventually return content once authentication completes in background
+```
+
+**Benefits**:
+- Honors user's explicit request for specific page
+- Leverages keepPageOpen=true to maintain authenticated session
+- Prevents Copilot from prematurely falling back to local files or other workarounds
+- Better user experience - tool actually delivers the requested content
+
+**Implementation**:
+- Update tool description in `src/mcp-browser.js`
+- Update examples in README.md
+- Add to CHANGELOG as next version
+
+### Other Ideas
 - Add Playwright fallback for non-Chrome or headless mode.
 - Add selector-based chunking or readability extraction to reduce token usage.
 - Add tests for the fetcher tool schema.

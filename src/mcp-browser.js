@@ -272,7 +272,7 @@ function truncate(str, max) {
 }
 
 async function main() {
-  const server = new Server({ name: "MCPBrowser", version: "0.2.15" }, { capabilities: { tools: {} } });
+  const server = new Server({ name: "MCPBrowser", version: "0.2.16" }, { capabilities: { tools: {} } });
 
   const tools = [
     {
