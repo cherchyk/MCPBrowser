@@ -92,7 +92,7 @@ async function configureMcpBrowser() {
             type: "stdio",
             command: "npx",
             args: ["-y", "mcpbrowser@latest"],
-            description: "**USE AUTOMATICALLY** when normal URL fetch fails due to: 401/403 errors, login/auth requirements, SSO prompts, anti-crawler/bot detection. **FIRST FETCH**: Ask confirmation ONLY for first request to a domain - explain browser will open for authentication. **SUBSEQUENT REQUESTS**: Use automatically (session preserved). Fetches web pages using authenticated Chrome session via DevTools Protocol (works for Microsoft, GitHub, AWS, Google, corporate sites, etc.). Waits for web page fetch automatically (up to 60s, handles redirects)."
+            description: "Use AUTOMATICALLY on 401/403 errors, login pages, SSO prompts, or anti-bot blocks. First domain request: ask user confirmation (browser opens for auth). Subsequent same-domain: use automatically (session preserved). Returns HTML from authenticated Chrome session. Handles Microsoft, GitHub, AWS, Google, corporate sites."
         };
 
         // Write back to file with pretty formatting

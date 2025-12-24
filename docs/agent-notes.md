@@ -9,12 +9,16 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 - **DO NOT** automatically deploy just because changes were made - user may have additional changes planned
 
 **DEPLOYMENT STEPS:**
-1. **Version Bump**: Update version number in `package.json`, `server.json`, and `extension/package.json`
-2. **Update Docs**: Update version numbers in ALL documentation files (`README.md`, `agent-notes.md`, etc.) - search for old version numbers in examples and update to current version
-3. **Update Changelog**: Update `extension/CHANGELOG.md` with changes
-4. **Git**: Commit all changes → `git push origin main`
-5. **npm**: `npm publish`
-6. **VS Code Marketplace**: `cd extension` → `vsce package` → `vsce publish`
+1. **Run Tests**: 
+   - **Unit Tests**: `node tests/domain-tab-pooling.test.js` - **STOP DEPLOYMENT if ANY test fails**
+   - **Integration Tests**: `node tests/integration.test.js` - Requires Chrome and manual authentication - **STOP DEPLOYMENT if ANY test fails**
+   - All tests must pass before proceeding
+2. **Version Bump**: Update version number in `package.json`, `server.json`, and `extension/package.json`
+3. **Update Docs**: Update version numbers in ALL documentation files (`README.md`, `agent-notes.md`, etc.) - search for old version numbers in examples and update to current version
+4. **Update Changelog**: Update `extension/CHANGELOG.md` with changes
+5. **Git**: Commit all changes → `git push origin main`
+6. **npm**: `npm publish`
+7. **VS Code Marketplace**: `cd extension` → `vsce package` → `vsce publish`
 
 **Critical**: ALL files must be updated and committed BEFORE publishing to npm/marketplace. Never deploy to just one platform - all three must be updated together to keep versions synchronized.
 
@@ -108,3 +112,40 @@ AUTHENTICATION FLOW:
 - Add Playwright fallback for non-Chrome or headless mode.
 - Add selector-based chunking or readability extraction to reduce token usage.
 - Add tests for the fetcher tool schema.
+
+## Test Suite
+
+### Unit Tests (Automated)
+**File**: `tests/domain-tab-pooling.test.js`  
+**Purpose**: Validate domain pooling logic without opening browser  
+**Run**: `node tests/domain-tab-pooling.test.js`  
+**Speed**: Fast (~100ms)  
+**Requirements**: None - uses mock objects  
+**Coverage**: 49 tests covering:
+- Domain extraction from URLs
+- Map-based domain management (add, reuse, clear)
+- Tab reuse for same domain
+- Creating new tabs for different domains
+- Handling closed tabs
+- URL pattern matching and extraction
+- Multi-domain navigation scenarios
+
+### Integration Tests (Manual)
+**File**: `tests/integration.test.js`  
+**Purpose**: Test real Chrome browser with actual authentication  
+**Run**: `node tests/integration.test.js`  
+**Speed**: Slow (requires network, auth, page loads)  
+**Requirements**: 
+- Chrome installed
+- User interaction for authentication
+- Network connectivity to eng.ms  
+**Coverage**: 1 comprehensive test (12 assertions) covering full Copilot workflow:
+- Step 1: Fetch eng.ms page with authentication waiting (detects redirect, waits for user login, returns actual content)
+- Step 2: Extract links from HTML (no re-fetch - uses HTML from Step 1)
+- Step 3: Load all extracted links using same tab (validates tab reuse for same domain)
+
+**Workflow mirrors real Copilot usage**: Fetch once → Extract links from HTML → Load links with tab reuse
+
+**Browser behavior**: Browser stays open after test completes for manual inspection. Test does not close browser automatically.
+
+**Note**: Both unit tests AND integration tests are run during deployment. Integration tests require user interaction for authentication.

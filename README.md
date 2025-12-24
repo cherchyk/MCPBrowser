@@ -117,7 +117,7 @@ Restart VS Code or reload the window for the changes to take effect.
 In Copilot Chat, you should see the `MCPBrowser` server listed. Ask it to fetch an authenticated URL and it will drive your signed-in Chrome session.
 
 ## How it works
-- Tool `fetch_webpage_protected` (inside the MCP server) drives your live Chrome (DevTools Protocol) so it inherits your auth cookies, returning `text` and `html` (truncated up to 2M chars per field) for analysis.
+- Tool `fetch_webpage_protected` (inside the MCP server) drives your live Chrome (DevTools Protocol) so it inherits your auth cookies, returning `html` (truncated up to 2M chars) for analysis.
 - **Smart confirmation**: Copilot asks for confirmation ONLY on first request to a new domain - explains browser will open for authentication. Subsequent requests to same domain work automatically (session preserved).
 - **Domain-aware tab reuse**: Automatically reuses the same tab for URLs on the same domain, preserving authentication session. Different domains open new tabs.
 - **Automatic web page fetching**: Waits for network idle (`networkidle0`) by default, ensuring JavaScript-heavy web pages (SPAs, dashboards) fully load before returning content.

@@ -1,5 +1,5 @@
 {  "name": "mcpbrowser",
-  "version": "0.2.18",
+  "version": "0.2.19",
   "mcpName": "io.github.cherchyk/browser",
   "type": "module",
   "description": "MCP server that fetches protected web pages using Chrome DevTools Protocol",

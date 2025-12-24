@@ -19,7 +19,6 @@ All notable changes to the "mcpbrowser" extension will be documented in this fil
   - Better reflects capability: handles authentication, SSO, anti-crawler, paywalls
 - **Enhanced parameter descriptions**:
   - `keepPageOpen`: Now explains WHEN to use (subsequent same-domain requests preserve auth)
-  - `outputFormat`: Added use-case guidance (HTML for structure, TEXT for token efficiency, BOTH for complete data)
 - **Updated descriptions**: Changed "authenticated web pages" → "protected web pages" for accuracy
 - **Added usage guidance**: "Should be used when standard fetch_webpage fails"
 

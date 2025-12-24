@@ -60,7 +60,7 @@ function getDefaultChromePaths() {
 const defaultChromePaths = getDefaultChromePaths();
 
 let cachedBrowser = null;
-let lastKeptPage = null; // reuse the same tab when requested
+let domainPages = new Map(); // hostname -> page mapping for tab reuse across domains
 let chromeLaunchPromise = null; // prevent multiple simultaneous launches
 
 async function devtoolsAvailable() {
@@ -152,19 +152,16 @@ async function getBrowser() {
   });
   cachedBrowser.on("disconnected", () => {
     cachedBrowser = null;
-    lastKeptPage = null;
+    domainPages.clear(); // Clear all domain page mappings
   });
   return cachedBrowser;
 }
 
-async function fetchPage({
-  url,
-  keepPageOpen = true,
-  outputFormat = "HTML",
-}) {
+async function fetchPage({ url }) {
   // Hardcoded smart defaults
   const waitUntil = "networkidle0";
-  const timeoutMs = 60000;
+  const navigationTimeout = 60000; // Initial navigation timeout
+  const authCompletionTimeout = 600000; // 10 minutes for user to complete authentication
   const reuseLastKeptPage = true;
   
   if (!url) {
@@ -173,36 +170,29 @@ async function fetchPage({
 
   const browser = await getBrowser();
   let page = null;
+  let hostname;
   
-  // Smart tab reuse: only reuse if same domain (preserves auth within domain)
-  if (reuseLastKeptPage && lastKeptPage && !lastKeptPage.isClosed()) {
-    let newHostname;
-    try {
-      newHostname = new URL(url).hostname;
-    } catch {
-      throw new Error(`Invalid URL: ${url}`);
-    }
-    const currentUrl = lastKeptPage.url();
-    
-    if (currentUrl) {
-      try {
-        const currentHostname = new URL(currentUrl).hostname;
-        // Reuse tab only if same domain (keeps auth session alive)
-        if (currentHostname === newHostname) {
-          page = lastKeptPage;
-          await page.bringToFront().catch(() => {});
-        } else {
-          // Different domain - close old tab and create new one
-          await lastKeptPage.close().catch(() => {});
-          lastKeptPage = null;
-        }
-      } catch {
-        // If URL parsing fails, create new tab
-      }
+  // Parse hostname for domain-based tab reuse
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    throw new Error(`Invalid URL: ${url}`);
+  }
+  
+  // Check if we have an existing page for this domain
+  if (reuseLastKeptPage && domainPages.has(hostname)) {
+    const existingPage = domainPages.get(hostname);
+    if (!existingPage.isClosed()) {
+      page = existingPage;
+      await page.bringToFront().catch(() => {});
+      console.error(`[MCPBrowser] Reusing existing tab for domain: ${hostname}`);
+    } else {
+      // Page was closed externally, remove from map
+      domainPages.delete(hostname);
     }
   }
   
-  // Create new tab if no reuse
+  // Create new tab if no existing page for this domain
   if (!page) {
     try {
       page = await browser.newPage();
@@ -225,50 +215,85 @@ async function fetchPage({
         throw new Error('Unable to create or find a controllable page');
       }
     }
+    // Add new page to domain map
+    domainPages.set(hostname, page);
+    console.error(`[MCPBrowser] Created new tab for domain: ${hostname}`);
   }
 
-  let shouldKeepOpen = keepPageOpen || page === lastKeptPage;
+  let shouldKeepOpen = true;
   let wasSuccess = false;
   try {
     console.error(`[MCPBrowser] Navigating to: ${url}`);
-    await page.goto(url, { waitUntil, timeout: timeoutMs });
-    console.error(`[MCPBrowser] Navigation completed: ${page.url()}`);
+    await page.goto(url, { waitUntil, timeout: navigationTimeout });
     
-    // Extract content based on outputFormat
-    const result = { success: true, url: page.url() };
+    const currentUrl = page.url();
+    const currentHostname = new URL(currentUrl).hostname;
     
-    if (outputFormat === "HTML" || outputFormat === "BOTH") {
-      const html = await page.evaluate(() => document.documentElement?.outerHTML || "");
-      result.html = truncate(html, 2000000);
+    console.error(`[MCPBrowser] Navigation completed: ${currentUrl}`);
+    
+    // Check if we were redirected to a different domain (likely authentication)
+    if (currentHostname !== hostname) {
+      console.error(`[MCPBrowser] Detected redirect to authentication domain: ${currentHostname}`);
+      console.error(`[MCPBrowser] Waiting for user to complete authentication...`);
+      console.error(`[MCPBrowser] Will wait up to ${authCompletionTimeout / 1000} seconds for return to ${hostname}`);
+      
+      // Wait for navigation back to the original domain
+      const authDeadline = Date.now() + authCompletionTimeout;
+      let authCompleted = false;
+      
+      while (Date.now() < authDeadline) {
+        try {
+          // Check current URL
+          const checkUrl = page.url();
+          const checkHostname = new URL(checkUrl).hostname;
+          
+          if (checkHostname === hostname) {
+            console.error(`[MCPBrowser] Authentication completed! Returned to: ${checkUrl}`);
+            authCompleted = true;
+            break;
+          }
+          
+          // Wait a bit before checking again
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (error) {
+          // Page might be navigating, continue waiting
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
+      if (!authCompleted) {
+        const hint = `Authentication timeout. Tab is left open at ${page.url()}. Complete authentication and retry the same URL.`;
+        return { success: false, error: "Authentication timeout - user did not complete login", pageKeptOpen: true, hint };
+      }
+      
+      // Wait for page to fully stabilize after auth redirect
+      console.error(`[MCPBrowser] Waiting for page to stabilize after authentication...`);
+      await new Promise(resolve => setTimeout(resolve, 3000)); // Give page time to settle
+      
+      // Ensure page is ready
+      try {
+        await page.waitForFunction(() => document.readyState === 'complete', { timeout: 10000 });
+      } catch {
+        // Ignore timeout - page might already be ready
+      }
     }
     
-    if (outputFormat === "TEXT" || outputFormat === "BOTH") {
-      const text = await page.evaluate(() => document.body?.innerText || "");
-      result.text = truncate(text, 2000000);
-    }
+    // Extract HTML content
+    const html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+    const preparedHtml = prepareHtml(html, page.url());
+    const result = { 
+      success: true, 
+      url: page.url(),
+      html: preparedHtml
+    };
     
     wasSuccess = true;
-    if (keepPageOpen && lastKeptPage !== page) {
-      // Close old kept page if we're keeping a different one
-      if (lastKeptPage && !lastKeptPage.isClosed()) {
-        await lastKeptPage.close().catch(() => {});
-      }
-      lastKeptPage = page;
-    }
     return result;
   } catch (err) {
-    shouldKeepOpen = shouldKeepOpen || keepPageOpen;
-    const hint = shouldKeepOpen
-      ? "Tab is left open. Complete sign-in there, then call fetch_webpage_protected again with just the URL."
-      : undefined;
-    return { success: false, error: err.message || String(err), pageKeptOpen: shouldKeepOpen, hint };
+    const hint = "Tab is left open. Complete sign-in there, then call fetch_webpage_protected again with just the URL.";
+    return { success: false, error: err.message || String(err), pageKeptOpen: true, hint };
   } finally {
-    if (!shouldKeepOpen && lastKeptPage === page) {
-      lastKeptPage = null;
-    }
-    if (!shouldKeepOpen) {
-      await page.close().catch(() => {});
-    }
+    // Tab always stays open - domain-aware reuse handles cleanup
   }
 }
 
@@ -277,19 +302,107 @@ function truncate(str, max) {
   return str.length > max ? `${str.slice(0, max)}... [truncated]` : str;
 }
 
+/**
+ * Prepares HTML for consumption by:
+ * 1. Converting relative URLs to absolute URLs
+ * 2. Removing non-content elements (scripts, styles, meta tags, comments)
+ * 3. Removing code-related attributes (class, id, style, data-*, event handlers)
+ * 4. Removing SVG graphics and other non-text elements
+ * 5. Collapsing excessive whitespace
+ */
+function prepareHtml(html, baseUrl) {
+  if (!html) return "";
+  
+  let cleaned = html;
+  
+  // Remove HTML comments
+  cleaned = cleaned.replace(/<!--[\s\S]*?-->/g, '');
+  
+  // Remove script tags and their content
+  cleaned = cleaned.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  
+  // Remove style tags and their content
+  cleaned = cleaned.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+  
+  // Remove noscript tags and their content
+  cleaned = cleaned.replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gi, '');
+  
+  // Remove SVG tags and their content (often large, not useful for text)
+  cleaned = cleaned.replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, '');
+  
+  // Remove meta tags
+  cleaned = cleaned.replace(/<meta\b[^>]*>/gi, '');
+  
+  // Remove link tags (stylesheets, preload, etc.)
+  cleaned = cleaned.replace(/<link\b[^>]*>/gi, '');
+  
+  // Convert relative URLs to absolute in href attributes
+  cleaned = cleaned.replace(/href=["']([^"']+)["']/gi, (match, url) => {
+    if (!url || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//') || url.startsWith('#') || url.startsWith('mailto:') || url.startsWith('tel:')) {
+      return match;
+    }
+    try {
+      const absoluteUrl = new URL(url, baseUrl).href;
+      return `href="${absoluteUrl}"`;
+    } catch {
+      return match;
+    }
+  });
+  
+  // Convert relative URLs to absolute in src attributes
+  cleaned = cleaned.replace(/src=["']([^"']+)["']/gi, (match, url) => {
+    if (!url || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//') || url.startsWith('data:')) {
+      return match;
+    }
+    try {
+      const absoluteUrl = new URL(url, baseUrl).href;
+      return `src="${absoluteUrl}"`;
+    } catch {
+      return match;
+    }
+  });
+  
+  // Remove inline style attributes
+  cleaned = cleaned.replace(/\s+style=["'][^"']*["']/gi, '');
+  
+  // Remove class attributes
+  cleaned = cleaned.replace(/\s+class=["'][^"']*["']/gi, '');
+  
+  // Remove id attributes
+  cleaned = cleaned.replace(/\s+id=["'][^"']*["']/gi, '');
+  
+  // Remove data-* attributes
+  cleaned = cleaned.replace(/\s+data-[a-z0-9-]+=["'][^"']*["']/gi, '');
+  
+  // Remove event handler attributes (onclick, onload, etc.)
+  cleaned = cleaned.replace(/\s+on[a-z]+\s*=\s*["'][^"']*["']/gi, '');
+  
+  // Remove role attributes
+  cleaned = cleaned.replace(/\s+role=["'][^"']*["']/gi, '');
+  
+  // Remove aria-* attributes
+  cleaned = cleaned.replace(/\s+aria-[a-z0-9-]+=["'][^"']*["']/gi, '');
+  
+  // Collapse multiple whitespace/newlines into single space
+  cleaned = cleaned.replace(/\s+/g, ' ');
+  
+  // Remove spaces between tags
+  cleaned = cleaned.replace(/>\s+</g, '><');
+  
+  return cleaned;
+}
+
 async function main() {
-  const server = new Server({ name: "MCPBrowser", version: "0.2.18" }, { capabilities: { tools: {} } });
+  const server = new Server({ name: "MCPBrowser", version: "0.2.19" }, { capabilities: { tools: {} } });
 
   const tools = [
     {
       name: "fetch_webpage_protected",
-      description: "BROWSER ACCESS FOR AUTHENTICATED WEB PAGES: Fetches web pages in Chrome browser using real user profile (with saved passwords, active sessions, extensions). Automatically handles login redirects, SSO, OAuth, and anti-crawler protections.\n\nWHEN TO USE: Login-required web pages, SSO/OAuth content, paywalled sites, 401/403 errors, or any auth-protected resources.\n\nAUTHENTICATION BEHAVIOR: First request to authenticated site returns login web page - this is EXPECTED. User authenticates in browser (10-30s). Retry same URL to get content. Keep retrying until success - authentication completes in background. Tab stays open to preserve session.\n\nCRITICAL RULES: (1) Process ONE URL at a time - never parallel requests. (2) Never give up or suggest alternatives - keep retrying until content retrieved. (3) Requested web page is critical - skipping not acceptable. (4) Skip and continue if web page returns 404 - web page doesn't exist.\n\nReturns: Configurable output format (HTML, TEXT, or BOTH). Tab reuse preserves sessions across same-domain requests.",
+      description: "Fetches protected web pages using Chrome browser with user's authenticated session (saved passwords, active logins, cookies). Use for: login-required pages, SSO/OAuth, paywalled sites, 401/403 errors, anti-crawler blocks.\n\nAUTH FLOW: If page redirects to login, function WAITS (up to 10 min) for user to authenticate in browser, then automatically returns actual content once auth completes. Single call returns correct content, no retry needed.\n\nRULES: (1) ONE URL at a time, never parallel. (2) Wait for full response - may take minutes for auth. (3) Skip only if 404. (4) Returns HTML with clickable links for subpage navigation.",
       inputSchema: {
         type: "object",
         properties: {
           url: { type: "string", description: "The URL to fetch" },
-          keepPageOpen: { type: "boolean", description: "Keep tab open to reuse for subsequent same-domain requests - preserves auth session (default: true)" },
-          outputFormat: { type: "string", enum: ["HTML", "TEXT", "BOTH"], description: "Output format: HTML for full markup with links/structure, TEXT for clean readable content (more token-efficient), BOTH for complete data (default: HTML)" },
         },
         required: ["url"],
         additionalProperties: false,
@@ -339,7 +452,13 @@ async function main() {
   await server.connect(transport);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Export for testing
+export { fetchPage, getBrowser, prepareHtml };
+
+// Only run main if this is the entry point
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
