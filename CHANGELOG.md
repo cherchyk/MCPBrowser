@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.28] - 2025-12-24
+
+### Changed
+- Improved agent-notes.md deployment checklist with stronger safeguards
+- Removed exception clause - deployment confirmation now always required
+- Reorganized agent-notes.md structure (project info before deployment steps)
+- Cleaned up outdated documentation from agent-notes.md
+
 ## [0.2.27] - 2025-12-24
 
 ### Changed

@@ -2,6 +2,13 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.28] - 2025-12-24
+
+### Changed
+- Improved MCP server description for better clarity and consistency
+- Updated description to start with "Web page fetching" and use "the user" instead of "you"
+- Enhanced use case explanations for authentication, anti-bot protection, and JavaScript rendering
+
 ## [0.2.27] - 2025-12-24
 
 ### Changed

@@ -92,7 +92,7 @@ async function configureMcpBrowser() {
             type: "stdio",
             command: "npx",
             args: ["-y", "mcpbrowser@latest"],
-            description: "In-browser web page fetching. Used when loading web page via browser is preferred.  For Example: (1) auth-required pages (401/403, login, SSO, corporate intranets), (2) anti-bot/crawler blocks, CAPTCHA/human verification, (3) JavaScript-heavy sites (SPAs, dynamic content). Browser opens to load the page, user may be asked to authenticate or to prove it's not a robot."
+            description: "Web page fetching via browser for sites requiring authentication, anti-bot protection, or JavaScript rendering. Use when standard HTTP requests fail for: (1) auth-required pages (401/403, SSO, corporate intranets), (2) anti-bot verification (CAPTCHA, Cloudflare), (3) JavaScript-heavy sites (SPAs, dynamic content). Opens a browser where the user can authenticate, then automatically extracts content."
         };
 
         // Write back to file with pretty formatting
