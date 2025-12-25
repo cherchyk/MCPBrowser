@@ -1,5 +1,5 @@
 {  "name": "mcpbrowser",
-  "version": "0.2.19",
+  "version": "0.2.20",
   "mcpName": "io.github.cherchyk/browser",
   "type": "module",
   "description": "MCP server that fetches protected web pages using Chrome DevTools Protocol",
@@ -8,7 +8,9 @@
     "mcpbrowser": "src/mcp-browser.js"
   },
   "scripts": {
-    "mcp": "node src/mcp-browser.js"
+    "mcp": "node src/mcp-browser.js",
+    "test": "node --test tests/*.test.js",
+    "test:mcp": "node --test tests/mcp-server.test.js"
   },
   "keywords": [
     "mcp",

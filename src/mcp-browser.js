@@ -393,7 +393,7 @@ function prepareHtml(html, baseUrl) {
 }
 
 async function main() {
-  const server = new Server({ name: "MCPBrowser", version: "0.2.19" }, { capabilities: { tools: {} } });
+  const server = new Server({ name: "MCPBrowser", version: "0.2.20" }, { capabilities: { tools: {} } });
 
   const tools = [
     {
@@ -455,10 +455,8 @@ async function main() {
 // Export for testing
 export { fetchPage, getBrowser, prepareHtml };
 
-// Only run main if this is the entry point
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
-}
+// Run the MCP server
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
