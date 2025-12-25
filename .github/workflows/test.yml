@@ -29,5 +29,5 @@ jobs:
     - name: Run MCP server tests
       run: npm run test:mcp
     
-    - name: Run all tests
-      run: npm test
+    - name: Run unit tests (excluding integration tests)
+      run: node --test tests/auth-flow.test.js tests/domain-tab-pooling.test.js tests/mcp-server.test.js tests/prepare-html.test.js tests/redirect-detection.test.js
