@@ -1,8 +1,8 @@
 {  "name": "mcpbrowser",
-  "version": "0.2.24",
+  "version": "0.2.25",
   "mcpName": "io.github.cherchyk/browser",
   "type": "module",
-  "description": "MCP server that fetches protected web pages using Chrome DevTools Protocol",
+  "description": "MCP server for in-browser web page fetching using Chrome DevTools Protocol",
   "main": "src/mcp-browser.js",
   "bin": {
     "mcpbrowser": "src/mcp-browser.js"

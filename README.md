@@ -2,9 +2,10 @@
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/cherchyk.mcpbrowser.svg)](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 [![npm version](https://img.shields.io/npm/v/mcpbrowser.svg)](https://www.npmjs.com/package/mcpbrowser)
+[![Claude Desktop](https://img.shields.io/badge/Claude-Desktop-5865F2?logo=anthropic)](https://modelcontextprotocol.io/quickstart/user)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Enables GitHub Copilot to fetch protected web pages** - handles login-protected web pages, corporate SSO, and anti-crawler restrictions that normal fetching can't handle. Uses your Chrome/Edge browser session via DevTools Protocol.
+**Enables Claude Code, GitHub Copilot, and Claude Desktop to fetch protected web pages** - handles login-protected web pages, corporate SSO, and anti-crawler restrictions that normal fetching can't handle. Uses your Chrome/Edge browser session via DevTools Protocol.
 
 ## 🚀 Installation Options
 
@@ -19,18 +20,18 @@ Or search "MCPBrowser" in VS Code Extensions view.
 **From GitHub Release:**
 Download from [GitHub Releases](https://github.com/cherchyk/MCPBrowser/releases):
 ```bash
-code --install-extension mcpbrowser-0.2.15.vsix
+code --install-extension mcpbrowser-0.2.24.vsix
 ```
 
 The extension automatically:
 - Installs the MCPBrowser npm package globally
-- Configures mcp.json for GitHub Copilot
+- Configures mcp.json for Claude Code & GitHub Copilot
 - Complete one-click setup - no manual steps needed
 
 📦 [View on Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 
 ### Option 2: npm Package (Recommended for Manual Setup)
-Published on npm as [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.15.
+Published on npm as [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.24.
 
 Add to your `mcp.json`:
 ```jsonc
@@ -47,11 +48,31 @@ Add to your `mcp.json`:
 - Mac/Linux: `~/.config/Code/User/mcp.json`
 
 ### Option 3: MCP Registry
-Available in the [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.cherchyk/browser` v0.2.15.
+Available in the [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.cherchyk/browser` v0.2.24.
 
 Search for "browser" in the registry to find configuration instructions.
 
-### Option 4: Clone from GitHub (Development)
+### Option 4: Claude Desktop
+Add to your Claude Desktop config file:
+
+**Config Location:**
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Mac: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "MCPBrowser": {
+      "command": "npx",
+      "args": ["-y", "mcpbrowser@latest"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop after configuration.
+
+### Option 5: Clone from GitHub (Development)
 ```bash
 git clone https://github.com/cherchyk/MCPBrowser.git
 cd MCPBrowser
@@ -59,22 +80,17 @@ npm install
 copy .env.example .env  # optional: set Chrome overrides
 ```
 
-### Option 2: Install via npx (when published to npm)
-```bash
-npx mcpbrowser
-```
-
 ## Prereqs
 - Chrome or Edge installed.
 - Node 18+.
 
-## Run (automatic via Copilot)
-- Add the MCP server entry to VS Code settings (`github.copilot.chat.modelContextProtocolServers`, see below). Copilot will start the server automatically when it needs the tool—no manual launch required.
+## Run (automatic via AI assistants)
+- Add the MCP server entry to your AI assistant's config (see installation options above). The AI assistant will start the server automatically when it needs the tool—no manual launch required.
 - On first use, the server auto-launches Chrome/Edge with remote debugging if it cannot find an existing DevTools endpoint. Defaults: port `9222`, user data dir `%LOCALAPPDATA%/ChromeAuthProfile`. Override with `CHROME_PATH`, `CHROME_USER_DATA_DIR`, or `CHROME_REMOTE_DEBUG_PORT`.
-- The old `scripts/start-all.ps1` launcher was removed; Chrome startup is handled inside the MCP server.
+- Chrome startup is handled inside the MCP server.
 
 ## Manual start (optional)
-Only if you want to run it yourself (Copilot already starts it when configured):
+Only if you want to run it yourself (AI assistants already start it when configured):
 ```bash
 npm run mcp
 ```
@@ -85,9 +101,9 @@ Or manually:
 Set `CHROME_PATH` if auto-detect fails; override profile with `CHROME_USER_DATA_DIR`, port with `CHROME_REMOTE_DEBUG_PORT`.
 
 ## (Optional) Local runner
-There is no local LLM runner now; Copilot provides the LLM and calls this MCP tool. If you need a standalone agent later, we can add one that reuses the fetch logic.
+There is no local LLM runner now; AI assistants (Claude Code, GitHub Copilot, Claude Desktop) provide the LLM and call this MCP tool. If you need a standalone agent later, we can add one that reuses the fetch logic.
 
-## Configure in VS Code (GitHub Copilot)
+## Configure in VS Code (Claude Code & GitHub Copilot)
 
 ### Step 1: Locate your mcp.json file
 - **Windows**: `%APPDATA%\Code\User\mcp.json`
@@ -114,20 +130,20 @@ Replace `<PATH_TO_MCPBROWSER>` with the full path where you cloned this reposito
 Restart VS Code or reload the window for the changes to take effect.
 
 ### Step 4: Verify
-In Copilot Chat, you should see the `MCPBrowser` server listed. Ask it to fetch an authenticated URL and it will drive your signed-in Chrome session.
+In Claude Code or Copilot Chat, you should see the `MCPBrowser` server listed. Ask it to fetch an authenticated URL and it will drive your signed-in Chrome session.
 
 ## How it works
-- Tool `fetch_webpage_protected` (inside the MCP server) drives your live Chrome (DevTools Protocol) so it inherits your auth cookies, returning `html` (truncated up to 2M chars) for analysis.
-- **Smart confirmation**: Copilot asks for confirmation ONLY on first request to a new domain - explains browser will open for authentication. Subsequent requests to same domain work automatically (session preserved).
+- Tool `fetch_webpage_protected` (inside the MCP server) drives your live Chrome/Edge (DevTools Protocol) so it inherits your auth cookies, returning `html` (truncated up to 2M chars) for analysis.
+- **Smart confirmation**: AI assistant asks for confirmation ONLY on first request to a new domain - explains browser will open for authentication. Subsequent requests to same domain work automatically (session preserved).
 - **Domain-aware tab reuse**: Automatically reuses the same tab for URLs on the same domain, preserving authentication session. Different domains open new tabs.
-- **Automatic web page fetching**: Waits for network idle (`networkidle0`) by default, ensuring JavaScript-heavy web pages (SPAs, dashboards) fully load before returning content.
-- **Automatic auth detection**: Detects ANY authentication redirect (domain changes, login/auth/sso/oauth URLs) and waits for you to complete sign-in, then returns to target web page.
-- **Universal compatibility**: Works with Microsoft, GitHub, AWS, Google, Okta, corporate SSO, or any authenticated site.
-- **Smart timeouts**: 60s default for web page fetch, 10 min for auth redirects. Tabs stay open indefinitely for reuse (no auto-close).
-- GitHub Copilot's LLM invokes this tool via MCP; this repo itself does not run an LLM.
+- **Automatic page loading**: Waits for network idle (`networkidle0`) by default, ensuring JavaScript-heavy pages (SPAs, dashboards) fully load before returning content.
+- **Automatic auth detection**: Detects ANY authentication redirect (domain changes, login/auth/sso/oauth URLs) and waits for you to complete sign-in, then returns to target page.
+- **Universal compatibility**: Works with ANY authenticated site - corporate intranets, SSO, OAuth, SAML, login pages, etc.
+- **Smart timeouts**: 60s default for page fetch, 10 min for auth redirects. Tabs stay open indefinitely for reuse (no auto-close).
+- The AI assistant's LLM invokes this tool via MCP; this repo itself does not run an LLM.
 
 ## Auth-assisted fetch flow
-- Copilot can call with just the URL, or with no params if you set an env default (`DEFAULT_FETCH_URL` or `MCP_DEFAULT_FETCH_URL`). By default tabs stay open indefinitely for reuse (domain-aware).
+- AI assistant can call with just the URL, or with no params if you set an env default (`DEFAULT_FETCH_URL` or `MCP_DEFAULT_FETCH_URL`). By default tabs stay open indefinitely for reuse (domain-aware).
 - First call opens the tab and leaves it open so you can sign in. No extra params needed.
 - After you sign in, call the same URL again; tab stays open for reuse. Set `keepPageOpen: false` to close immediately on success.
 - Optional fields (`authWaitSelector`, `waitForSelector`, `waitForUrlPattern`, etc.) are available but not required.
@@ -137,12 +153,12 @@ In Copilot Chat, you should see the `MCPBrowser` server listed. Ask it to fetch 
 - To use a specific WS endpoint: set `CHROME_WS_ENDPOINT` from Chrome `chrome://version` DevTools JSON.
 
 ## Tips
-- **Universal auth**: Works with ANY authenticated site (Microsoft, GitHub, AWS, Google, corporate intranets, SSO, OAuth, etc.)
-- **No re-authentication needed**: Automatically reuses the same tab for URLs on the same domain, keeping your auth session alive across multiple web page fetches
-- **Automatic web page fetching**: Tool waits for web pages to fully load (default 60s timeout, waits for network idle). Copilot should trust the tool and not retry manually.
+- **Universal auth**: Works with ANY authenticated site - corporate intranets, SSO, OAuth, SAML, login pages, CAPTCHA, human verification, etc.
+- **No re-authentication needed**: Automatically reuses the same tab for URLs on the same domain, keeping your auth session alive across multiple page fetches
+- **Automatic page loading**: Tool waits for pages to fully load (default 60s timeout, waits for network idle). AI assistant should trust the tool and not retry manually.
 - **Auth redirect handling**: Auto-detects auth redirects by monitoring domain changes and common login URL patterns (`/login`, `/auth`, `/signin`, `/sso`, `/oauth`, `/saml`)
 - **Tabs stay open**: By default tabs remain open indefinitely for reuse. Set `keepPageOpen: false` to close immediately after successful fetch.
 - **Smart domain switching**: When switching domains, automatically closes the old tab and opens a new one to prevent tab accumulation
-- If you hit login web pages, verify Chrome instance is signed in and the site opens there.
-- Use a dedicated profile directory to avoid interfering with your daily Chrome.
-- For heavy web pages, add `waitForSelector` to ensure post-login content appears before extraction.
+- If you hit login pages, verify Chrome/Edge instance is signed in and the site opens there.
+- Use a dedicated profile directory to avoid interfering with your daily browser.
+- For heavy pages, add `waitForSelector` to ensure post-login content appears before extraction.

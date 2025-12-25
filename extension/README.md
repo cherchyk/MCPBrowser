@@ -1,16 +1,16 @@
 # MCP Browser
 
-**Lightweight MCP server-extension that allows Copilot to fetch protected web pages you can authenticate to via browser.** Handles login-protected web pages, corporate SSO, and anti-crawler restrictions that normal fetching can't handle. Should be used when standard fetch_webpage fails.
+**Lightweight MCP server-extension for in-browser web page fetching.** Used when loading web page via browser is preferred - handles login, SSO, anti-crawler restrictions. Should be used when standard fetch_webpage fails.
 
 ## Features
 
 - 🚀 **One-Click Setup**: Installs npm package and configures mcp.json automatically - complete setup with a single click
 - 🔐 **Authentication Support**: Fetches web pages in your Chrome/Edge browser - authenticate once, reuse sessions automatically
-- 🤖 **Bypass Anti-Crawler**: Fetch sites that block automated tools
+- 🤖 **Bypass Anti-Crawler**: Fetch sites that block automated tools, including CAPTCHA and human verification
 
 ## How It Works
 
-When Copilot needs to fetch an authenticated or protected web page:
+When Copilot needs to fetch a web page via browser:
 1. MCPBrowser opens the URL in your Chrome/Edge browser
 2. If authentication is required, you log in normally in the browser
 3. MCPBrowser waits for the web page to fully load (handles redirects automatically)
@@ -52,6 +52,11 @@ Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P`):
 ## About MCPBrowser
 
 Alternative web fetcher for GitHub Copilot when normal URL fetch fails. Uses Chrome DevTools Protocol to fetch authenticated and crawler-protected web pages through your browser session.
+
+**Use cases:**
+1. **Auth-required pages**: 401/403 errors, login pages, SSO, corporate intranets
+2. **Anti-bot/crawler blocks**: CAPTCHA, human verification, bot detection
+3. **JavaScript-heavy sites**: SPAs, dynamic content requiring browser rendering
 
 Learn more: [MCPBrowser on GitHub](https://github.com/cherchyk/MCPBrowser)
 

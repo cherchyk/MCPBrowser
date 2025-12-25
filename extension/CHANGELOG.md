@@ -2,6 +2,13 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.25] - 2025-12-24
+
+### Changed
+- Aligned all descriptions with "in-browser web page fetching" terminology
+- Updated package.json, extension/package.json, and server.json descriptions for consistency
+- Improved extension README to focus on VS Code use case only
+
 ## [0.2.24] - 2025-12-24
 
 ### Changed

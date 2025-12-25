@@ -393,7 +393,7 @@ function prepareHtml(html, baseUrl) {
 }
 
 async function main() {
-  const server = new Server({ name: "MCPBrowser", version: "0.2.24" }, { capabilities: { tools: {} } });
+  const server = new Server({ name: "MCPBrowser", version: "0.2.25" }, { capabilities: { tools: {} } });
 
   const tools = [
     {

@@ -9,21 +9,21 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 - **DO NOT** automatically deploy just because changes were made - user may have additional changes planned
 
 **DEPLOYMENT STEPS:**
-0. **Verify Branch**:
+1. **Verify Branch**:
    - **CRITICAL**: Deployment MUST be done from the `main` branch ONLY
    - Check current branch: `git branch --show-current`
    - **STOP DEPLOYMENT** if branch is not `main` - inform user and halt
    - **Changelog Rule**: In the change notes only include changes that are present in the `main` branch
    - If work is on feature branches, it must be merged to `main` first before deployment
 
-1. **Run Tests**: 
+2. **Run Tests**: 
    - **IMPORTANT**: Always run from project root directory (where the main package.json is located)
    - **Command**: `npm test` (runs all *.test.js files in tests/ folder)
    - **STOP DEPLOYMENT if ANY test fails**
    - Note: Integration tests require Chrome and manual authentication
    - All tests must pass before proceeding
-2. **Version Bump**: Update version number in `package.json`, `server.json`, and `extension/package.json`
-3. **Update ALL Descriptions - Two Sources of Truth**:
+3. **Version Bump**: Update version number in `package.json`, `server.json`, and `extension/package.json`
+4. **Update ALL Descriptions - Two Sources of Truth**:
    - **SOURCE OF TRUTH #1 - MCP Server Purpose**: `extension/src/extension.js` 
      - Search for `config.servers.MCPBrowser` to find the `description` field
      - This describes WHEN and WHY to use the MCP server (for mcp.json configuration)
@@ -41,11 +41,11 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
      - `extension/README.md` - extension documentation opening paragraph
    
    - **Tip**: Use grep/search to find all `"description"` or `description:` fields, verify each matches appropriate source of truth
-4. **Update Docs**: Update version numbers in ALL documentation files (`README.md`, `agent-notes.md`, etc.) - search for old version numbers in examples and update to current version
-5. **Update Changelog**: Update `extension/CHANGELOG.md` with changes
-5. **Git**: Commit all changes → `git push origin main`
-6. **npm**: `npm publish`
-7. **VS Code Marketplace**: `cd extension` → `vsce package` → `vsce publish`
+5. **Update Docs**: Update version numbers in ALL documentation files (`README.md`, `agent-notes.md`, etc.) - search for old version numbers in examples and update to current version
+6. **Update Changelog**: Update `extension/CHANGELOG.md` with changes
+7. **Git**: Commit all changes → `git push origin main`
+8. **npm**: `npm publish`
+9. **VS Code Marketplace**: `cd extension` → `vsce package` → `vsce publish`
 
 **Critical**: ALL files must be updated and committed BEFORE publishing to npm/marketplace. Never deploy to just one platform - all three must be updated together to keep versions synchronized.
 
@@ -59,9 +59,9 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 
 ## Distribution
 MCP Browser is available through three channels:
-1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.23 - One-click automated configuration
-2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.23 - Use with `npx mcpbrowser@latest`
-3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.23 - Discoverable in the official registry
+1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.25 - One-click automated configuration
+2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.25 - Use with `npx mcpbrowser@latest`
+3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.25 - Discoverable in the official registry
 
 All three methods configure the same underlying MCP server.
 
