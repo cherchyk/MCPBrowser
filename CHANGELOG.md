@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.2.30] - 2025-12-25
+
+### Added
+- **Comprehensive redirect and authentication flow handling**:
+  - Permanent redirect detection (e.g., gmail.com → mail.google.com)
+  - Cross-domain SSO support (Google, Microsoft, Okta patterns)
+  - Same-domain authentication path detection (e.g., /dashboard → /login)
+  - Requested auth page bypass (direct navigation to auth URLs)
+  - False positive prevention for auth-like URLs (e.g., /login-help)
+  - Auto-authentication detection with 5-second timeout
+  - Manual authentication with subdomain landing support (10-minute timeout)
+  - JavaScript redirect detection with 2-second wait after page load
+  - Slow page handling with networkidle0 → load fallback
+
+### Changed
+- **Major refactoring of fetchPage function**:
+  - Extracted 8 testable functions from monolithic 250-line fetchPage
+  - Created modular architecture: getBaseDomain, isLikelyAuthUrl, detectRedirectType, getOrCreatePage, navigateToUrl, waitForAutoAuth, waitForManualAuth, waitForPageStability, extractAndProcessHtml
+  - Reduced main fetchPage orchestration to ~80 lines
+  - Fixed module import guard to prevent MCP server auto-start during test imports
+
+### Added
+- **Comprehensive test suite (106 tests total, all passing)**:
+  - redirect-detection.test.js: 43 tests for redirect logic
+  - auth-flow.test.js: 14 tests for authentication flows with MockPage
+  - Aligned integration.test.js structure with other test files
+  - All tests use consistent assert.strictEqual/assert.ok patterns
+  - Test runner executes all suites with summary output
+
+### Fixed
+- gmail.com no longer treated as authentication flow (permanent redirect handled correctly)
+- Cross-domain authentication flows properly detected and waited for
+- Auth URL pattern matching uses strict boundaries to avoid false positives
+- Module imports no longer trigger MCP server startup
+
 ## [0.2.29] - 2025-12-24
 
 ### Changed

@@ -240,36 +240,78 @@ async function getBrowser() {
 }
 
 /**
- * Fetch a web page using Chrome browser, with support for authentication flows and tab reuse.
- * Reuses existing tabs per domain when possible. Handles authentication redirects by waiting
- * for user to complete login (up to 10 minutes). Processes HTML to remove unnecessary elements
- * and convert relative URLs to absolute.
- * @param {Object} params - Fetch parameters
- * @param {string} params.url - The URL to fetch
- * @param {boolean} [params.removeUnnecessaryHTML=true] - Whether to clean HTML (removes scripts, styles, etc.)
- * @returns {Promise<Object>} Result object with success status, URL, HTML content, or error details
+ * Extract base domain from hostname (e.g., "mail.google.com" → "google.com")
+ * @param {string} hostname - The hostname to parse
+ * @returns {string} The base domain
  */
-async function fetchPage({ url, removeUnnecessaryHTML = true }) {
-  // Hardcoded smart defaults
-  const waitUntil = "networkidle0";
-  const navigationTimeout = 60000; // Initial navigation timeout
-  const authCompletionTimeout = 600000; // 10 minutes for user to complete authentication
-  const reuseLastKeptPage = true;
-  
-  if (!url) {
-    throw new Error("url parameter is required");
+function getBaseDomain(hostname) {
+  const parts = hostname.split('.');
+  if (parts.length >= 2) {
+    return parts.slice(-2).join('.');
   }
+  return hostname;
+}
 
-  const browser = await getBrowser();
-  let page = null;
-  let hostname;
+/**
+ * Detect if URL contains authentication patterns
+ * @param {string} url - The URL to check
+ * @returns {boolean} True if URL appears to be auth-related
+ */
+function isLikelyAuthUrl(url) {
+  const lowerUrl = url.toLowerCase();
   
-  // Parse hostname for domain-based tab reuse
+  // Path-based patterns (more strict - require / boundaries or end of path)
+  const pathPatterns = [
+    '/login', '/signin', '/sign-in', '/auth', '/sso', '/oauth', 
+    '/authenticate', '/saml', '/openid'
+  ];
+  
+  // Subdomain patterns (require as subdomain at start)
+  const subdomainPatterns = [
+    'login.', 'auth.', 'sso.', 'accounts.', 'id.', 'identity.',
+    'signin.', 'authentication.', 'idp.'
+  ];
+  
+  // Extract path from URL
+  let pathname = '';
   try {
-    hostname = new URL(url).hostname;
+    pathname = new URL(url).pathname.toLowerCase();
   } catch {
-    throw new Error(`Invalid URL: ${url}`);
+    // If URL parsing fails, check if any pattern exists in the string
+    pathname = lowerUrl;
   }
+  
+  // Check path patterns - ensure they're at path boundaries
+  const hasAuthPath = pathPatterns.some(pattern => {
+    // Check if pattern appears at start of path, followed by nothing, /, ?, or #
+    return pathname === pattern || 
+           pathname.startsWith(pattern + '/') ||
+           pathname.startsWith(pattern + '?') ||
+           lowerUrl.includes(pattern + '#');
+  });
+  
+  // Check subdomain patterns (must be at start of hostname)
+  const hostname = (() => {
+    try {
+      return new URL(url).hostname.toLowerCase();
+    } catch {
+      return '';
+    }
+  })();
+  const hasAuthSubdomain = subdomainPatterns.some(pattern => hostname.startsWith(pattern));
+  
+  return hasAuthPath || hasAuthSubdomain;
+}
+
+/**
+ * Get or create a page for the given domain, reusing existing tabs when possible.
+ * @param {Browser} browser - The Puppeteer browser instance
+ * @param {string} hostname - The hostname to get/create a page for
+ * @param {boolean} reuseLastKeptPage - Whether to reuse existing tabs
+ * @returns {Promise<Page>} The page for this domain
+ */
+async function getOrCreatePage(browser, hostname, reuseLastKeptPage = true) {
+  let page = null;
   
   // Check if we have an existing page for this domain
   if (reuseLastKeptPage && domainPages.has(hostname)) {
@@ -311,85 +353,322 @@ async function fetchPage({ url, removeUnnecessaryHTML = true }) {
     domainPages.set(hostname, page);
     console.error(`[MCPBrowser] Created new tab for domain: ${hostname}`);
   }
+  
+  return page;
+}
 
-  let shouldKeepOpen = true;
-  let wasSuccess = false;
+/**
+ * Navigate to URL with fallback strategy for slow pages.
+ * @param {Page} page - The Puppeteer page instance
+ * @param {string} url - The URL to navigate to
+ * @param {string} waitUntil - Wait condition (networkidle0, load, etc.)
+ * @param {number} timeout - Navigation timeout in ms
+ * @returns {Promise<void>}
+ */
+async function navigateToUrl(page, url, waitUntil, timeout) {
+  console.error(`[MCPBrowser] Navigating to: ${url}`);
+  
+  // Set up listener for JS-based redirects that happen after page load
+  let jsRedirectDetected = false;
+  let jsRedirectUrl = null;
+  const navigationHandler = (frame) => {
+    if (frame === page.mainFrame()) {
+      jsRedirectUrl = frame.url();
+      jsRedirectDetected = true;
+    }
+  };
+  page.on('framenavigated', navigationHandler);
+  
   try {
-    console.error(`[MCPBrowser] Navigating to: ${url}`);
-    await page.goto(url, { waitUntil, timeout: navigationTimeout });
+    // Handle slow pages: try networkidle0 first, fallback to load if it takes too long
+    try {
+      await page.goto(url, { waitUntil, timeout });
+    } catch (error) {
+      // If networkidle0 times out or page has issues, try with just 'load'
+      if (error.message.includes('timeout') || error.message.includes('Navigation')) {
+        console.error(`[MCPBrowser] Navigation slow, trying fallback load strategy...`);
+        await page.goto(url, { waitUntil: 'load', timeout });
+      } else {
+        throw error;
+      }
+    }
+    
+    // Wait briefly for potential JS redirects
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  } finally {
+    // Remove navigation listener
+    page.off('framenavigated', navigationHandler);
+  }
+}
+
+/**
+ * Detect redirect type: permanent redirect, auth flow, or same-domain auth path change.
+ * @param {string} url - Original requested URL
+ * @param {string} hostname - Original hostname
+ * @param {string} currentUrl - Current page URL
+ * @param {string} currentHostname - Current page hostname
+ * @returns {Object} Object with redirect type and related info
+ */
+function detectRedirectType(url, hostname, currentUrl, currentHostname) {
+  const isDifferentDomain = currentHostname !== hostname;
+  const requestedAuthPage = isLikelyAuthUrl(url);
+  const currentIsAuthPage = isLikelyAuthUrl(currentUrl);
+  const isSameDomainAuthPath = !isDifferentDomain && currentIsAuthPage && !requestedAuthPage;
+  
+  // If user requested auth page directly and landed on it (same domain), return content
+  if (requestedAuthPage && currentHostname === hostname && !isDifferentDomain) {
+    return { type: 'requested_auth', currentHostname };
+  }
+  
+  // No redirect scenario
+  if (!isDifferentDomain && !isSameDomainAuthPath) {
+    return { type: 'none' };
+  }
+  
+  const originalBase = getBaseDomain(hostname);
+  const currentBase = getBaseDomain(currentHostname);
+  
+  // Permanent redirect: Different domain without auth patterns
+  if (!currentIsAuthPage) {
+    return { type: 'permanent', currentHostname };
+  }
+  
+  // Authentication flow
+  const flowType = isSameDomainAuthPath ? 'same-domain path change' : 'cross-domain redirect';
+  return { 
+    type: 'auth', 
+    flowType, 
+    originalBase, 
+    currentBase, 
+    currentUrl,
+    hostname,
+    currentHostname
+  };
+}
+
+/**
+ * Check if authentication auto-completes quickly (valid session/cookies).
+ * @param {Page} page - The Puppeteer page instance
+ * @param {string} hostname - Original hostname
+ * @param {string} originalBase - Original base domain
+ * @param {number} timeoutMs - How long to wait for auto-auth
+ * @returns {Promise<Object>} Object with success status and final hostname
+ */
+async function waitForAutoAuth(page, hostname, originalBase, timeoutMs = 5000) {
+  console.error(`[MCPBrowser] Checking for auto-authentication (${timeoutMs / 1000} sec)...`);
+  
+  const deadline = Date.now() + timeoutMs;
+  
+  while (Date.now() < deadline) {
+    try {
+      const checkUrl = page.url();
+      const checkHostname = new URL(checkUrl).hostname;
+      const checkBase = getBaseDomain(checkHostname);
+      
+      // Check if returned to original domain/base and no longer on auth URL
+      if ((checkHostname === hostname || checkBase === originalBase) && !isLikelyAuthUrl(checkUrl)) {
+        console.error(`[MCPBrowser] Auto-authentication successful! Now at: ${checkUrl}`);
+        return { success: true, hostname: checkHostname };
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } catch (error) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+  
+  return { success: false };
+}
+
+/**
+ * Wait for user to complete manual authentication.
+ * @param {Page} page - The Puppeteer page instance
+ * @param {string} hostname - Original hostname
+ * @param {string} originalBase - Original base domain
+ * @param {number} timeoutMs - How long to wait for manual auth
+ * @returns {Promise<Object>} Object with success status, final hostname, and optional error
+ */
+async function waitForManualAuth(page, hostname, originalBase, timeoutMs = 600000) {
+  console.error(`[MCPBrowser] Auto-authentication did not complete. Waiting for user...`);
+  console.error(`[MCPBrowser] Will wait for return to ${hostname} or same base domain (${originalBase})`);
+  
+  const deadline = Date.now() + timeoutMs;
+  
+  while (Date.now() < deadline) {
+    try {
+      const checkUrl = page.url();
+      const checkHostname = new URL(checkUrl).hostname;
+      const checkBase = getBaseDomain(checkHostname);
+      
+      // Auth complete if back to original domain OR same base domain AND not on auth page
+      if ((checkHostname === hostname || checkBase === originalBase) && !isLikelyAuthUrl(checkUrl)) {
+        console.error(`[MCPBrowser] Authentication completed! Now at: ${checkUrl}`);
+        
+        if (checkHostname !== hostname) {
+          console.error(`[MCPBrowser] Landed on different subdomain: ${checkHostname}`);
+        }
+        
+        return { success: true, hostname: checkHostname };
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } catch (error) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  }
+  
+  const currentUrl = page.url();
+  const hint = `Authentication timeout. Tab is left open at ${currentUrl}. Complete authentication and retry the same URL.`;
+  return { 
+    success: false, 
+    error: "Authentication timeout - user did not complete login",
+    hint 
+  };
+}
+
+/**
+ * Wait for page to stabilize after authentication.
+ * @param {Page} page - The Puppeteer page instance
+ * @returns {Promise<void>}
+ */
+async function waitForPageStability(page) {
+  console.error(`[MCPBrowser] Waiting for page to stabilize...`);
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  
+  try {
+    await page.waitForFunction(() => document.readyState === 'complete', { timeout: 10000 });
+  } catch {
+    // Ignore timeout - page might already be ready
+  }
+}
+
+/**
+ * Extract and process HTML from the page.
+ * @param {Page} page - The Puppeteer page instance
+ * @param {boolean} removeUnnecessaryHTML - Whether to clean the HTML
+ * @returns {Promise<string>} The processed HTML
+ */
+async function extractAndProcessHtml(page, removeUnnecessaryHTML) {
+  const html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+  
+  let processedHtml;
+  if (removeUnnecessaryHTML) {
+    const cleaned = cleanHtml(html);
+    processedHtml = enrichHtml(cleaned, page.url());
+  } else {
+    processedHtml = enrichHtml(html, page.url());
+  }
+  
+  return processedHtml;
+}
+
+/**
+ * Fetch a web page using Chrome browser, with support for authentication flows and tab reuse.
+ * Reuses existing tabs per domain when possible. Handles authentication redirects by waiting
+ * for user to complete login (up to 10 minutes). Processes HTML to remove unnecessary elements
+ * and convert relative URLs to absolute.
+ * @param {Object} params - Fetch parameters
+ * @param {string} params.url - The URL to fetch
+ * @param {boolean} [params.removeUnnecessaryHTML=true] - Whether to clean HTML (removes scripts, styles, etc.)
+ * @returns {Promise<Object>} Result object with success status, URL, HTML content, or error details
+ */
+async function fetchPage({ url, removeUnnecessaryHTML = true }) {
+  // Hardcoded smart defaults
+  const waitUntil = "networkidle0";
+  const navigationTimeout = 60000;
+  const authCompletionTimeout = 600000;
+  const reuseLastKeptPage = true;
+  
+  if (!url) {
+    throw new Error("url parameter is required");
+  }
+
+  // Parse hostname for domain-based tab reuse
+  let hostname;
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    throw new Error(`Invalid URL: ${url}`);
+  }
+
+  const browser = await getBrowser();
+  let page = null;
+  
+  try {
+    // Get or create page for this domain
+    page = await getOrCreatePage(browser, hostname, reuseLastKeptPage);
+    
+    // Navigate to URL with fallback strategy
+    await navigateToUrl(page, url, waitUntil, navigationTimeout);
     
     const currentUrl = page.url();
     const currentHostname = new URL(currentUrl).hostname;
-    
     console.error(`[MCPBrowser] Navigation completed: ${currentUrl}`);
     
-    // Check if we were redirected to a different domain (likely authentication)
-    if (currentHostname !== hostname) {
-      console.error(`[MCPBrowser] Detected redirect to authentication domain: ${currentHostname}`);
-      console.error(`[MCPBrowser] Waiting for user to complete authentication...`);
-      console.error(`[MCPBrowser] Will wait up to ${authCompletionTimeout / 1000} seconds for return to ${hostname}`);
+    // Detect redirect type and handle accordingly
+    const redirectInfo = detectRedirectType(url, hostname, currentUrl, currentHostname);
+    
+    if (redirectInfo.type === 'requested_auth') {
+      console.error(`[MCPBrowser] User requested auth page directly, returning content`);
+      // Update domain mapping if needed
+      if (redirectInfo.currentHostname !== hostname) {
+        domainPages.delete(hostname);
+        domainPages.set(redirectInfo.currentHostname, page);
+        hostname = redirectInfo.currentHostname;
+      }
+    } else if (redirectInfo.type === 'permanent') {
+      console.error(`[MCPBrowser] Permanent redirect detected: ${hostname} → ${redirectInfo.currentHostname}`);
+      console.error(`[MCPBrowser] Accepting redirect and updating domain mapping`);
+      domainPages.delete(hostname);
+      domainPages.set(redirectInfo.currentHostname, page);
+      hostname = redirectInfo.currentHostname;
+    } else if (redirectInfo.type === 'auth') {
+      console.error(`[MCPBrowser] Authentication flow detected (${redirectInfo.flowType})`);
+      console.error(`[MCPBrowser] Current location: ${redirectInfo.currentUrl}`);
       
-      // Wait for navigation back to the original domain
-      const authDeadline = Date.now() + authCompletionTimeout;
-      let authCompleted = false;
+      // Try auto-auth first
+      const autoAuthResult = await waitForAutoAuth(page, redirectInfo.hostname, redirectInfo.originalBase);
       
-      while (Date.now() < authDeadline) {
-        try {
-          // Check current URL
-          const checkUrl = page.url();
-          const checkHostname = new URL(checkUrl).hostname;
-          
-          if (checkHostname === hostname) {
-            console.error(`[MCPBrowser] Authentication completed! Returned to: ${checkUrl}`);
-            authCompleted = true;
-            break;
-          }
-          
-          // Wait a bit before checking again
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        } catch (error) {
-          // Page might be navigating, continue waiting
-          await new Promise(resolve => setTimeout(resolve, 2000));
+      if (autoAuthResult.success) {
+        // Update hostname if changed
+        if (autoAuthResult.hostname !== hostname) {
+          domainPages.delete(hostname);
+          domainPages.set(autoAuthResult.hostname, page);
+          hostname = autoAuthResult.hostname;
+        }
+      } else {
+        // Wait for manual auth
+        const manualAuthResult = await waitForManualAuth(page, redirectInfo.hostname, redirectInfo.originalBase, authCompletionTimeout);
+        
+        if (!manualAuthResult.success) {
+          return { 
+            success: false, 
+            error: manualAuthResult.error, 
+            pageKeptOpen: true, 
+            hint: manualAuthResult.hint 
+          };
+        }
+        
+        // Update hostname if changed
+        if (manualAuthResult.hostname !== hostname) {
+          domainPages.delete(hostname);
+          domainPages.set(manualAuthResult.hostname, page);
+          hostname = manualAuthResult.hostname;
         }
       }
       
-      if (!authCompleted) {
-        const hint = `Authentication timeout. Tab is left open at ${page.url()}. Complete authentication and retry the same URL.`;
-        return { success: false, error: "Authentication timeout - user did not complete login", pageKeptOpen: true, hint };
-      }
-      
-      // Wait for page to fully stabilize after auth redirect
-      console.error(`[MCPBrowser] Waiting for page to stabilize after authentication...`);
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Give page time to settle
-      
-      // Ensure page is ready
-      try {
-        await page.waitForFunction(() => document.readyState === 'complete', { timeout: 10000 });
-      } catch {
-        // Ignore timeout - page might already be ready
-      }
+      // Wait for page stability after auth
+      await waitForPageStability(page);
     }
     
-    // Extract HTML content
-    const html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+    // Extract and process HTML
+    const processedHtml = await extractAndProcessHtml(page, removeUnnecessaryHTML);
     
-    // Process HTML based on removeUnnecessaryHTML parameter
-    let processedHtml;
-    if (removeUnnecessaryHTML) {
-      const cleaned = cleanHtml(html);
-      processedHtml = enrichHtml(cleaned, page.url());
-    } else {
-      processedHtml = enrichHtml(html, page.url());
-    }
-    
-    const result = { 
+    return { 
       success: true, 
       url: page.url(),
       html: processedHtml
     };
-    
-    wasSuccess = true;
-    return result;
   } catch (err) {
     const hint = "Tab is left open. Complete sign-in there, then call fetch_webpage_protected again with just the URL.";
     return { success: false, error: err.message || String(err), pageKeptOpen: true, hint };
@@ -587,10 +866,27 @@ async function main() {
 }
 
 // Export for testing
-export { fetchPage, getBrowser, prepareHtml, cleanHtml, enrichHtml };
+export { 
+  fetchPage, 
+  getBrowser, 
+  prepareHtml, 
+  cleanHtml, 
+  enrichHtml,
+  getOrCreatePage,
+  navigateToUrl,
+  detectRedirectType,
+  waitForAutoAuth,
+  waitForManualAuth,
+  waitForPageStability,
+  extractAndProcessHtml,
+  getBaseDomain,
+  isLikelyAuthUrl
+};
 
-// Run the MCP server
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Run the MCP server only if this is the main module (not imported for testing)
+if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
