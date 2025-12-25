@@ -2,6 +2,13 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.21] - 2025-12-24
+
+### Changed
+- Updated deployment checklist to use `npm test` for all tests
+- Improved test automation: now runs all *.test.js files in tests/ folder automatically
+- Version synchronization across all package files
+
 ## [0.2.18] - 2025-12-23
 
 ### Changed

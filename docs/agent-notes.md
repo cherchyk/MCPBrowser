@@ -10,8 +10,8 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 
 **DEPLOYMENT STEPS:**
 1. **Run Tests**: 
-   - **Unit Tests**: `node tests/domain-tab-pooling.test.js` - **STOP DEPLOYMENT if ANY test fails**
-   - **Integration Tests**: `node tests/integration.test.js` - Requires Chrome and manual authentication - **STOP DEPLOYMENT if ANY test fails**
+   - **All Tests**: `npm test` (runs all *.test.js files in tests/ folder) - **STOP DEPLOYMENT if ANY test fails**
+   - Note: Integration tests require Chrome and manual authentication
    - All tests must pass before proceeding
 2. **Version Bump**: Update version number in `package.json`, `server.json`, and `extension/package.json`
 3. **Update Docs**: Update version numbers in ALL documentation files (`README.md`, `agent-notes.md`, etc.) - search for old version numbers in examples and update to current version
@@ -32,9 +32,9 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 
 ## Distribution
 MCP Browser is available through three channels:
-1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.18 - One-click automated configuration
-2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.18 - Use with `npx mcpbrowser@latest`
-3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.18 - Discoverable in the official registry
+1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.21 - One-click automated configuration
+2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.21 - Use with `npx mcpbrowser@latest`
+3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.21 - Discoverable in the official registry
 
 All three methods configure the same underlying MCP server.
 
@@ -72,7 +72,7 @@ All three methods configure the same underlying MCP server.
 
 ### Persistent Retry Strategy for Authenticated Web Pages
 **Priority**: High  
-**Version**: Future (post-0.2.18)
+**Version**: Future (post-0.2.21)
 
 **Current Behavior**:
 - Tool description suggests "retry 2-3 times with delays"
