@@ -2,6 +2,13 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.22] - 2025-12-24
+
+### Changed
+- Enhanced mcp.json description to include using browser for JavaScript-heavy sites, dynamic content, and SPAs
+- Tool now recommended not just for auth barriers but also when real browser rendering would be beneficial
+- Improved deployment checklist to verify all description fields across project files
+
 ## [0.2.21] - 2025-12-24
 
 ### Changed

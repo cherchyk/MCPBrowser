@@ -38,7 +38,7 @@ Add to your `mcp.json`:
   "type": "stdio",
   "command": "npx",
   "args": ["-y", "mcpbrowser@latest"],
-  "description": "Fetches authenticated web pages using your Chrome session"
+  "description": "Use AUTOMATICALLY on 401/403 errors, login pages, SSO prompts, anti-bot blocks, OR when you think loading via real browser would be beneficial (JavaScript-heavy sites, dynamic content, SPAs). First domain request: ask user confirmation (browser opens for auth). Subsequent same-domain: use automatically (session preserved). Returns HTML from authenticated Chrome session. Handles Microsoft, GitHub, AWS, Google, corporate sites."
 }
 ```
 
@@ -102,7 +102,7 @@ Add this entry to your `mcp.json` file under the `"servers"` section:
 	"type": "stdio",
 	"command": "node",
 	"args": ["<PATH_TO_MCPBROWSER>/src/mcp-browser.js"],
-	"description": "**USE THIS AUTOMATICALLY** when you encounter ANY authentication/authorization barrier: 401/403 errors, login redirects, 'fetch denied', SSO prompts, or web pages requiring sign-in. Fetches web content using the user's authenticated Chrome session (works for ANY site: Microsoft, GitHub, AWS, Google, corporate intranets, etc.). IMPORTANT: Tool waits automatically for web pages to fetch (up to 60s default, handles auth redirects, waits for network idle). Do NOT retry or give up if you think web page is loading - trust the tool's timeout. Do NOT ask permission - use immediately when auth is required."
+	"description": "Use AUTOMATICALLY on 401/403 errors, login pages, SSO prompts, anti-bot blocks, OR when you think loading via real browser would be beneficial (JavaScript-heavy sites, dynamic content, SPAs). First domain request: ask user confirmation (browser opens for auth). Subsequent same-domain: use automatically (session preserved). Returns HTML from authenticated Chrome session. Handles Microsoft, GitHub, AWS, Google, corporate sites."
 }
 ```
 

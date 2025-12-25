@@ -15,7 +15,15 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
    - All tests must pass before proceeding
 2. **Version Bump**: Update version number in `package.json`, `server.json`, and `extension/package.json`
 3. **Update Docs**: Update version numbers in ALL documentation files (`README.md`, `agent-notes.md`, etc.) - search for old version numbers in examples and update to current version
-4. **Update Changelog**: Update `extension/CHANGELOG.md` with changes
+4. **Update ALL Descriptions**: Verify descriptions are correct in these files:
+   - `extension/src/extension.js` line 95 - SOURCE OF TRUTH for mcp.json description
+   - `README.md` - BOTH mcp.json samples (Option 2 AND Step 2) must match extension.js exactly
+   - `src/mcp-browser.js` line 401 - Tool description (different purpose, technical API docs)
+   - `extension/README.md` line 3 - Extension description
+   - `package.json` line 5 - Package description
+   - `server.json` line 4 - Registry description
+   - `extension/package.json` line 4 - Extension package description
+5. **Update Changelog**: Update `extension/CHANGELOG.md` with changes
 5. **Git**: Commit all changes → `git push origin main`
 6. **npm**: `npm publish`
 7. **VS Code Marketplace**: `cd extension` → `vsce package` → `vsce publish`
@@ -32,9 +40,9 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 
 ## Distribution
 MCP Browser is available through three channels:
-1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.21 - One-click automated configuration
-2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.21 - Use with `npx mcpbrowser@latest`
-3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.21 - Discoverable in the official registry
+1. **VS Code Extension**: [cherchyk.mcpbrowser](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) v0.2.22 - One-click automated configuration
+2. **npm**: [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.22 - Use with `npx mcpbrowser@latest`
+3. **MCP Registry**: [io.github.cherchyk/browser](https://registry.modelcontextprotocol.io/) v0.2.22 - Discoverable in the official registry
 
 All three methods configure the same underlying MCP server.
 
@@ -72,7 +80,7 @@ All three methods configure the same underlying MCP server.
 
 ### Persistent Retry Strategy for Authenticated Web Pages
 **Priority**: High  
-**Version**: Future (post-0.2.21)
+**Version**: Future (post-0.2.22)
 
 **Current Behavior**:
 - Tool description suggests "retry 2-3 times with delays"

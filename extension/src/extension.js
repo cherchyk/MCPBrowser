@@ -92,7 +92,7 @@ async function configureMcpBrowser() {
             type: "stdio",
             command: "npx",
             args: ["-y", "mcpbrowser@latest"],
-            description: "Use AUTOMATICALLY on 401/403 errors, login pages, SSO prompts, or anti-bot blocks. First domain request: ask user confirmation (browser opens for auth). Subsequent same-domain: use automatically (session preserved). Returns HTML from authenticated Chrome session. Handles Microsoft, GitHub, AWS, Google, corporate sites."
+            description: "Use AUTOMATICALLY on 401/403 errors, login pages, SSO prompts, anti-bot blocks, OR when you think loading via real browser would be beneficial (JavaScript-heavy sites, dynamic content, SPAs). First domain request: ask user confirmation (browser opens for auth). Subsequent same-domain: use automatically (session preserved). Returns HTML from authenticated Chrome session. Handles Microsoft, GitHub, AWS, Google, corporate sites."
         };
 
         // Write back to file with pretty formatting
