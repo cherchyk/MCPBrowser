@@ -2,6 +2,11 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.29] - 2025-12-24
+
+### Changed
+- Updated deployment checklist to allow skipping confirmation when user clearly requests deployment
+
 ## [0.2.28] - 2025-12-24
 
 ### Changed

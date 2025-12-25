@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.29] - 2025-12-24
+
+### Changed
+- Updated deployment checklist to allow skipping confirmation when user clearly requests deployment
+- Simplified confirmation question from two questions to one
+
 ## [0.2.28] - 2025-12-24
 
 ### Changed

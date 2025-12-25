@@ -34,20 +34,19 @@
 # ⚠️ CRITICAL: READ THIS FIRST BEFORE ANY DEPLOYMENT ⚠️
 
 ## 🛑 DEPLOYMENT RULE #1 - NEVER SKIP THIS STEP
-**ALWAYS ASK FIRST**: "Ready to deploy? Any other changes needed?"
+**ALWAYS ASK FIRST**: "Ready to deploy?"
 - Ask this question FIRST, before checking branches, running tests, or making ANY changes
 - Wait for explicit "yes" or "proceed" confirmation from user
-- If user says anything other than clear confirmation, STOP and discuss
-- **NO EXCEPTIONS**: Even if user says "deploy now" or "publish this", ALWAYS ask for final confirmation
-- This gives user a chance to mention pending changes or reconsider
+- **EXCEPTION**: Skip asking if user CLEARLY requested deployment in their message (e.g., "deploy version 0.2.29", "publish now", "deploy again as X")
+- If user just made changes or deployment intent is unclear, ALWAYS ask
 
 ## Deployment Checklist (CRITICAL - DO ALWAYS)
 When deploying follow these steps IN ORDER, NO SKIPPING:
 
 **DEPLOYMENT STEPS:**
-- [ ] **Step 1: ASK USER** → "Ready to deploy? Any other changes needed?" → **WAIT FOR YES**
-  - **NO EXCEPTIONS**: Always ask, even if user already said "deploy"
-  - User may have additional changes planned or want to reconsider
+- [ ] **Step 1: ASK USER** → "Ready to deploy?" → **WAIT FOR YES**
+  - **EXCEPTION**: Skip asking if user CLEARLY requested deployment (e.g., "deploy version X", "publish now", "deploy again")
+  - If user just made changes or context is unclear, ALWAYS ask for confirmation
 
 - [ ] **Step 2: Verify Branch**:
    - **CRITICAL**: Deployment MUST be done from the `main` branch ONLY
