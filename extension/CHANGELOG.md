@@ -2,6 +2,13 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.23] - 2025-12-24
+
+### Changed
+- Improved deployment checklist to identify two sources of truth for descriptions
+- Enhanced documentation to distinguish between MCP Server Purpose (extension.js) and Fetch Tool API (mcp-browser.js)
+- Updated test execution instructions to always run from project root directory
+
 ## [0.2.22] - 2025-12-24
 
 ### Changed
