@@ -2,6 +2,19 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.32] - 2025-12-25
+
+### Changed
+- Removed dotenv dependency - no longer needed as environment variables work without it
+- Removed unused .env.example file and related documentation
+- Cleaned up unused test-mcp.js file from root directory
+
+### Fixed
+- Fixed macOS compatibility: improved module detection to work cross-platform using fileURLToPath
+- Added Edge x86 support for Windows (C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe)
+- Added Linux Edge support (/usr/bin/microsoft-edge, /opt/microsoft/msedge/msedge)
+- Fixed version number inconsistencies across all configuration files
+
 ## [0.2.31] - 2025-12-25
 
 ### Changed

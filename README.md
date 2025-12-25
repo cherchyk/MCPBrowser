@@ -20,7 +20,7 @@ Or search "MCPBrowser" in VS Code Extensions view.
 **From GitHub Release:**
 Download from [GitHub Releases](https://github.com/cherchyk/MCPBrowser/releases):
 ```bash
-code --install-extension mcpbrowser-0.2.24.vsix
+code --install-extension mcpbrowser-0.2.32.vsix
 ```
 
 The extension automatically:
@@ -31,7 +31,7 @@ The extension automatically:
 📦 [View on Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 
 ### Option 2: npm Package (Recommended for Manual Setup)
-Published on npm as [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.24.
+Published on npm as [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.2.32.
 
 Add to your `mcp.json`:
 ```jsonc
@@ -48,7 +48,7 @@ Add to your `mcp.json`:
 - Mac/Linux: `~/.config/Code/User/mcp.json`
 
 ### Option 3: MCP Registry
-Available in the [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.cherchyk/browser` v0.2.24.
+Available in the [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.cherchyk/browser` v0.2.32.
 
 Search for "browser" in the registry to find configuration instructions.
 
@@ -77,7 +77,6 @@ Restart Claude Desktop after configuration.
 git clone https://github.com/cherchyk/MCPBrowser.git
 cd MCPBrowser
 npm install
-copy .env.example .env  # optional: set Chrome overrides
 ```
 
 ## Prereqs
@@ -149,8 +148,15 @@ In Claude Code or Copilot Chat, you should see the `MCPBrowser` server listed. A
 - Optional fields (`authWaitSelector`, `waitForSelector`, `waitForUrlPattern`, etc.) are available but not required.
 
 ## Configuration
-- `.env`: optional overrides for `CHROME_WS_ENDPOINT`, `CHROME_REMOTE_DEBUG_HOST/PORT`, `CHROME_PATH`, `CHROME_USER_DATA_DIR`.
-- To use a specific WS endpoint: set `CHROME_WS_ENDPOINT` from Chrome `chrome://version` DevTools JSON.
+Optional environment variables for advanced configuration:
+- `CHROME_PATH`: Custom path to Chrome/Edge executable
+- `CHROME_USER_DATA_DIR`: Custom browser profile directory
+- `CHROME_REMOTE_DEBUG_HOST`: DevTools host (default: `127.0.0.1`)
+- `CHROME_REMOTE_DEBUG_PORT`: DevTools port (default: `9222`)
+- `CHROME_WS_ENDPOINT`: Explicit WebSocket endpoint URL
+- `DEFAULT_FETCH_URL` or `MCP_DEFAULT_FETCH_URL`: Default URL when called without params
+
+Set these in your shell or system environment before running the MCP server.
 
 ## Tips
 - **Universal auth**: Works with ANY authenticated site - corporate intranets, SSO, OAuth, SAML, login pages, CAPTCHA, human verification, etc.

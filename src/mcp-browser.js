@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import dotenv from "dotenv";
 import puppeteer from "puppeteer-core";
 import { existsSync } from "fs";
 import os from "os";
@@ -8,8 +7,6 @@ import { spawn } from "child_process";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-
-dotenv.config();
 
 const chromeHost = process.env.CHROME_REMOTE_DEBUG_HOST || "127.0.0.1";
 const chromePort = Number(process.env.CHROME_REMOTE_DEBUG_PORT || 9222);
@@ -49,6 +46,7 @@ function getDefaultChromePaths() {
       "C:/Program Files/Google/Chrome/Application/chrome.exe",
       "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
       "C:/Program Files/Microsoft/Edge/Application/msedge.exe",
+      "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
     ];
   } else if (platform === "darwin") {
     return [
@@ -61,6 +59,8 @@ function getDefaultChromePaths() {
       "/usr/bin/google-chrome",
       "/usr/bin/chromium-browser",
       "/usr/bin/chromium",
+      "/usr/bin/microsoft-edge",
+      "/opt/microsoft/msedge/msedge",
     ];
   }
 }
@@ -884,7 +884,9 @@ export {
 };
 
 // Run the MCP server only if this is the main module (not imported for testing)
-if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
+import { fileURLToPath } from 'url';
+if (import.meta.url === new URL(process.argv[1], 'file://').href || 
+    fileURLToPath(import.meta.url) === process.argv[1]) {
   main().catch((err) => {
     console.error(err);
     process.exit(1);
