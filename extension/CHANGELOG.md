@@ -2,6 +2,12 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.24] - 2025-12-24
+
+### Changed
+- Enhanced deployment checklist with branch verification requirement (must deploy from `main` only)
+- Updated changelog rules to include only changes present in the `main` branch
+
 ## [0.2.23] - 2025-12-24
 
 ### Changed

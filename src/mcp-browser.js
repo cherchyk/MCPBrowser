@@ -393,12 +393,12 @@ function prepareHtml(html, baseUrl) {
 }
 
 async function main() {
-  const server = new Server({ name: "MCPBrowser", version: "0.2.23" }, { capabilities: { tools: {} } });
+  const server = new Server({ name: "MCPBrowser", version: "0.2.24" }, { capabilities: { tools: {} } });
 
   const tools = [
     {
       name: "fetch_webpage_protected",
-      description: "Fetches protected web pages using Chrome browser with user's authenticated session (saved passwords, active logins, cookies). Use for: login-required pages, SSO/OAuth, paywalled sites, 401/403 errors, anti-crawler blocks.\n\nAUTH FLOW: If page redirects to login, function WAITS (up to 10 min) for user to authenticate in browser, then automatically returns actual content once auth completes. Single call returns correct content, no retry needed.\n\nRULES: (1) ONE URL at a time, never parallel. (2) Wait for full response - may take minutes for auth. (3) Skip only if 404. (4) Returns HTML with clickable links for subpage navigation.",
+      description: "Fetches web pages by loading them in Chrome/Edge browser. Use for: (1) auth-required pages (401/403, login, SSO, corporate intranets), (2) anti-bot/crawler blocks, CAPTCHA/human verification, (3) JavaScript-heavy sites (SPAs, dynamic content).\n\nAUTH FLOW: If page requires authentication, browser opens and WAITS (up to 10 min) for user to log in, then automatically returns content once loaded. Single call returns correct content, no retry needed.\n\nRULES: (1) ONE URL at a time, never parallel. (2) Wait for full response - may take minutes for auth. (3) Skip only if 404. (4) Returns HTML with clickable links for subpage navigation.",
       inputSchema: {
         type: "object",
         properties: {

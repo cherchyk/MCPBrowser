@@ -38,7 +38,7 @@ Add to your `mcp.json`:
   "type": "stdio",
   "command": "npx",
   "args": ["-y", "mcpbrowser@latest"],
-  "description": "Use AUTOMATICALLY on 401/403 errors, login pages, SSO prompts, anti-bot blocks, OR when you think loading via real browser would be beneficial (JavaScript-heavy sites, dynamic content, SPAs). First domain request: ask user confirmation (browser opens for auth). Subsequent same-domain: use automatically (session preserved). Returns HTML from authenticated Chrome session. Handles Microsoft, GitHub, AWS, Google, corporate sites."
+  "description": "In-browser web page fetching. Used for: (1) auth-required pages (401/403, login, SSO, corporate intranets), (2) anti-bot/crawler blocks, CAPTCHA/human verification, (3) JavaScript-heavy sites (SPAs, dynamic content). Browser opens to load the page, user may be asked to authenticate or to prove it's not a robot."
 }
 ```
 
@@ -102,7 +102,7 @@ Add this entry to your `mcp.json` file under the `"servers"` section:
 	"type": "stdio",
 	"command": "node",
 	"args": ["<PATH_TO_MCPBROWSER>/src/mcp-browser.js"],
-	"description": "Use AUTOMATICALLY on 401/403 errors, login pages, SSO prompts, anti-bot blocks, OR when you think loading via real browser would be beneficial (JavaScript-heavy sites, dynamic content, SPAs). First domain request: ask user confirmation (browser opens for auth). Subsequent same-domain: use automatically (session preserved). Returns HTML from authenticated Chrome session. Handles Microsoft, GitHub, AWS, Google, corporate sites."
+	"description": "In-browser web page fetching. Used for: (1) auth-required pages (401/403, login, SSO, corporate intranets), (2) anti-bot/crawler blocks, CAPTCHA/human verification, (3) JavaScript-heavy sites (SPAs, dynamic content). Browser opens to load the page, user may be asked to authenticate or to prove it's not a robot."
 }
 ```
 

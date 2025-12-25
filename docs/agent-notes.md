@@ -9,6 +9,13 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 - **DO NOT** automatically deploy just because changes were made - user may have additional changes planned
 
 **DEPLOYMENT STEPS:**
+0. **Verify Branch**:
+   - **CRITICAL**: Deployment MUST be done from the `main` branch ONLY
+   - Check current branch: `git branch --show-current`
+   - **STOP DEPLOYMENT** if branch is not `main` - inform user and halt
+   - **Changelog Rule**: In the change notes only include changes that are present in the `main` branch
+   - If work is on feature branches, it must be merged to `main` first before deployment
+
 1. **Run Tests**: 
    - **IMPORTANT**: Always run from project root directory (where the main package.json is located)
    - **Command**: `npm test` (runs all *.test.js files in tests/ folder)
