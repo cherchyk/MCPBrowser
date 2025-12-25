@@ -39,7 +39,7 @@ Add to your `mcp.json`:
   "type": "stdio",
   "command": "npx",
   "args": ["-y", "mcpbrowser@latest"],
-  "description": "In-browser web page fetching. Used for: (1) auth-required pages (401/403, login, SSO, corporate intranets), (2) anti-bot/crawler blocks, CAPTCHA/human verification, (3) JavaScript-heavy sites (SPAs, dynamic content). Browser opens to load the page, user may be asked to authenticate or to prove it's not a robot."
+  "description": "Web page fetching via browser for sites requiring authentication, anti-bot protection, or JavaScript rendering. Use when standard HTTP requests fail for: (1) auth-required pages (401/403, SSO, corporate intranets), (2) anti-bot verification (CAPTCHA, Cloudflare), (3) JavaScript-heavy sites (SPAs, dynamic content). Opens a browser where the user can authenticate, then automatically extracts content."
 }
 ```
 
@@ -118,7 +118,7 @@ Add this entry to your `mcp.json` file under the `"servers"` section:
 	"type": "stdio",
 	"command": "node",
 	"args": ["<PATH_TO_MCPBROWSER>/src/mcp-browser.js"],
-	"description": "In-browser web page fetching. Used for: (1) auth-required pages (401/403, login, SSO, corporate intranets), (2) anti-bot/crawler blocks, CAPTCHA/human verification, (3) JavaScript-heavy sites (SPAs, dynamic content). Browser opens to load the page, user may be asked to authenticate or to prove it's not a robot."
+	"description": "Web page fetching via browser for sites requiring authentication, anti-bot protection, or JavaScript rendering. Use when standard HTTP requests fail for: (1) auth-required pages (401/403, SSO, corporate intranets), (2) anti-bot verification (CAPTCHA, Cloudflare), (3) JavaScript-heavy sites (SPAs, dynamic content). Opens a browser where the user can authenticate, then automatically extracts content."
 }
 ```
 

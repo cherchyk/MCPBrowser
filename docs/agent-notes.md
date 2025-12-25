@@ -33,9 +33,16 @@
 
 # ⚠️ CRITICAL: READ THIS FIRST BEFORE ANY DEPLOYMENT ⚠️
 
-## 🛑 DEPLOYMENT RULE #1 - NEVER SKIP THIS STEP
+## 🛑 DEPLOYMENT RULE #1 - USE THE TODO LIST TOOL
+**MANDATORY**: When user requests deployment, IMMEDIATELY use `manage_todo_list` tool to create a checklist with ALL deployment steps listed below.
+- Create todo list FIRST, before doing ANYTHING else
+- Mark each step in-progress as you work on it
+- Mark each step completed immediately after finishing
+- This ensures no steps are skipped
+
+## 🛑 DEPLOYMENT RULE #2 - NEVER SKIP THE ASK STEP
 **ALWAYS ASK FIRST**: "Ready to deploy?"
-- Ask this question FIRST, before checking branches, running tests, or making ANY changes
+- Ask this question FIRST (after creating todo list), before checking branches, running tests, or making ANY changes
 - Wait for explicit "yes" or "proceed" confirmation from user
 - **EXCEPTION**: Skip asking if user CLEARLY requested deployment in their message (e.g., "deploy version 0.2.29", "publish now", "deploy again as X")
 - If user just made changes or deployment intent is unclear, ALWAYS ask
@@ -44,6 +51,10 @@
 When deploying follow these steps IN ORDER, NO SKIPPING:
 
 **DEPLOYMENT STEPS:**
+- [ ] **Step 0: CREATE TODO LIST** → Use `manage_todo_list` tool to create checklist with ALL steps below
+  - This is MANDATORY to prevent skipping steps
+  - Create list FIRST before doing anything else
+
 - [ ] **Step 1: ASK USER** → "Ready to deploy?" → **WAIT FOR YES**
   - **EXCEPTION**: Skip asking if user CLEARLY requested deployment (e.g., "deploy version X", "publish now", "deploy again")
   - If user just made changes or context is unclear, ALWAYS ask for confirmation

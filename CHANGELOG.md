@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.31] - 2025-12-25
+
+### Changed
+- Aligned integration test file structure with other test files (auth-flow.test.js style)
+- Refactored integration tests to use top-level await pattern instead of wrapper function
+- Improved test consistency across all test files
+- Updated agent-notes.md deployment checklist with mandatory todo list tool usage
+
 ## [0.2.30] - 2025-12-25
 
 ### Added

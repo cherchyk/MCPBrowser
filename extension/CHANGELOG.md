@@ -2,6 +2,37 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.31] - 2025-12-25
+
+### Changed
+- Aligned integration test file structure with other test files (auth-flow.test.js style)
+- Refactored integration tests to use top-level await pattern instead of wrapper function
+- Improved test consistency across all test files
+
+## [0.2.30] - 2025-12-25
+
+### Added
+- Comprehensive redirect and authentication flow handling
+- Cross-domain SSO support (Google, Microsoft, Okta patterns)
+- Same-domain authentication path detection
+- Auto-authentication detection with 5-second timeout
+- Manual authentication with subdomain landing support
+- JavaScript redirect detection
+- False positive prevention for auth-like URLs
+
+### Changed
+- Major refactoring: extracted 8 testable functions from fetchPage
+- Reduced main fetchPage orchestration from ~250 lines to ~80 lines
+
+### Added
+- Comprehensive test suite (106 tests total, all passing)
+- redirect-detection.test.js: 43 tests
+- auth-flow.test.js: 14 tests with MockPage
+
+### Fixed
+- gmail.com permanent redirect handling (no longer treated as auth flow)
+- Module imports no longer trigger MCP server auto-start
+
 ## [0.2.29] - 2025-12-24
 
 ### Changed
