@@ -2,6 +2,13 @@
 
 All notable changes to the "mcpbrowser" extension will be documented in this file.
 
+## [0.2.27] - 2025-12-24
+
+### Changed
+- Updated extension icon with modern MCP Browser branding design
+- New icon features bold "MCP" typography and "BROWSER" subtitle for better brand recognition
+- Improved visual design with indigo gradient and white card layout
+
 ## [0.2.25] - 2025-12-24
 
 ### Changed

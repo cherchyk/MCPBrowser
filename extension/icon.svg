@@ -1,35 +1,56 @@
 <svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background circle -->
-  <circle cx="64" cy="64" r="60" fill="#0078D4"/>
+  <!-- Modern gradient with MCP typography focus -->
+  <defs>
+    <linearGradient id="bg6" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6366F1;stop-opacity:1" />
+    </linearGradient>
+  </defs>
   
-  <!-- Browser window outline -->
-  <rect x="24" y="28" width="80" height="56" rx="4" fill="white"/>
-  <rect x="28" y="32" width="72" height="48" rx="2" fill="#E8F4FD"/>
+  <!-- Gradient background -->
+  <rect width="128" height="128" rx="24" fill="url(#bg6)"/>
   
-  <!-- Browser chrome bar -->
-  <rect x="28" y="32" width="72" height="8" fill="#0078D4"/>
+  <!-- Large white rounded square -->
+  <rect x="16" y="16" width="96" height="96" rx="16" fill="white" opacity="0.98"/>
   
-  <!-- Browser dots (window controls) -->
-  <circle cx="33" cy="36" r="1.5" fill="white"/>
-  <circle cx="38" cy="36" r="1.5" fill="white"/>
-  <circle cx="43" cy="36" r="1.5" fill="white"/>
+  <!-- Top section with browser chrome -->
+  <rect x="24" y="24" width="80" height="14" rx="7" fill="#F8FAFC"/>
   
-  <!-- Lock/Shield icon (authentication symbol) -->
-  <g transform="translate(48, 48)">
-    <!-- Shield -->
-    <path d="M 16 4 L 16 14 C 16 18 12 22 8 24 C 4 22 0 18 0 14 L 0 4 L 8 0 Z" 
-          fill="#10B981" stroke="none"/>
-    <!-- Checkmark inside shield -->
-    <path d="M 5 12 L 7 14 L 12 8" 
+  <!-- Browser dots -->
+  <circle cx="32" cy="31" r="2" fill="#E5E7EB"/>
+  <circle cx="40" cy="31" r="2" fill="#E5E7EB"/>
+  <circle cx="48" cy="31" r="2" fill="#E5E7EB"/>
+  
+  <!-- Lock with shield -->
+  <g transform="translate(72, 26)">
+    <circle cx="5" cy="5" r="5" fill="#10B981"/>
+    <path d="M 3.5 5 L 3.5 3.8 C 3.5 3 4 2.5 5 2.5 C 6 2.5 6.5 3 6.5 3.8 L 6.5 5" 
+          stroke="white" stroke-width="0.8" fill="none"/>
+    <rect x="3" y="5" width="4" height="4" rx="0.5" fill="white"/>
+  </g>
+  
+  <!-- Large MCP text - main focus -->
+  <text x="64" y="68" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#4F46E5" text-anchor="middle">MCP</text>
+  
+  <!-- Subtitle -->
+  <text x="64" y="82" font-family="Arial, sans-serif" font-size="9" fill="#475569" text-anchor="middle">BROWSER</text>
+  
+  <!-- Bottom decorative line -->
+  <rect x="36" y="92" width="56" height="2" rx="1" fill="#E0E7FF"/>
+  
+  <!-- Connection dots -->
+  <circle cx="44" cy="100" r="2.5" fill="#10B981"/>
+  <circle cx="52" cy="100" r="2.5" fill="#10B981" opacity="0.6"/>
+  <circle cx="60" cy="100" r="2.5" fill="#10B981" opacity="0.3"/>
+  
+  <!-- Security badge -->
+  <g transform="translate(66, 96)">
+    <circle cx="6" cy="4" r="6" fill="#10B981"/>
+    <path d="M 4 4 L 5.5 5.5 L 8.5 2.5" 
           stroke="white" 
-          stroke-width="2" 
+          stroke-width="1.2" 
           stroke-linecap="round" 
           stroke-linejoin="round" 
           fill="none"/>
   </g>
-  
-  <!-- Connection indicator (small dots) -->
-  <circle cx="90" cy="48" r="3" fill="#10B981"/>
-  <circle cx="98" cy="48" r="2" fill="#10B981" opacity="0.7"/>
-  <circle cx="104" cy="48" r="1.5" fill="#10B981" opacity="0.4"/>
 </svg>

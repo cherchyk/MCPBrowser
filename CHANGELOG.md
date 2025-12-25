@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.27] - 2025-12-24
+
+### Changed
+- Updated VS Code extension icon with modern MCP Browser branding design
+- New icon features bold "MCP" typography with "BROWSER" subtitle for better brand visibility
+
 ## [0.2.19] - 2025-01-27
 
 ### Added
