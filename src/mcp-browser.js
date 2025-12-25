@@ -526,12 +526,12 @@ function prepareHtml(html, baseUrl) {
  * @returns {Promise<void>}
  */
 async function main() {
-  const server = new Server({ name: "MCPBrowser", version: "0.2.25" }, { capabilities: { tools: {} } });
+  const server = new Server({ name: "MCPBrowser", version: "0.2.26" }, { capabilities: { tools: {} } });
 
   const tools = [
     {
       name: "fetch_webpage_protected",
-      description: "Fetches web pages by loading them in Chrome/Edge browser. Use for: (1) auth-required pages (401/403, login, SSO, corporate intranets), (2) anti-bot/crawler blocks, CAPTCHA/human verification, (3) JavaScript-heavy sites (SPAs, dynamic content).\n\nAUTH FLOW: If page requires authentication, browser opens and WAITS (up to 10 min) for user to log in, then automatically returns content once loaded. Single call returns correct content, no retry needed.\n\nRULES: (1) ONE URL at a time, never parallel. (2) Wait for full response - may take minutes for auth. (3) Skip only if 404. (4) Returns HTML with clickable links for subpage navigation.",
+      description: "Fetches web pages using Chrome/Edge browser. Handles auth-required pages, CAPTCHA, SSO, anti-bot protection, and JavaScript-heavy sites.\n\nWaits for user interaction (login, CAPTCHA) if needed, then returns content automatically.\n\nIMPORTANT: Call ONE URL at a time only. Never parallel - causes conflicts. Wait for completion before next URL.",
       inputSchema: {
         type: "object",
         properties: {
