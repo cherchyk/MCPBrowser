@@ -15,7 +15,11 @@ const chromeHost = process.env.CHROME_REMOTE_DEBUG_HOST || "127.0.0.1";
 const chromePort = Number(process.env.CHROME_REMOTE_DEBUG_PORT || 9222);
 const explicitWSEndpoint = process.env.CHROME_WS_ENDPOINT;
 
-// Use default Chrome profile if not explicitly set
+/**
+ * Get the default user data directory for Chrome debugging profile.
+ * Creates a dedicated profile directory to avoid conflicts with the user's main Chrome profile.
+ * @returns {string} The platform-specific path to the Chrome debug profile directory
+ */
 function getDefaultUserDataDir() {
   const platform = os.platform();
   const home = os.homedir();
@@ -33,6 +37,10 @@ function getDefaultUserDataDir() {
 const userDataDir = process.env.CHROME_USER_DATA_DIR || getDefaultUserDataDir();
 const chromePathEnv = process.env.CHROME_PATH;
 
+/**
+ * Get platform-specific default paths where Chrome/Edge browsers are typically installed.
+ * @returns {string[]} Array of possible browser executable paths for the current platform
+ */
 function getDefaultChromePaths() {
   const platform = os.platform();
   
@@ -63,6 +71,10 @@ let cachedBrowser = null;
 let domainPages = new Map(); // hostname -> page mapping for tab reuse across domains
 let chromeLaunchPromise = null; // prevent multiple simultaneous launches
 
+/**
+ * Check if Chrome DevTools Protocol endpoint is available and responding.
+ * @returns {Promise<boolean>} True if DevTools endpoint is accessible, false otherwise
+ */
 async function devtoolsAvailable() {
   try {
     const url = `http://${chromeHost}:${chromePort}/json/version`;
@@ -75,11 +87,22 @@ async function devtoolsAvailable() {
   }
 }
 
+/**
+ * Find the Chrome/Edge executable path, checking environment variable first, then default locations.
+ * @returns {string|undefined} Path to the browser executable, or undefined if not found
+ */
 function findChromePath() {
   if (chromePathEnv && existsSync(chromePathEnv)) return chromePathEnv;
   return defaultChromePaths.find((p) => existsSync(p));
 }
 
+/**
+ * Launch Chrome with remote debugging enabled if not already running.
+ * Uses a singleton pattern to prevent multiple simultaneous launches.
+ * Waits up to 20 seconds for Chrome to become available on the DevTools port.
+ * @returns {Promise<void>}
+ * @throws {Error} If Chrome cannot be found or fails to start within timeout
+ */
 async function launchChromeIfNeeded() {
   if (explicitWSEndpoint) return; // user provided explicit endpoint; assume managed externally
   
@@ -128,6 +151,12 @@ async function launchChromeIfNeeded() {
   return await chromeLaunchPromise;
 }
 
+/**
+ * Resolve the WebSocket endpoint URL for connecting to Chrome DevTools Protocol.
+ * Either returns the explicitly configured endpoint or queries it from the DevTools JSON API.
+ * @returns {Promise<string>} The WebSocket URL for connecting to Chrome
+ * @throws {Error} If unable to reach DevTools or no WebSocket URL is available
+ */
 async function resolveWSEndpoint() {
   if (explicitWSEndpoint) return explicitWSEndpoint;
   const url = `http://${chromeHost}:${chromePort}/json/version`;
@@ -142,6 +171,55 @@ async function resolveWSEndpoint() {
   return data.webSocketDebuggerUrl;
 }
 
+/**
+ * Rebuild the domain-to-page mapping from existing browser tabs.
+ * This enables tab reuse across reconnections by discovering tabs that are already open.
+ * Skips internal pages like about:blank and chrome:// URLs.
+ * @param {Browser} browser - The Puppeteer browser instance
+ * @returns {Promise<void>}
+ */
+async function rebuildDomainPagesMap(browser) {
+  try {
+    const pages = await browser.pages();
+    console.error(`[MCPBrowser] Reconnected to browser with ${pages.length} existing tabs`);
+    
+    for (const page of pages) {
+      try {
+        const pageUrl = page.url();
+        // Skip chrome:// pages, about:blank, and other internal pages
+        if (!pageUrl || 
+            pageUrl === 'about:blank' || 
+            pageUrl.startsWith('chrome://') || 
+            pageUrl.startsWith('chrome-extension://') ||
+            pageUrl.startsWith('devtools://')) {
+          continue;
+        }
+        
+        const hostname = new URL(pageUrl).hostname;
+        if (hostname && !domainPages.has(hostname)) {
+          domainPages.set(hostname, page);
+          console.error(`[MCPBrowser] Mapped existing tab for domain: ${hostname} (${pageUrl})`);
+        }
+      } catch (err) {
+        // Skip pages that are inaccessible or have invalid URLs
+        continue;
+      }
+    }
+    
+    if (domainPages.size > 0) {
+      console.error(`[MCPBrowser] Restored ${domainPages.size} domain-to-tab mappings`);
+    }
+  } catch (err) {
+    console.error(`[MCPBrowser] Warning: Could not rebuild domain pages map: ${err.message}`);
+  }
+}
+
+/**
+ * Get or create a connection to the Chrome browser.
+ * Returns cached browser if still connected, otherwise establishes a new connection.
+ * Rebuilds domain-to-page mapping on reconnection to enable tab reuse.
+ * @returns {Promise<Browser>} Connected Puppeteer browser instance
+ */
 async function getBrowser() {
   await launchChromeIfNeeded();
   if (cachedBrowser && cachedBrowser.isConnected()) return cachedBrowser;
@@ -154,9 +232,23 @@ async function getBrowser() {
     cachedBrowser = null;
     domainPages.clear(); // Clear all domain page mappings
   });
+  
+  // Rebuild domainPages map from existing tabs to enable reuse across reconnections
+  await rebuildDomainPagesMap(cachedBrowser);
+  
   return cachedBrowser;
 }
 
+/**
+ * Fetch a web page using Chrome browser, with support for authentication flows and tab reuse.
+ * Reuses existing tabs per domain when possible. Handles authentication redirects by waiting
+ * for user to complete login (up to 10 minutes). Processes HTML to remove unnecessary elements
+ * and convert relative URLs to absolute.
+ * @param {Object} params - Fetch parameters
+ * @param {string} params.url - The URL to fetch
+ * @param {boolean} [params.removeUnnecessaryHTML=true] - Whether to clean HTML (removes scripts, styles, etc.)
+ * @returns {Promise<Object>} Result object with success status, URL, HTML content, or error details
+ */
 async function fetchPage({ url, removeUnnecessaryHTML = true }) {
   // Hardcoded smart defaults
   const waitUntil = "networkidle0";
@@ -306,6 +398,12 @@ async function fetchPage({ url, removeUnnecessaryHTML = true }) {
   }
 }
 
+/**
+ * Truncate a string to a maximum length, adding "... [truncated]" if truncated.
+ * @param {string} str - The string to truncate
+ * @param {number} max - Maximum length
+ * @returns {string} The original or truncated string
+ */
 function truncate(str, max) {
   if (!str) return "";
   return str.length > max ? `${str.slice(0, max)}... [truncated]` : str;
@@ -421,6 +519,12 @@ function prepareHtml(html, baseUrl) {
   return enrichHtml(cleaned, baseUrl);
 }
 
+/**
+ * Main entry point for the MCP server.
+ * Sets up the Model Context Protocol server with fetch_webpage_protected tool,
+ * configures request handlers, and starts the stdio transport.
+ * @returns {Promise<void>}
+ */
 async function main() {
   const server = new Server({ name: "MCPBrowser", version: "0.2.25" }, { capabilities: { tools: {} } });
 

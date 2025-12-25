@@ -310,6 +310,116 @@ async function runTests() {
     
     assert(domainPages.size === 1, 'Should still have only 1 domain (eng.ms) in map after all loads');
   });
+
+  await test('Should rebuild domain pages map on reconnection', async () => {
+    const domainPages = new Map();
+    const browser = new MockBrowser();
+    
+    // Simulate having tabs already open from previous session
+    const page1 = await browser.newPage();
+    await page1.goto('https://github.com/user/repo');
+    
+    const page2 = await browser.newPage();
+    await page2.goto('https://microsoft.com/docs');
+    
+    const page3 = await browser.newPage();
+    await page3.goto('https://eng.ms/docs/products');
+    
+    const page4 = await browser.newPage();
+    await page4.goto('about:blank');
+    
+    // Verify pages exist but map is empty (simulating disconnection)
+    assert(domainPages.size === 0, 'Domain pages map should be empty before rebuild');
+    
+    // Simulate rebuildDomainPagesMap function
+    const pages = await browser.pages();
+    assert(pages.length === 4, `Should have 4 tabs open, got ${pages.length}`);
+    
+    for (const page of pages) {
+      try {
+        const pageUrl = page.url();
+        // Skip internal pages
+        if (!pageUrl || 
+            pageUrl === 'about:blank' || 
+            pageUrl.startsWith('chrome://') || 
+            pageUrl.startsWith('chrome-extension://') ||
+            pageUrl.startsWith('devtools://')) {
+          continue;
+        }
+        
+        const hostname = new URL(pageUrl).hostname;
+        if (hostname && !domainPages.has(hostname)) {
+          domainPages.set(hostname, page);
+        }
+      } catch (err) {
+        // Skip pages with invalid URLs
+        continue;
+      }
+    }
+    
+    // Verify map was rebuilt correctly
+    assert(domainPages.size === 3, `Should have 3 domains in map (excluding about:blank), got ${domainPages.size}`);
+    assert(domainPages.has('github.com'), 'Should have github.com in map');
+    assert(domainPages.has('microsoft.com'), 'Should have microsoft.com in map');
+    assert(domainPages.has('eng.ms'), 'Should have eng.ms in map');
+    assert(!domainPages.has('about:blank'), 'Should not have about:blank in map');
+    
+    // Verify correct pages are mapped
+    assert(domainPages.get('github.com').url() === 'https://github.com/user/repo', 'github.com should map to correct page');
+    assert(domainPages.get('microsoft.com').url() === 'https://microsoft.com/docs', 'microsoft.com should map to correct page');
+    assert(domainPages.get('eng.ms').url() === 'https://eng.ms/docs/products', 'eng.ms should map to correct page');
+    
+    // Verify tabs can be reused after rebuild
+    const githubPage = domainPages.get('github.com');
+    assert(!githubPage.isClosed(), 'Rebuilt github.com page should still be open');
+    await githubPage.goto('https://github.com/another/repo');
+    assert(githubPage.url() === 'https://github.com/another/repo', 'Rebuilt page should be navigable');
+  });
+
+  await test('Should skip chrome:// and internal pages during rebuild', async () => {
+    const domainPages = new Map();
+    const browser = new MockBrowser();
+    
+    // Create pages with various internal URLs
+    const page1 = await browser.newPage();
+    await page1.goto('chrome://settings');
+    
+    const page2 = await browser.newPage();
+    await page2.goto('chrome-extension://abc123/popup.html');
+    
+    const page3 = await browser.newPage();
+    await page3.goto('devtools://devtools/bundled/devtools_app.html');
+    
+    const page4 = await browser.newPage();
+    await page4.goto('https://example.com/page');
+    
+    // Rebuild domain pages map
+    const pages = await browser.pages();
+    for (const page of pages) {
+      try {
+        const pageUrl = page.url();
+        if (!pageUrl || 
+            pageUrl === 'about:blank' || 
+            pageUrl.startsWith('chrome://') || 
+            pageUrl.startsWith('chrome-extension://') ||
+            pageUrl.startsWith('devtools://')) {
+          continue;
+        }
+        
+        const hostname = new URL(pageUrl).hostname;
+        if (hostname && !domainPages.has(hostname)) {
+          domainPages.set(hostname, page);
+        }
+      } catch (err) {
+        continue;
+      }
+    }
+    
+    // Only example.com should be in the map
+    assert(domainPages.size === 1, `Should only have 1 domain (example.com), got ${domainPages.size}`);
+    assert(domainPages.has('example.com'), 'Should have example.com in map');
+    assert(!domainPages.has('chrome'), 'Should not have chrome:// pages in map');
+  });
   
   // Summary
   console.log('\n' + '='.repeat(50));
