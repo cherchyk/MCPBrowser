@@ -1,29 +1,31 @@
 # MCP Browser notes
 
-## 🚨 DEPLOYMENT CHECKLIST (CRITICAL - DO ALWAYS)
+## Deployment Checklist (CRITICAL - DO ALWAYS)
 When deploying ANY update to MCP Browser, follow these steps IN ORDER:
 
-**⚠️ BEFORE STARTING DEPLOYMENT:**
-- **ASK USER**: "Ready to deploy?" - Get explicit confirmation before proceeding with deployment steps
-- **EXCEPTION**: Skip asking only if user explicitly requested deployment in their message (e.g., "deploy now", "publish this", "release version X")
-- **DO NOT** automatically deploy just because changes were made - user may have additional changes planned
-
 **DEPLOYMENT STEPS:**
-1. **Verify Branch**:
+1. **Get User Confirmation**:
+   - **ASK USER**: "Ready to deploy?" - Get explicit confirmation before proceeding with deployment steps
+   - **EXCEPTION**: Skip asking only if user explicitly requested deployment in their message (e.g., "deploy now", "publish this", "release version X")
+   - **DO NOT** automatically deploy just because changes were made - user may have additional changes planned
+
+2. **Verify Branch**:
    - **CRITICAL**: Deployment MUST be done from the `main` branch ONLY
    - Check current branch: `git branch --show-current`
    - **STOP DEPLOYMENT** if branch is not `main` - inform user and halt
    - **Changelog Rule**: In the change notes only include changes that are present in the `main` branch
    - If work is on feature branches, it must be merged to `main` first before deployment
 
-2. **Run Tests**: 
+3. **Run Tests**: 
    - **IMPORTANT**: Always run from project root directory (where the main package.json is located)
    - **Command**: `npm test` (runs all *.test.js files in tests/ folder)
    - **STOP DEPLOYMENT if ANY test fails**
    - Note: Integration tests require Chrome and manual authentication
    - All tests must pass before proceeding
-3. **Version Bump**: Update version number in `package.json`, `server.json`, and `extension/package.json`
-4. **Update ALL Descriptions - Two Sources of Truth**:
+
+4. **Version Bump**: Update version number in `package.json`, `server.json`, and `extension/package.json`
+
+5. **Update ALL Descriptions - Two Sources of Truth**:
    - **SOURCE OF TRUTH #1 - MCP Server Purpose**: `extension/src/extension.js` 
      - Search for `config.servers.MCPBrowser` to find the `description` field
      - This describes WHEN and WHY to use the MCP server (for mcp.json configuration)
@@ -41,11 +43,16 @@ When deploying ANY update to MCP Browser, follow these steps IN ORDER:
      - `extension/README.md` - extension documentation opening paragraph
    
    - **Tip**: Use grep/search to find all `"description"` or `description:` fields, verify each matches appropriate source of truth
-5. **Update Docs**: Update version numbers in ALL documentation files (`README.md`, `agent-notes.md`, etc.) - search for old version numbers in examples and update to current version
-6. **Update Changelog**: Update `extension/CHANGELOG.md` with changes
-7. **Git**: Commit all changes → `git push origin main`
-8. **npm**: `npm publish`
-9. **VS Code Marketplace**: `cd extension` → `vsce package` → `vsce publish`
+
+6. **Update Docs**: Update version numbers in ALL documentation files (`README.md`, `agent-notes.md`, etc.) - search for old version numbers in examples and update to current version
+
+7. **Update Changelog**: Update `extension/CHANGELOG.md` with changes
+
+8. **Git**: Commit all changes → `git push origin main`
+
+9. **npm**: `npm publish`
+
+10. **VS Code Marketplace**: `cd extension` → `vsce package` → `vsce publish`
 
 **Critical**: ALL files must be updated and committed BEFORE publishing to npm/marketplace. Never deploy to just one platform - all three must be updated together to keep versions synchronized.
 

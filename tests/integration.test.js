@@ -130,6 +130,34 @@ async function runIntegrationTests() {
         assert(linkResult.html && linkResult.html.length > 0, `Link ${i+1} should return HTML content`);
       }
     });
+
+    await test('Should support removeUnnecessaryHTML parameter', async () => {
+      const url = 'https://eng.ms/docs/products/geneva';
+      
+      console.log(`   📄 Fetching with removeUnnecessaryHTML=true (default)`);
+      const cleanResult = await fetchPage({ url, removeUnnecessaryHTML: true });
+      
+      assert(cleanResult.success, 'Should successfully fetch with removeUnnecessaryHTML=true');
+      assert(cleanResult.html && cleanResult.html.length > 0, 'Should return cleaned HTML');
+      assert(!cleanResult.html.includes('<script'), 'Cleaned HTML should not contain script tags');
+      assert(!cleanResult.html.includes('<style'), 'Cleaned HTML should not contain style tags');
+      assert(!cleanResult.html.includes('class='), 'Cleaned HTML should not contain class attributes');
+      console.log(`   ✅ Cleaned HTML length: ${cleanResult.html.length} chars`);
+      
+      console.log(`   📄 Fetching with removeUnnecessaryHTML=false`);
+      const rawResult = await fetchPage({ url, removeUnnecessaryHTML: false });
+      
+      assert(rawResult.success, 'Should successfully fetch with removeUnnecessaryHTML=false');
+      assert(rawResult.html && rawResult.html.length > 0, 'Should return raw HTML');
+      console.log(`   ✅ Raw HTML length: ${rawResult.html.length} chars`);
+      
+      // Raw HTML should be larger than cleaned HTML
+      assert(rawResult.html.length > cleanResult.html.length, 
+        `Raw HTML (${rawResult.html.length}) should be larger than cleaned (${cleanResult.html.length})`);
+      
+      const reductionPercent = ((rawResult.html.length - cleanResult.html.length) / rawResult.html.length * 100).toFixed(1);
+      console.log(`   📊 Size reduction: ${reductionPercent}% (${rawResult.html.length} → ${cleanResult.html.length} chars)`);
+    });
     
   } catch (error) {
     console.error('\n❌ Test suite error:', error.message);

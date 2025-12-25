@@ -1,7 +1,7 @@
 import assert from 'assert';
-import { prepareHtml } from '../src/mcp-browser.js';
+import { prepareHtml, cleanHtml, enrichHtml } from '../src/mcp-browser.js';
 
-console.log('🧪 Testing prepareHtml function\n');
+console.log('🧪 Testing HTML processing functions\n');
 
 let testsPassed = 0;
 let testsFailed = 0;
@@ -298,6 +298,210 @@ test('Should handle HTML with all types of removals', () => {
   assert(result.includes('href="https://example.com/page"'), 'Should convert relative URL');
   assert(result.includes('Text content'), 'Should preserve text');
 });
+
+// ==================================================
+// cleanHtml Function Tests
+// ==================================================
+
+console.log('\n🧹 Testing cleanHtml function\n');
+
+// Test cleanHtml 1: Remove HTML comments
+test('cleanHtml: Should remove HTML comments', () => {
+  const html = '<div>Content<!-- This is a comment --></div>';
+  const result = cleanHtml(html);
+  assert(!result.includes('<!--'), 'Should not contain comment start');
+  assert(!result.includes('-->'), 'Should not contain comment end');
+  assert(result.includes('Content'), 'Should preserve content');
+});
+
+// Test cleanHtml 2: Remove script tags
+test('cleanHtml: Should remove script tags and their content', () => {
+  const html = '<div>Keep this</div><script>alert("remove");</script><div>And this</div>';
+  const result = cleanHtml(html);
+  assert(!result.includes('<script'), 'Should not contain script tag');
+  assert(!result.includes('alert'), 'Should not contain script content');
+  assert(result.includes('Keep this'), 'Should preserve content');
+});
+
+// Test cleanHtml 3: Remove style tags
+test('cleanHtml: Should remove style tags and their content', () => {
+  const html = '<div>Content</div><style>.class { color: red; }</style>';
+  const result = cleanHtml(html);
+  assert(!result.includes('<style'), 'Should not contain style tag');
+  assert(!result.includes('color: red'), 'Should not contain style content');
+  assert(result.includes('Content'), 'Should preserve content');
+});
+
+// Test cleanHtml 4: Remove meta tags
+test('cleanHtml: Should remove meta tags', () => {
+  const html = '<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head><body>Content</body>';
+  const result = cleanHtml(html);
+  assert(!result.includes('<meta'), 'Should not contain meta tags');
+  assert(result.includes('Content'), 'Should preserve content');
+});
+
+// Test cleanHtml 5: Remove inline style attributes
+test('cleanHtml: Should remove inline style attributes', () => {
+  const html = '<div style="color: red; font-size: 14px;">Content</div>';
+  const result = cleanHtml(html);
+  assert(!result.includes('style='), 'Should remove style attribute');
+  assert(result.includes('Content'), 'Should preserve content');
+});
+
+// Test cleanHtml 6: Remove class attributes
+test('cleanHtml: Should remove class attributes', () => {
+  const html = '<div class="container main-content">Text</div>';
+  const result = cleanHtml(html);
+  assert(!result.includes('class='), 'Should remove class attribute');
+  assert(result.includes('Text'), 'Should preserve content');
+});
+
+// Test cleanHtml 7: Remove id attributes
+test('cleanHtml: Should remove id attributes', () => {
+  const html = '<div id="main-section">Content</div>';
+  const result = cleanHtml(html);
+  assert(!result.includes('id='), 'Should remove id attribute');
+  assert(result.includes('Content'), 'Should preserve content');
+});
+
+// Test cleanHtml 8: Remove SVG tags
+test('cleanHtml: Should remove SVG tags and content', () => {
+  const html = '<div>Text</div><svg width="100" height="100"><circle cx="50" cy="50" r="40"/></svg>';
+  const result = cleanHtml(html);
+  assert(!result.includes('<svg'), 'Should remove svg tag');
+  assert(!result.includes('circle'), 'Should remove svg content');
+  assert(result.includes('Text'), 'Should preserve content');
+});
+
+// Test cleanHtml 9: Collapse whitespace
+test('cleanHtml: Should collapse multiple whitespace into single space', () => {
+  const html = '<div>Line 1\n\n\n   Line 2\t\t\tLine 3</div>';
+  const result = cleanHtml(html);
+  assert(!result.includes('\n\n'), 'Should remove multiple newlines');
+  assert(!result.includes('   '), 'Should remove multiple spaces');
+  assert(result.includes('Line 1'), 'Should preserve content');
+});
+
+// Test cleanHtml 10: Does NOT modify URLs (that's enrichHtml's job)
+test('cleanHtml: Should NOT modify relative URLs', () => {
+  const html = '<a href="/docs/page">Link</a><img src="/images/logo.png">';
+  const result = cleanHtml(html);
+  assert(result.includes('href="/docs/page"'), 'Should keep relative href unchanged');
+  assert(result.includes('src="/images/logo.png"'), 'Should keep relative src unchanged');
+});
+
+// ==================================================
+// enrichHtml Function Tests
+// ==================================================
+
+console.log('\n🔗 Testing enrichHtml function\n');
+
+// Test enrichHtml 1: Convert relative href URLs
+test('enrichHtml: Should convert relative href URLs to absolute', () => {
+  const html = '<a href="/docs/page">Link</a>';
+  const result = enrichHtml(html, 'https://example.com');
+  assert(result.includes('href="https://example.com/docs/page"'), 'Should convert relative href to absolute');
+});
+
+// Test enrichHtml 2: Keep absolute href URLs unchanged
+test('enrichHtml: Should keep absolute href URLs unchanged', () => {
+  const html = '<a href="https://other.com/page">Link</a>';
+  const result = enrichHtml(html, 'https://example.com');
+  assert(result.includes('href="https://other.com/page"'), 'Should keep absolute href unchanged');
+});
+
+// Test enrichHtml 3: Convert relative src URLs
+test('enrichHtml: Should convert relative src URLs to absolute', () => {
+  const html = '<img src="/images/logo.png">';
+  const result = enrichHtml(html, 'https://example.com');
+  assert(result.includes('src="https://example.com/images/logo.png"'), 'Should convert relative src to absolute');
+});
+
+// Test enrichHtml 4: Keep absolute src URLs unchanged
+test('enrichHtml: Should keep absolute src URLs unchanged', () => {
+  const html = '<img src="https://cdn.example.com/logo.png">';
+  const result = enrichHtml(html, 'https://example.com');
+  assert(result.includes('src="https://cdn.example.com/logo.png"'), 'Should keep absolute src unchanged');
+});
+
+// Test enrichHtml 5: Handle anchor links
+test('enrichHtml: Should not modify anchor links', () => {
+  const html = '<a href="#section">Jump</a>';
+  const result = enrichHtml(html, 'https://example.com');
+  assert(result.includes('href="#section"'), 'Should keep anchor links unchanged');
+});
+
+// Test enrichHtml 6: Handle mailto and tel links
+test('enrichHtml: Should not modify mailto and tel links', () => {
+  const html = '<a href="mailto:test@example.com">Email</a><a href="tel:+1234567890">Call</a>';
+  const result = enrichHtml(html, 'https://example.com');
+  assert(result.includes('href="mailto:test@example.com"'), 'Should keep mailto unchanged');
+  assert(result.includes('href="tel:+1234567890"'), 'Should keep tel unchanged');
+});
+
+// Test enrichHtml 7: Handle data URIs
+test('enrichHtml: Should not modify data URIs', () => {
+  const html = '<img src="data:image/png;base64,iVBORw0KGg==">';
+  const result = enrichHtml(html, 'https://example.com');
+  assert(result.includes('src="data:image/png;base64,iVBORw0KGg=="'), 'Should keep data URI unchanged');
+});
+
+// Test enrichHtml 8: Handle protocol-relative URLs
+test('enrichHtml: Should not modify protocol-relative URLs', () => {
+  const html = '<img src="//cdn.example.com/image.png">';
+  const result = enrichHtml(html, 'https://example.com');
+  assert(result.includes('src="//cdn.example.com/image.png"'), 'Should keep protocol-relative URL unchanged');
+});
+
+// Test enrichHtml 9: Does NOT remove elements (that's cleanHtml's job)
+test('enrichHtml: Should NOT remove script or style tags', () => {
+  const html = '<script>console.log("test");</script><style>.test{}</style>';
+  const result = enrichHtml(html, 'https://example.com');
+  assert(result.includes('<script'), 'Should keep script tag');
+  assert(result.includes('<style'), 'Should keep style tag');
+});
+
+// ==================================================
+// Combined cleanHtml + enrichHtml Tests
+// ==================================================
+
+console.log('\n🔄 Testing cleanHtml + enrichHtml combination\n');
+
+// Test Combined 1: Clean then enrich
+test('Combined: Should clean HTML then enrich URLs', () => {
+  const html = '<div class="test" style="color:red"><a href="/page">Link</a><script>alert();</script></div>';
+  const cleaned = cleanHtml(html);
+  const enriched = enrichHtml(cleaned, 'https://example.com');
+  
+  // Should not have cleaned elements
+  assert(!enriched.includes('class='), 'Should not have class');
+  assert(!enriched.includes('style='), 'Should not have style');
+  assert(!enriched.includes('<script'), 'Should not have script');
+  
+  // Should have enriched URL
+  assert(enriched.includes('href="https://example.com/page"'), 'Should have absolute URL');
+  assert(enriched.includes('Link'), 'Should preserve content');
+});
+
+// Test Combined 2: Verify prepareHtml still works (backward compatibility)
+test('Combined: prepareHtml should still work as before', () => {
+  const html = '<div class="test"><a href="/page">Link</a><script>alert();</script></div>';
+  const result = prepareHtml(html, 'https://example.com');
+  
+  // Should clean
+  assert(!result.includes('class='), 'Should clean attributes');
+  assert(!result.includes('<script'), 'Should remove script');
+  
+  // Should enrich
+  assert(result.includes('href="https://example.com/page"'), 'Should convert URL');
+  assert(result.includes('Link'), 'Should preserve content');
+});
+
+// ==================================================
+// Original prepareHtml Tests (for backward compatibility)
+// ==================================================
+
+console.log('\n📦 Testing prepareHtml (backward compatibility)\n');
 
 console.log('\n==================================================');
 console.log(`✅ Tests Passed: ${testsPassed}`);

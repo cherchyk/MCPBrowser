@@ -157,7 +157,7 @@ async function getBrowser() {
   return cachedBrowser;
 }
 
-async function fetchPage({ url }) {
+async function fetchPage({ url, removeUnnecessaryHTML = true }) {
   // Hardcoded smart defaults
   const waitUntil = "networkidle0";
   const navigationTimeout = 60000; // Initial navigation timeout
@@ -280,11 +280,20 @@ async function fetchPage({ url }) {
     
     // Extract HTML content
     const html = await page.evaluate(() => document.documentElement?.outerHTML || "");
-    const preparedHtml = prepareHtml(html, page.url());
+    
+    // Process HTML based on removeUnnecessaryHTML parameter
+    let processedHtml;
+    if (removeUnnecessaryHTML) {
+      const cleaned = cleanHtml(html);
+      processedHtml = enrichHtml(cleaned, page.url());
+    } else {
+      processedHtml = enrichHtml(html, page.url());
+    }
+    
     const result = { 
       success: true, 
       url: page.url(),
-      html: preparedHtml
+      html: processedHtml
     };
     
     wasSuccess = true;
@@ -303,14 +312,13 @@ function truncate(str, max) {
 }
 
 /**
- * Prepares HTML for consumption by:
- * 1. Converting relative URLs to absolute URLs
- * 2. Removing non-content elements (scripts, styles, meta tags, comments)
- * 3. Removing code-related attributes (class, id, style, data-*, event handlers)
- * 4. Removing SVG graphics and other non-text elements
- * 5. Collapsing excessive whitespace
+ * Removes non-content elements and attributes from HTML:
+ * 1. Removing non-content elements (scripts, styles, meta tags, comments)
+ * 2. Removing code-related attributes (class, id, style, data-*, event handlers)
+ * 3. Removing SVG graphics and other non-text elements
+ * 4. Collapsing excessive whitespace
  */
-function prepareHtml(html, baseUrl) {
+function cleanHtml(html) {
   if (!html) return "";
   
   let cleaned = html;
@@ -335,32 +343,6 @@ function prepareHtml(html, baseUrl) {
   
   // Remove link tags (stylesheets, preload, etc.)
   cleaned = cleaned.replace(/<link\b[^>]*>/gi, '');
-  
-  // Convert relative URLs to absolute in href attributes
-  cleaned = cleaned.replace(/href=["']([^"']+)["']/gi, (match, url) => {
-    if (!url || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//') || url.startsWith('#') || url.startsWith('mailto:') || url.startsWith('tel:')) {
-      return match;
-    }
-    try {
-      const absoluteUrl = new URL(url, baseUrl).href;
-      return `href="${absoluteUrl}"`;
-    } catch {
-      return match;
-    }
-  });
-  
-  // Convert relative URLs to absolute in src attributes
-  cleaned = cleaned.replace(/src=["']([^"']+)["']/gi, (match, url) => {
-    if (!url || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//') || url.startsWith('data:')) {
-      return match;
-    }
-    try {
-      const absoluteUrl = new URL(url, baseUrl).href;
-      return `src="${absoluteUrl}"`;
-    } catch {
-      return match;
-    }
-  });
   
   // Remove inline style attributes
   cleaned = cleaned.replace(/\s+style=["'][^"']*["']/gi, '');
@@ -392,6 +374,53 @@ function prepareHtml(html, baseUrl) {
   return cleaned;
 }
 
+/**
+ * Enriches HTML by converting relative URLs to absolute URLs
+ */
+function enrichHtml(html, baseUrl) {
+  if (!html) return "";
+  
+  let enriched = html;
+  
+  // Convert relative URLs to absolute in href attributes
+  enriched = enriched.replace(/href=["']([^"']+)["']/gi, (match, url) => {
+    if (!url || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//') || url.startsWith('#') || url.startsWith('mailto:') || url.startsWith('tel:')) {
+      return match;
+    }
+    try {
+      const absoluteUrl = new URL(url, baseUrl).href;
+      return `href="${absoluteUrl}"`;
+    } catch {
+      return match;
+    }
+  });
+  
+  // Convert relative URLs to absolute in src attributes
+  enriched = enriched.replace(/src=["']([^"']+)["']/gi, (match, url) => {
+    if (!url || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//') || url.startsWith('data:')) {
+      return match;
+    }
+    try {
+      const absoluteUrl = new URL(url, baseUrl).href;
+      return `src="${absoluteUrl}"`;
+    } catch {
+      return match;
+    }
+  });
+  
+  return enriched;
+}
+
+/**
+ * Prepares HTML for consumption by cleaning and enriching it.
+ * @deprecated Use cleanHtml and enrichHtml separately for better control
+ */
+function prepareHtml(html, baseUrl) {
+  if (!html) return "";
+  const cleaned = cleanHtml(html);
+  return enrichHtml(cleaned, baseUrl);
+}
+
 async function main() {
   const server = new Server({ name: "MCPBrowser", version: "0.2.25" }, { capabilities: { tools: {} } });
 
@@ -403,6 +432,7 @@ async function main() {
         type: "object",
         properties: {
           url: { type: "string", description: "The URL to fetch" },
+          removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true }
         },
         required: ["url"],
         additionalProperties: false,
@@ -453,7 +483,7 @@ async function main() {
 }
 
 // Export for testing
-export { fetchPage, getBrowser, prepareHtml };
+export { fetchPage, getBrowser, prepareHtml, cleanHtml, enrichHtml };
 
 // Run the MCP server
 main().catch((err) => {
