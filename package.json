@@ -1,1 +1,43 @@
-{"name":"mcpbrowser","version":"0.2.32","mcpName":"io.github.cherchyk/browser","type":"module","description":"MCP server for in-browser web page fetching using Chrome DevTools Protocol","main":"src/mcp-browser.js","bin":{"mcpbrowser":"src/mcp-browser.js"},"scripts":{"mcp":"node src/mcp-browser.js","test":"node --test tests/*.test.js","test:mcp":"node --test tests/mcp-server.test.js"},"keywords":["mcp","mcp-server","model-context-protocol","chrome","puppeteer","authentication","web-scraping","github-copilot"],"author":"cherchyk","license":"MIT","repository":{"type":"git","url":"git+https://github.com/cherchyk/MCPBrowser.git"},"bugs":{"url":"https://github.com/cherchyk/MCPBrowser/issues"},"homepage":"https://github.com/cherchyk/MCPBrowser#readme","dependencies":{"@modelcontextprotocol/sdk":"^1.25.1","puppeteer-core":"^23.4.1"},"engines":{"node":">=18.0.0"}}
+{
+  "name": "mcpbrowser-monorepo",
+  "version": "0.2.32",
+  "private": true,
+  "description": "MCPBrowser monorepo containing MCP server and VS Code extension",
+  "workspaces": [
+    "MCPBrowser",
+    "VSCodeExtension"
+  ],
+  "scripts": {
+    "install:all": "npm install --workspaces",
+    "test": "npm run test --workspaces --if-present",
+    "test:mcp": "npm run test --workspace=MCPBrowser",
+    "test:extension": "npm run test --workspace=VSCodeExtension",
+    "clean": "npm run clean --workspaces --if-present && rimraf node_modules",
+    "publish:mcp": "npm publish --workspace=MCPBrowser",
+    "package:extension": "npm run package --workspace=VSCodeExtension --if-present"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cherchyk/MCPBrowser.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "vscode-extension",
+    "browser",
+    "authentication"
+  ],
+  "author": "cherchyk",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cherchyk/MCPBrowser/issues"
+  },
+  "homepage": "https://github.com/cherchyk/MCPBrowser#readme",
+  "devDependencies": {
+    "rimraf": "^6.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

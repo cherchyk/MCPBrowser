@@ -33,6 +33,18 @@ async function isMcpBrowserConfigured() {
 }
 
 /**
+ * Check if Node.js/npm is installed
+ */
+async function checkNodeInstalled() {
+    try {
+        await execPromise('npm --version');
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+/**
  * Install MCPBrowser npm package globally
  */
 async function installMcpBrowser() {
@@ -190,6 +202,21 @@ async function activate(context) {
                 }
             }
             
+            // Check if Node.js/npm is installed
+            const nodeInstalled = await checkNodeInstalled();
+            if (!nodeInstalled) {
+                const action = await vscode.window.showErrorMessage(
+                    'Node.js is not installed. MCPBrowser requires Node.js to function. Would you like to download it?',
+                    'Download Node.js',
+                    'Cancel'
+                );
+                
+                if (action === 'Download Node.js') {
+                    vscode.env.openExternal(vscode.Uri.parse('https://nodejs.org/'));
+                }
+                return;
+            }
+            
             // Step 1: Install npm package
             const installed = await installMcpBrowser();
             if (!installed) {
@@ -266,5 +293,14 @@ function deactivate() {}
 
 module.exports = {
     activate,
-    deactivate
+    deactivate,
+    // Exported for testing
+    getMcpConfigPath,
+    checkNodeInstalled,
+    isMcpBrowserConfigured,
+    configureMcpBrowser,
+    removeMcpBrowser,
+    installMcpBrowser,
+    checkMcpBrowserInstalled,
+    showConfigurationPrompt
 };

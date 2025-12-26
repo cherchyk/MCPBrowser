@@ -1,12 +1,32 @@
+# Dependencies
 node_modules/
+MCPBrowser/node_modules/
+VSCodeExtension/node_modules/
+
+# Environment files
 .env
+
+# Build artifacts
 *.vsix
+VSCodeExtension/*.vsix
 
 # MCP Registry tokens (sensitive)
 .mcpregistry_*
 mcp-publisher.exe
 
-# Extension build artifacts
-extension/node_modules/
-extension/*.vsix
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+# Note: VSCodeExtension/.vscode/launch.json is intentionally tracked
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/extensions.json
+!VSCodeExtension/.vscode/
 

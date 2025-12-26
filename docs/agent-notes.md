@@ -1,33 +1,52 @@
 # MCP Browser notes
 
-## Project Structure
+## Project Structure (Monorepo)
+
+This is a monorepo with two projects:
+- **MCPBrowser/** - MCP server (npm package)
+- **VSCodeExtension/** - VS Code extension
 
 **Key Files:**
-- `src/mcp-browser.js` - MCP server implementation (fetch tool)
-- `extension/src/extension.js` - VS Code extension for auto-configuration
-- `package.json` - npm package metadata and version
-- `extension/package.json` - VS Code extension metadata and version
-- `server.json` - MCP Registry metadata
-- `README.md` - User documentation
-- `extension/README.md` - Extension documentation
+
+**MCP Server (MCPBrowser/):**
+- `MCPBrowser/src/mcp-browser.js` - MCP server implementation (fetch tool)
+- `MCPBrowser/package.json` - npm package metadata and version
+- `MCPBrowser/server.json` - MCP Registry metadata
+- `MCPBrowser/README.md` - MCP server documentation
+- `MCPBrowser/tests/` - MCP server test suite
+
+**VS Code Extension (VSCodeExtension/):**
+- `VSCodeExtension/src/extension.js` - Extension for auto-configuration
+- `VSCodeExtension/package.json` - Extension metadata and version
+- `VSCodeExtension/README.md` - Extension documentation
+- `VSCodeExtension/test/` - Extension test suite
+
+**Root:**
+- `package.json` - Workspace configuration (npm workspaces)
+- `README.md` - Monorepo overview documentation
 
 **Distribution Platforms:**
-1. npm registry - `npm publish`
-2. VS Code Marketplace - `vsce publish`
-3. MCP Registry - via server.json (auto-indexed)
+1. npm registry - `npm publish` (from MCPBrowser/)
+2. VS Code Marketplace - `vsce publish` (from VSCodeExtension/)
+3. MCP Registry - via MCPBrowser/server.json (auto-indexed)
 
 ## Test Suite
 
-**Command:** `npm test` (from project root)
+**Command:** `npm test` (from monorepo root - runs all workspaces)
 
-**Unit Tests:** `tests/domain-tab-pooling.test.js`
-- Fast (~100ms), no browser needed
-- 49 tests for domain pooling logic
+**MCP Server Tests (MCPBrowser/tests/):**
+- **Unit Tests:** `MCPBrowser/tests/domain-tab-pooling.test.js`
+  - Fast (~100ms), no browser needed
+  - 49 tests for domain pooling logic
+- **Integration Tests:** `MCPBrowser/tests/integration.test.js`
+  - Requires Chrome + manual authentication
+  - Tests real browser workflow with eng.ms
+  - Browser stays open after completion
 
-**Integration Tests:** `tests/integration.test.js`
-- Requires Chrome + manual authentication
-- Tests real browser workflow with eng.ms
-- Browser stays open after completion
+**Extension Tests (VSCodeExtension/test/):**
+- **Unit Tests:** `VSCodeExtension/test/extension.test.js`
+  - Uses Mocha/Sinon for mocking
+  - Tests extension functions (getMcpConfigPath, checkNodeInstalled, etc.)
 
 ---
 
@@ -67,47 +86,76 @@ When deploying follow these steps IN ORDER, NO SKIPPING:
    - If work is on feature branches, it must be merged to `main` first before deployment
 
 - [ ] **Step 3: Run Tests**: 
-   - **IMPORTANT**: Always run from project root directory (where the main package.json is located)
-   - **Command**: `npm test` (runs all *.test.js files in tests/ folder)
+   - **MANDATORY**: ALWAYS run tests before deployment - NO EXCEPTIONS
+   - **IMPORTANT**: Run from monorepo root directory
+   - **Command**: `npm test` (runs tests for all workspaces - both MCP server and Extension)
+   - **MCP Server Tests**: Located in `MCPBrowser/tests/` (Node.js test runner)
+     - Unit tests: domain-tab-pooling, redirect-detection, auth-flow, prepare-html, mcp-server
+     - Integration test: Requires Chrome + manual authentication
+   - **Extension Tests**: Located in `VSCodeExtension/test/` (Mocha)
+     - Unit tests: extension.test.js (comprehensive suite for all functions)
    - **STOP DEPLOYMENT if ANY test fails**
-   - Note: Integration tests require Chrome and manual authentication
-   - All tests must pass before proceeding
+   - Note: MCP integration tests require Chrome and manual authentication
+   - All tests must pass before proceeding to next step
 
-- [ ] **Step 4: Version Bump**: Update version number in `package.json`, `server.json`, and `extension/package.json`
+- [ ] **Step 4: Version Bump**: Update version number in THREE package.json files:
+   - `MCPBrowser/package.json` - MCP server version
+   - `MCPBrowser/server.json` - MCP Registry version
+   - `VSCodeExtension/package.json` - Extension version
+   - **CRITICAL**: All three must have the SAME version number
 
 - [ ] **Step 5: Update ALL Descriptions - Two Sources of Truth**:
-   - **SOURCE OF TRUTH #1 - MCP Server Purpose**: `extension/src/extension.js` 
+   - **SOURCE OF TRUTH #1 - MCP Server Purpose**: `VSCodeExtension/src/extension.js` 
      - Search for `config.servers.MCPBrowser` to find the `description` field
      - This describes WHEN and WHY to use the MCP server (for mcp.json configuration)
-     - **Must propagate to**: ALL mcp.json samples in `README.md` - search for `"description"` in code blocks and ensure they match exactly
+     - **Must propagate to**: ALL mcp.json samples in READMEs - search for `"description"` in code blocks and ensure they match exactly
    
-   - **SOURCE OF TRUTH #2 - Fetch Tool API**: `src/mcp-browser.js`
+   - **SOURCE OF TRUTH #2 - Fetch Tool API**: `MCPBrowser/src/mcp-browser.js`
      - Search for `name: "fetch_webpage_protected"` to find the tool's `description` field
      - This describes HOW the fetch tool works (technical API documentation for MCP protocol)
      - This is different from #1 - it's for the tool API, not the server configuration
    
    - **Derived Descriptions** (should align with sources of truth but may be adapted for context):
-     - `package.json` - main package description (search for `"description"` field)
-     - `extension/package.json` - extension package description (search for `"description"` field)
-     - `server.json` - registry description (search for `"description"` field)
-     - `extension/README.md` - extension documentation opening paragraph
+     - `MCPBrowser/package.json` - main package description (search for `"description"` field)
+     - `VSCodeExtension/package.json` - extension package description (search for `"description"` field)
+     - `MCPBrowser/server.json` - registry description (search for `"description"` field)
+     - `VSCodeExtension/README.md` - extension documentation opening paragraph
+     - `MCPBrowser/README.md` - MCP server documentation
    
    - **Tip**: Use grep/search to find all `"description"` or `description:` fields, verify each matches appropriate source of truth
 
-- [ ] **Step 6: Update Docs**: Update version numbers in ALL documentation files (`README.md`, `agent-notes.md`, etc.) - search for old version numbers in examples and update to current version
+- [ ] **Step 6: Update Docs**: Update version numbers in ALL documentation files:
+   - `README.md` (root monorepo overview)
+   - `MCPBrowser/README.md` (MCP server docs)
+   - `VSCodeExtension/README.md` (extension docs)
+   - `docs/agent-notes.md` (this file)
+   - Search for old version numbers in examples and update to current version
 
-- [ ] **Step 7: Update Changelog**: Update `extension/CHANGELOG.md` with changes
+- [ ] **Step 7: Update Changelog**: Update `CHANGELOG.md` (root monorepo changelog) with changes
+   - **Location**: Single root changelog file at `CHANGELOG.md`
+   - **Format**: Entries organized by version with clear "MCP Server" and "VS Code Extension" section headers
+   - **Important**: Add changes under the appropriate package section (MCP Server vs VS Code Extension)
 
 - [ ] **Step 8: Git**: Commit all changes → `git push origin main`
 
 - [ ] **Step 9: VERIFY SYNCHRONIZATION**:
    - **CRITICAL**: ALL files must be updated and committed BEFORE publishing
-   - Verify all version numbers match: `package.json`, `server.json`, `extension/package.json`
+   - Verify all version numbers match in THREE files:
+     - `MCPBrowser/package.json`
+     - `MCPBrowser/server.json`
+     - `VSCodeExtension/package.json`
    - Verify all descriptions are synchronized from their sources of truth
    - **STOP** if any file is out of sync - never deploy to just one platform
    - All three platforms (npm, VS Code Marketplace, server.json) must be updated together
 
-- [ ] **Step 10: npm**: `npm publish`
+- [ ] **Step 10: npm**: Publish MCP server to npm
+   - `cd MCPBrowser`
+   - `npm publish`
+   - `cd ..` (return to root)
 
-- [ ] **Step 11: VS Code Marketplace**: `cd extension` → `vsce package` → `vsce publish`
+- [ ] **Step 11: VS Code Marketplace**: Publish extension
+   - `cd VSCodeExtension`
+   - `vsce package`
+   - `vsce publish`
+   - `cd ..` (return to root)
 

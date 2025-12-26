@@ -1,5 +1,5 @@
 {
-  "name": "mcpbrowser",
+  "name": "mcpbrowser-extension",
   "displayName": "MCP Browser",
   "description": "Lightweight MCP server-extension for in-browser web page fetching - handles login, SSO, and anti-crawler restrictions. Should be used when standard fetch_webpage fails",
   "version": "0.2.32",
@@ -43,13 +43,21 @@
   },
   "homepage": "https://github.com/cherchyk/MCPBrowser#readme",
   "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^20.19.27",
-    "@types/vscode": "^1.107.0"
-  },
+  "author": "cherchyk",
+  "type": "commonjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test/**/*.test.js",
+    "package": "vsce package"
   },
-  "author": "",
-  "type": "commonjs"
+  "dependencies": {
+    "mcpbrowser": "^0.2.32"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.19.27",
+    "@types/vscode": "^1.107.0",
+    "mocha": "^10.8.2",
+    "proxyquire": "^2.1.3",
+    "sinon": "^19.0.2"
+  }
 }
