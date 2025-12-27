@@ -178,27 +178,29 @@ test('Should remove inline style attributes', () => {
   assert(result.includes('Content'), 'Should preserve content');
 });
 
-// Test 17: Remove class attributes
-test('Should remove class attributes', () => {
+// Test 17: Keep class attributes (needed for interaction)
+test('Should keep class attributes', () => {
   const html = '<div class="container main-content">Text</div>';
   const result = prepareHtml(html, 'https://example.com');
-  assert(!result.includes('class='), 'Should remove class attribute');
+  assert(result.includes('class="container main-content"'), 'Should keep class attribute');
   assert(result.includes('Text'), 'Should preserve content');
 });
 
-// Test 18: Remove id attributes
-test('Should remove id attributes', () => {
+// Test 18: Keep id attributes (needed for interaction)
+test('Should keep id attributes', () => {
   const html = '<div id="main-section">Content</div>';
   const result = prepareHtml(html, 'https://example.com');
-  assert(!result.includes('id='), 'Should remove id attribute');
+  assert(result.includes('id="main-section"'), 'Should keep id attribute');
   assert(result.includes('Content'), 'Should preserve content');
 });
 
-// Test 19: Remove data-* attributes
-test('Should remove data-* attributes', () => {
-  const html = '<div data-id="123" data-value="test">Content</div>';
+// Test 19: Remove data-* attributes except data-testid
+test('Should remove data-* attributes except data-testid', () => {
+  const html = '<div data-id="123" data-testid="submit-btn" data-value="test">Content</div>';
   const result = prepareHtml(html, 'https://example.com');
-  assert(!result.includes('data-'), 'Should remove data attributes');
+  assert(!result.includes('data-id='), 'Should remove data-id');
+  assert(!result.includes('data-value='), 'Should remove data-value');
+  assert(result.includes('data-testid="submit-btn"'), 'Should keep data-testid');
   assert(result.includes('Content'), 'Should preserve content');
 });
 
@@ -261,6 +263,24 @@ test('Should collapse multiple whitespace into single space', () => {
   assert(result.includes('Line 1'), 'Should preserve content');
 });
 
+// Test 26b: Remove hidden elements
+test('Should remove elements with hidden attribute', () => {
+  const html = '<div>Visible</div><div hidden>Hidden content</div><div>More visible</div>';
+  const result = prepareHtml(html, 'https://example.com');
+  assert(result.includes('Visible'), 'Should preserve visible content');
+  assert(!result.includes('Hidden content'), 'Should remove hidden element content');
+  assert(result.includes('More visible'), 'Should preserve other visible content');
+});
+
+// Test 26c: Remove elements with display:none
+test('Should remove elements with display:none style', () => {
+  const html = '<div>Visible</div><div style="display:none">Hidden</div><div>More visible</div>';
+  const result = prepareHtml(html, 'https://example.com');
+  assert(result.includes('Visible'), 'Should preserve visible content');
+  assert(!result.includes('Hidden'), 'Should remove display:none element');
+  assert(result.includes('More visible'), 'Should preserve other visible content');
+});
+
 // Test 27: Comprehensive test with all removals
 test('Should handle HTML with all types of removals', () => {
   const html = `
@@ -278,11 +298,11 @@ test('Should handle HTML with all types of removals', () => {
   `;
   const result = prepareHtml(html, 'https://example.com/test/');
   
-  // Should remove all code attributes
-  assert(!result.includes('class='), 'Should remove class');
-  assert(!result.includes('id='), 'Should remove id');
-  assert(!result.includes('style='), 'Should remove style');
-  assert(!result.includes('data-'), 'Should remove data attributes');
+  // Should keep interaction-related attributes
+  assert(result.includes('class='), 'Should keep class');
+  assert(result.includes('id='), 'Should keep id');
+  // Should remove style and event attributes
+  assert(!result.includes('style="color: blue"'), 'Should remove inline style values');
   assert(!result.includes('onclick='), 'Should remove onclick');
   assert(!result.includes('role='), 'Should remove role');
   assert(!result.includes('aria-'), 'Should remove aria');
@@ -348,19 +368,19 @@ test('cleanHtml: Should remove inline style attributes', () => {
   assert(result.includes('Content'), 'Should preserve content');
 });
 
-// Test cleanHtml 6: Remove class attributes
-test('cleanHtml: Should remove class attributes', () => {
+// Test cleanHtml 6: Keep class attributes
+test('cleanHtml: Should keep class attributes', () => {
   const html = '<div class="container main-content">Text</div>';
   const result = cleanHtml(html);
-  assert(!result.includes('class='), 'Should remove class attribute');
+  assert(result.includes('class="container main-content"'), 'Should keep class attribute');
   assert(result.includes('Text'), 'Should preserve content');
 });
 
-// Test cleanHtml 7: Remove id attributes
-test('cleanHtml: Should remove id attributes', () => {
+// Test cleanHtml 7: Keep id attributes
+test('cleanHtml: Should keep id attributes', () => {
   const html = '<div id="main-section">Content</div>';
   const result = cleanHtml(html);
-  assert(!result.includes('id='), 'Should remove id attribute');
+  assert(result.includes('id="main-section"'), 'Should keep id attribute');
   assert(result.includes('Content'), 'Should preserve content');
 });
 
@@ -473,8 +493,8 @@ test('Combined: Should clean HTML then enrich URLs', () => {
   const cleaned = cleanHtml(html);
   const enriched = enrichHtml(cleaned, 'https://example.com');
   
-  // Should not have cleaned elements
-  assert(!enriched.includes('class='), 'Should not have class');
+  // Should keep class, remove style and script
+  assert(enriched.includes('class="test"'), 'Should keep class');
   assert(!enriched.includes('style='), 'Should not have style');
   assert(!enriched.includes('<script'), 'Should not have script');
   
@@ -488,8 +508,8 @@ test('Combined: prepareHtml should still work as before', () => {
   const html = '<div class="test"><a href="/page">Link</a><script>alert();</script></div>';
   const result = prepareHtml(html, 'https://example.com');
   
-  // Should clean
-  assert(!result.includes('class='), 'Should clean attributes');
+  // Should keep class, remove script
+  assert(result.includes('class="test"'), 'Should keep class for interaction');
   assert(!result.includes('<script'), 'Should remove script');
   
   // Should enrich

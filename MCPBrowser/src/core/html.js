@@ -31,6 +31,10 @@ export function cleanHtml(html) {
   // Remove SVG tags and their content (often large, not useful for text)
   cleaned = cleaned.replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, '');
   
+  // Remove hidden elements (not visible, not interactable)
+  cleaned = cleaned.replace(/<[^>]+\s+hidden\s*(?:=\s*["']?[^"'>]*["']?)?\s*[^>]*>[\s\S]*?<\/[^>]+>/gi, '');
+  cleaned = cleaned.replace(/<[^>]+\s+style\s*=\s*["'][^"']*display\s*:\s*none[^"']*["'][^>]*>[\s\S]*?<\/[^>]+>/gi, '');
+  
   // Remove meta tags
   cleaned = cleaned.replace(/<meta\b[^>]*>/gi, '');
   
@@ -40,14 +44,25 @@ export function cleanHtml(html) {
   // Remove inline style attributes
   cleaned = cleaned.replace(/\s+style=["'][^"']*["']/gi, '');
   
-  // Remove class attributes
-  cleaned = cleaned.replace(/\s+class=["'][^"']*["']/gi, '');
+  // Keep class and id attributes for element selection
+  // cleaned = cleaned.replace(/\s+class=["'][^"']*["']/gi, '');
+  // cleaned = cleaned.replace(/\s+id=["'][^"']*["']/gi, '');
   
-  // Remove id attributes
-  cleaned = cleaned.replace(/\s+id=["'][^"']*["']/gi, '');
+  // Preserve data-testid (commonly used for automation), then remove other data-* attributes
+  const testIds = [];
+  cleaned = cleaned.replace(/\s+(data-testid=["'][^"']*["'])/gi, (match, attr) => {
+    const placeholder = `__TESTID_${testIds.length}__`;
+    testIds.push(attr);
+    return ` ${placeholder}`;
+  });
   
-  // Remove data-* attributes
+  // Remove all other data-* attributes
   cleaned = cleaned.replace(/\s+data-[a-z0-9-]+=["'][^"']*["']/gi, '');
+  
+  // Restore data-testid attributes
+  testIds.forEach((attr, index) => {
+    cleaned = cleaned.replace(`__TESTID_${index}__`, attr);
+  });
   
   // Remove event handler attributes (onclick, onload, etc.)
   cleaned = cleaned.replace(/\s+on[a-z]+\s*=\s*["'][^"']*["']/gi, '');
