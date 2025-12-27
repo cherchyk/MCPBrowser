@@ -1,8 +1,8 @@
 {
-  "name": "mcpbrowser-monorepo",
+  "name": "mcpbrowser-workspace",
   "version": "0.2.32",
   "private": true,
-  "description": "MCPBrowser monorepo containing MCP server and VS Code extension",
+  "description": "MCPBrowser workspace containing MCP server and VS Code extension",
   "workspaces": [
     "MCPBrowser",
     "VSCodeExtension"

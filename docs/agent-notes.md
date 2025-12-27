@@ -1,8 +1,8 @@
 # MCP Browser notes
 
-## Project Structure (Monorepo)
+## Project Structure
 
-This is a monorepo with two projects:
+This workspace contains two projects:
 - **MCPBrowser/** - MCP server (npm package)
 - **VSCodeExtension/** - VS Code extension
 
@@ -23,7 +23,7 @@ This is a monorepo with two projects:
 
 **Root:**
 - `package.json` - Workspace configuration (npm workspaces)
-- `README.md` - Monorepo overview documentation
+- `README.md` - Root overview documentation
 
 **Distribution Platforms:**
 1. npm registry - `npm publish` (from MCPBrowser/)
@@ -32,7 +32,7 @@ This is a monorepo with two projects:
 
 ## Test Suite
 
-**Command:** `npm test` (from monorepo root - runs all workspaces)
+**Command:** `npm test` (from root directory - runs both projects)
 
 **MCP Server Tests (MCPBrowser/tests/):**
 - **Unit Tests:** `MCPBrowser/tests/domain-tab-pooling.test.js`
@@ -87,7 +87,7 @@ When deploying follow these steps IN ORDER, NO SKIPPING:
 
 - [ ] **Step 3: Run Tests**: 
    - **MANDATORY**: ALWAYS run tests before deployment - NO EXCEPTIONS
-   - **IMPORTANT**: Run from monorepo root directory
+   - **IMPORTANT**: Run from root directory
    - **Command**: `npm test` (runs tests for all workspaces - both MCP server and Extension)
    - **MCP Server Tests**: Located in `MCPBrowser/tests/` (Node.js test runner)
      - Unit tests: domain-tab-pooling, redirect-detection, auth-flow, prepare-html, mcp-server
@@ -125,13 +125,13 @@ When deploying follow these steps IN ORDER, NO SKIPPING:
    - **Tip**: Use grep/search to find all `"description"` or `description:` fields, verify each matches appropriate source of truth
 
 - [ ] **Step 6: Update Docs**: Update version numbers in ALL documentation files:
-   - `README.md` (root monorepo overview)
+   - `README.md` (root overview)
    - `MCPBrowser/README.md` (MCP server docs)
    - `VSCodeExtension/README.md` (extension docs)
    - `docs/agent-notes.md` (this file)
    - Search for old version numbers in examples and update to current version
 
-- [ ] **Step 7: Update Changelog**: Update `CHANGELOG.md` (root monorepo changelog) with changes
+- [ ] **Step 7: Update Changelog**: Update `CHANGELOG.md` (root changelog) with changes
    - **Location**: Single root changelog file at `CHANGELOG.md`
    - **Format**: Entries organized by version with clear "MCP Server" and "VS Code Extension" section headers
    - **Important**: Add changes under the appropriate package section (MCP Server vs VS Code Extension)

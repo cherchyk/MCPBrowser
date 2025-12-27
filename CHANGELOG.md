@@ -2,6 +2,32 @@
 
 All notable changes to the MCPBrowser project (both the MCP server and VS Code extension) are documented here.
 
+## [0.2.33] - 2025-12-26
+
+### Project Structure
+
+#### Changed
+- Reorganized repository into clear folder structure: MCPBrowser/ and VSCodeExtension/
+- Simplified documentation language - removed technical jargon ("monorepo", "workspace dependencies")
+- Updated root package.json to use npm workspaces for managing both projects
+
+### VS Code Extension
+
+#### Added
+- Comprehensive test suite with 25 tests covering all extension functionality
+- Test infrastructure: Mocha, Sinon, Proxyquire for mocking VS Code APIs
+- Setup files: test/setup.js, test/mocha.opts, test/README.md
+
+#### Fixed
+- Test compatibility - properly mock vscode module without requiring actual VS Code environment
+- Process cleanup in tests to prevent test pollution
+
+### MCP Server
+
+#### Changed
+- All tests passing (173/174) with improved reliability
+- Git history fully preserved through restructuring using git mv
+
 ## [0.2.32] - 2025-12-25
 
 ### VS Code Extension

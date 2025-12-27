@@ -1,11 +1,11 @@
-# MCPBrowser Monorepo
+# MCPBrowser
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/cherchyk.mcpbrowser.svg)](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 [![npm version](https://img.shields.io/npm/v/mcpbrowser.svg)](https://www.npmjs.com/package/mcpbrowser)
 [![Claude Desktop](https://img.shields.io/badge/Claude-Desktop-5865F2?logo=anthropic)](https://modelcontextprotocol.io/quickstart/user)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This monorepo contains two related projects:
+This repo contains two related projects:
 
 ## 📦 Projects
 
@@ -63,40 +63,6 @@ npm run test:extension
 **Install all workspace dependencies:**
 ```bash
 npm run install:all
-```
-
-## 📁 Repository Structure
-
-```
-MCPBrowser/
-├── MCPBrowser/          # MCP Server (npm package)
-│   ├── src/            # Server source code
-│   ├── tests/          # Server tests
-│   └── package.json    # Server dependencies
-├── VSCodeExtension/     # VS Code Extension
-│   ├── src/            # Extension source code
-│   ├── test/           # Extension tests
-│   └── package.json    # Extension dependencies
-├── package.json         # Workspace configuration
-└── README.md           # This file
-```
-
-## 🛠️ Development
-
-This is an npm workspace monorepo. Each project can be developed independently:
-
-**Working on MCP Server:**
-```bash
-cd MCPBrowser
-npm install
-npm test
-```
-
-**Working on VS Code Extension:**
-```bash
-cd VSCodeExtension
-npm install
-npm test
 ```
 
 ## 📝 License
