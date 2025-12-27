@@ -1,20 +1,13 @@
 {
   "name": "mcpbrowser-workspace",
-  "version": "0.2.32",
+  "version": "0.2.33",
   "private": true,
   "description": "MCPBrowser workspace containing MCP server and VS Code extension",
-  "workspaces": [
-    "MCPBrowser",
-    "VSCodeExtension"
-  ],
   "scripts": {
-    "install:all": "npm install --workspaces",
-    "test": "npm run test --workspaces --if-present",
-    "test:mcp": "npm run test --workspace=MCPBrowser",
-    "test:extension": "npm run test --workspace=VSCodeExtension",
-    "clean": "npm run clean --workspaces --if-present && rimraf node_modules",
-    "publish:mcp": "npm publish --workspace=MCPBrowser",
-    "package:extension": "npm run package --workspace=VSCodeExtension --if-present"
+    "test": "cd MCPBrowser && npm test && cd ../VSCodeExtension && npm test",
+    "test:mcp": "cd MCPBrowser && npm test",
+    "test:extension": "cd VSCodeExtension && npm test",
+    "clean": "rimraf node_modules MCPBrowser/node_modules VSCodeExtension/node_modules"
   },
   "repository": {
     "type": "git",
