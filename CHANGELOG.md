@@ -2,6 +2,19 @@
 
 All notable changes to the MCPBrowser project (both the MCP server and VS Code extension) are documented here.
 
+## [0.2.34] - 2025-12-26
+
+### MCP Server
+
+#### Changed
+- Updated MCP name from `io.github.cherchyk/browser` to `io.github.cherchyk/mcpbrowser` for consistency with npm package name
+
+### Project Structure
+
+#### Fixed
+- Removed npm workspaces configuration to avoid duplicate package name conflicts
+- Updated test scripts to use directory-based execution instead of workspace commands
+
 ## [0.2.33] - 2025-12-26
 
 ### Project Structure

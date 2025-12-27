@@ -6,7 +6,7 @@
     "url": "https://github.com/cherchyk/MCPBrowser",
     "source": "github"
   },
-  "version": "0.2.33",
+  "version": "0.2.34",
   "packages": [
     {
       "registryType": "npm",
