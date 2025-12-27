@@ -149,13 +149,10 @@ When deploying follow these steps IN ORDER, NO SKIPPING:
    - All three platforms (npm, VS Code Marketplace, server.json) must be updated together
 
 - [ ] **Step 10: npm**: Publish MCP server to npm
-   - `cd MCPBrowser`
-   - `npm publish`
-   - `cd ..` (return to root)
+   - **Single command**: `cd MCPBrowser; npm publish; cd ..`
+   - This ensures we return to root after publishing
 
 - [ ] **Step 11: VS Code Marketplace**: Publish extension
-   - `cd VSCodeExtension`
-   - `vsce package`
-   - `vsce publish`
-   - `cd ..` (return to root)
+   - **Single command**: `cd VSCodeExtension; vsce package --no-dependencies; vsce publish --packagePath mcpbrowser-<VERSION>.vsix; cd ..`
+   - This ensures all steps run and we return to root
 

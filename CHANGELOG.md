@@ -2,6 +2,15 @@
 
 All notable changes to the MCPBrowser project (both the MCP server and VS Code extension) are documented here.
 
+## [0.2.35] - 2025-12-26
+
+### Documentation
+
+#### Fixed
+- Updated deployment checklist Step 11 to use chained commands ensuring proper directory navigation
+- Added `--no-dependencies` flag to vsce package command to prevent workspace conflicts
+- Specified explicit VSIX file path in vsce publish command
+
 ## [0.2.34] - 2025-12-26
 
 ### MCP Server
