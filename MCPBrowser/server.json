@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.cherchyk/browser",
+  "name": "io.github.cherchyk/mcpbrowser",
   "description": "In-browser web page fetching using Chrome DevTools Protocol. Handles auth-required pages, anti-bot/crawler blocks, and JavaScript-heavy sites",
   "repository": {
     "url": "https://github.com/cherchyk/MCPBrowser",
