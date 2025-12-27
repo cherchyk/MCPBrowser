@@ -121,7 +121,7 @@ Add this entry to your `mcp.json` file under the `"servers"` section:
 }
 ```
 
-Replace `<PATH_TO_MCPBROWSER>` with the full path to the MCP server directory in the cloned monorepo, for example:
+Replace `<PATH_TO_MCPBROWSER>` with the full path to the MCP server directory in the cloned repository, for example:
 - Windows: `"D:/dev/MCPBrowser/MCPBrowser/src/mcp-browser.js"`
 - Linux/Mac: `"/home/user/MCPBrowser/MCPBrowser/src/mcp-browser.js"`
 

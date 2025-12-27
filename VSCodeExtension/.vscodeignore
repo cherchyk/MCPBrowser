@@ -5,3 +5,5 @@ node_modules/**
 .yarnrc
 *.vsix
 package-lock.json
+test/**
+../**
