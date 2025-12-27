@@ -141,6 +141,115 @@ In Claude Code or Copilot Chat, you should see the `MCPBrowser` server listed. A
 - **Smart timeouts**: 60s default for page fetch, 10 min for auth redirects. Tabs stay open indefinitely for reuse (no auto-close).
 - The AI assistant's LLM invokes this tool via MCP; this repo itself does not run an LLM.
 
+## 🎯 Interactive Features (NEW!)
+
+MCPBrowser now supports **human-like interaction** with web pages! You can click buttons, fill forms, and interact with dynamic content just like a human would.
+
+### Available Tools
+
+#### 1. `click_element` - Click on page elements
+Click on any element - buttons, links, divs with onclick handlers, or any clickable element.
+
+**Parameters:**
+- `url` (required): URL of the page (must be already loaded via `fetch_webpage_protected`)
+- `selector` (optional): CSS selector for the element (e.g., `#submit-btn`, `.login-button`)
+- `text` (optional): Text content to search for if selector not provided (e.g., "Sign In", "Submit")
+- `timeout` (optional): Maximum wait time in milliseconds (default: 30000)
+
+**Example:**
+```javascript
+// Click by selector
+{ url: "https://example.com", selector: "#login-button" }
+
+// Click by text content
+{ url: "https://example.com", text: "Sign In" }
+```
+
+#### 2. `type_text` - Type text into input fields
+Type text into input fields, textareas, or any editable element with human-like typing simulation.
+
+**Parameters:**
+- `url` (required): URL of the page
+- `selector` (required): CSS selector for the input element
+- `text` (required): Text to type
+- `clear` (optional): Clear existing text first (default: true)
+- `delay` (optional): Delay between keystrokes in ms (default: 50)
+- `timeout` (optional): Maximum wait time in milliseconds (default: 30000)
+
+**Example:**
+```javascript
+{ 
+  url: "https://example.com", 
+  selector: "#username", 
+  text: "myuser@example.com" 
+}
+```
+
+#### 3. `get_interactive_elements` - List all interactive elements
+Discover all clickable and interactive elements on the page - links, buttons, inputs, elements with onclick handlers.
+
+**Parameters:**
+- `url` (required): URL of the page
+- `limit` (optional): Maximum number of elements to return (default: 50)
+
+**Returns:** Array of elements with details (tag, text, selector, href, type, id, hasOnClick, role)
+
+**Example:**
+```javascript
+{ url: "https://example.com", limit: 20 }
+```
+
+#### 4. `wait_for_element` - Wait for element to appear
+Wait for an element to appear on the page (useful after clicking something that triggers dynamic content).
+
+**Parameters:**
+- `url` (required): URL of the page
+- `selector` (optional): CSS selector to wait for
+- `text` (optional): Text content to wait for if selector not provided
+- `timeout` (optional): Maximum wait time in milliseconds (default: 30000)
+
+**Example:**
+```javascript
+{ url: "https://example.com", selector: ".success-message" }
+```
+
+### Usage Workflow
+
+1. **First, fetch the page:**
+   ```javascript
+   fetch_webpage_protected({ url: "https://example.com/login" })
+   ```
+
+2. **Discover interactive elements:**
+   ```javascript
+   get_interactive_elements({ url: "https://example.com/login" })
+   ```
+
+3. **Fill in the form:**
+   ```javascript
+   type_text({ url: "https://example.com/login", selector: "#username", text: "user@example.com" })
+   type_text({ url: "https://example.com/login", selector: "#password", text: "mypassword" })
+   ```
+
+4. **Click the submit button:**
+   ```javascript
+   click_element({ url: "https://example.com/login", selector: "#submit" })
+   // or by text: click_element({ url: "https://example.com/login", text: "Sign In" })
+   ```
+
+5. **Wait for success message:**
+   ```javascript
+   wait_for_element({ url: "https://example.com/login", selector: ".success" })
+   ```
+
+### Key Features
+- ✅ Works with **any clickable element** - not just `<a>` tags (buttons, divs with onclick, etc.)
+- ✅ **Text-based selection** - click elements by their visible text
+- ✅ **Human-like typing** - simulates natural keystroke delays
+- ✅ **Automatic scrolling** - scrolls elements into view before interaction
+- ✅ **Smart element detection** - finds the most specific match when searching by text
+- ✅ **Session preservation** - all interactions happen in the same browser tab
+
 ## Auth-assisted fetch flow
 - AI assistant can call with just the URL, or with no params if you set an env default (`DEFAULT_FETCH_URL` or `MCP_DEFAULT_FETCH_URL`). By default tabs stay open indefinitely for reuse (domain-aware).
 - First call opens the tab and leaves it open so you can sign in. No extra params needed.

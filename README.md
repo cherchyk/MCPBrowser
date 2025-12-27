@@ -12,6 +12,8 @@ This monorepo contains two related projects:
 ### [MCPBrowser](./MCPBrowser/) - MCP Server
 MCP server for in-browser web page fetching using Chrome DevTools Protocol. Handles login-protected pages, corporate SSO, and anti-crawler restrictions.
 
+**NEW: Interactive Features!** Now supports human-like interaction with web pages - click buttons, fill forms, type text, and interact with dynamic content just like a human would.
+
 **Published as:** [`mcpbrowser` on npm](https://www.npmjs.com/package/mcpbrowser)
 
 [📖 Full Documentation](./MCPBrowser/README.md)

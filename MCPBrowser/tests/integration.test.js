@@ -5,7 +5,7 @@
  */
 
 import assert from 'assert';
-import { fetchPage } from '../src/mcp-browser.js';
+import { fetchPage, closeBrowser } from '../src/mcp-browser.js';
 
 console.log('🚀 Starting Integration Tests (REAL CHROME)\n');
 console.log('⚠️  This will open Chrome browser and may require authentication');
@@ -186,9 +186,12 @@ console.log(`Tests failed: ${testsFailed}`);
 console.log('='.repeat(50));
 console.log('\n💡 Browser left open for manual inspection');
 
+// Close browser connection to allow process to exit
+await closeBrowser();
+
 if (testsFailed > 0) {
   process.exit(1);
 }
 
-// Exit immediately without waiting for browser
+// Exit immediately
 process.exit(0);
