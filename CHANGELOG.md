@@ -4,6 +4,11 @@ All notable changes to the MCPBrowser project (both the MCP server and VS Code e
 
 ## [Unreleased]
 
+## [0.2.37] - 2025-12-29
+
+### Fixes
+- Minor documentation and deployment updates
+
 ## [0.2.36] - 2025-12-29
 
 ### MCP Server

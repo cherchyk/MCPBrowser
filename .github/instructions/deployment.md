@@ -104,10 +104,7 @@ Update `CHANGELOG.md` (root changelog) with changes
 - **Format**: Entries organized by version with clear "MCP Server" and "VS Code Extension" section headers
 - **Important**: Add changes under the appropriate package section (MCP Server vs VS Code Extension)
 
-### Step 9: Git Commit & Push
-Commit all changes → `git push origin main`
-
-### Step 10: VERIFY SYNCHRONIZATION
+### Step 9: VERIFY SYNCHRONIZATION
 **CRITICAL**: ALL files must be updated and committed BEFORE publishing
 - Verify all version numbers match in THREE files:
   - `MCPBrowser/package.json`
@@ -116,6 +113,9 @@ Commit all changes → `git push origin main`
 - Verify all descriptions are synchronized from their sources of truth
 - **STOP** if any file is out of sync - never deploy to just one platform
 - All three platforms (npm, VS Code Marketplace, server.json) must be updated together
+
+### Step 10: Git Commit & Push
+Commit all changes → `git push origin main`
 
 ### Step 11: Publish to npm
 Publish MCP server to npm registry
