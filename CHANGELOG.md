@@ -4,6 +4,13 @@ All notable changes to the MCPBrowser project (both the MCP server and VS Code e
 
 ## [Unreleased]
 
+## [0.3.1] - 2025-12-29
+
+### VS Code Extension
+- 🔄 Improved MCP server description for better Copilot integration
+- Updated description to clarify when to use MCPBrowser vs standard HTTP requests
+- Emphasized interactive capabilities: click elements, fill forms, handle authentication
+
 ## [0.2.37] - 2025-12-29
 
 ### Fixes
