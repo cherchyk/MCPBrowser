@@ -132,7 +132,7 @@ Restart VS Code or reload the window for the changes to take effect.
 In Claude Code or Copilot Chat, you should see the `MCPBrowser` server listed. Ask it to fetch an authenticated URL and it will drive your signed-in Chrome session.
 
 ## How it works
-- Tool `fetch_webpage_protected` (inside the MCP server) drives your live Chrome/Edge (DevTools Protocol) so it inherits your auth cookies, returning `html` (truncated up to 2M chars) for analysis.
+- Tool `fetch_webpage` (inside the MCP server) drives your live Chrome/Edge (DevTools Protocol) so it inherits your auth cookies, returning `html` (truncated up to 2M chars) for analysis.
 - **Smart confirmation**: AI assistant asks for confirmation ONLY on first request to a new domain - explains browser will open for authentication. Subsequent requests to same domain work automatically (session preserved).
 - **Domain-aware tab reuse**: Automatically reuses the same tab for URLs on the same domain, preserving authentication session. Different domains open new tabs.
 - **Automatic page loading**: Waits for network idle (`networkidle0`) by default, ensuring JavaScript-heavy pages (SPAs, dashboards) fully load before returning content.
@@ -151,7 +151,7 @@ MCPBrowser now supports **human-like interaction** with web pages! You can click
 Click on any element - buttons, links, divs with onclick handlers, or any clickable element.
 
 **Parameters:**
-- `url` (required): URL of the page (must be already loaded via `fetch_webpage_protected`)
+- `url` (required): URL of the page (must be already loaded via `fetch_webpage`)
 - `selector` (optional): CSS selector for the element (e.g., `#submit-btn`, `.login-button`)
 - `text` (optional): Text content to search for if selector not provided (e.g., "Sign In", "Submit")
 - `timeout` (optional): Maximum wait time in milliseconds (default: 30000)
@@ -213,11 +213,37 @@ Wait for an element to appear on the page (useful after clicking something that 
 { url: "https://example.com", selector: ".success-message" }
 ```
 
+#### 5. `get_current_html` - Get updated HTML without reloading (NEW! 🚀)
+**Efficiently** get the current HTML state from an already-loaded page **without navigation or reloading**. Use this after interactions (`click_element`, `type_text`, `wait_for_element`) to get the updated DOM state.
+
+**Why use this instead of `fetch_webpage`?**
+- ⚡ **Much faster** - no page reload, just extracts current DOM
+- 🎯 **More accurate** - captures exact state after interaction
+- 💾 **Preserves state** - doesn't lose dynamic JavaScript state
+- 🔄 **Efficient** - perfect for interactive workflows
+
+**Parameters:**
+- `url` (required): URL of the page (must be already loaded via `fetch_webpage`)
+- `removeUnnecessaryHTML` (optional): Clean HTML for size reduction (default: true, ~90% smaller)
+
+**Example:**
+```javascript
+{ url: "https://example.com", removeUnnecessaryHTML: true }
+```
+
+**Performance comparison:**
+```
+fetch_webpage after interaction:  2-5 seconds (reloads page)
+get_current_html after interaction: 0.1-0.3 seconds (just extracts HTML) ✅
+```
+
 ### Usage Workflow
+
+**Efficient interactive workflow (NEW!):**
 
 1. **First, fetch the page:**
    ```javascript
-   fetch_webpage_protected({ url: "https://example.com/login" })
+   fetch_webpage({ url: "https://example.com/login" })
    ```
 
 2. **Discover interactive elements:**
@@ -237,10 +263,20 @@ Wait for an element to appear on the page (useful after clicking something that 
    // or by text: click_element({ url: "https://example.com/login", text: "Sign In" })
    ```
 
-5. **Wait for success message:**
+5. **Wait for content to load:**
    ```javascript
-   wait_for_element({ url: "https://example.com/login", selector: ".success" })
+   wait_for_element({ url: "https://example.com/dashboard", selector: ".dashboard-content" })
    ```
+
+6. **Get updated HTML efficiently (no reload!):**
+   ```javascript
+   get_current_html({ url: "https://example.com/dashboard" })
+   // ✅ Fast! Just extracts current DOM without reloading the page
+   ```
+
+**When to use `get_current_html` vs `fetch_webpage`:**
+- Use `fetch_webpage`: Initial page load, navigation to new URLs, auth flows
+- Use `get_current_html`: After clicks, form fills, waits - when page is already loaded ✅
 
 ### Key Features
 - ✅ Works with **any clickable element** - not just `<a>` tags (buttons, divs with onclick, etc.)

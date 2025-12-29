@@ -1,11 +1,11 @@
 /**
  * Integration tests - REQUIRES REAL CHROME AND USER AUTHENTICATION
  * These tests will actually open Chrome browser and require manual login
- * Run with: node tests/integration.test.js
+ * Run with: node tests/actions/fetch-page.test.js
  */
 
 import assert from 'assert';
-import { fetchPage, closeBrowser } from '../src/mcp-browser.js';
+import { fetchPage, closeBrowser } from '../../src/mcp-browser.js';
 
 console.log('🚀 Starting Integration Tests (REAL CHROME)\n');
 console.log('⚠️  This will open Chrome browser and may require authentication');

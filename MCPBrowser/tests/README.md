@@ -1,41 +1,86 @@
 # MCPBrowser Tests
 
-Comprehensive test suite for MCPBrowser redirect detection and authentication flow handling.
+Comprehensive test suite for MCPBrowser covering core functionality, actions, and integration scenarios.
+
+## Test Organization
+
+Tests are organized to mirror the source code structure:
+- **Unit Tests** - Run in parallel for fast execution (core modules)
+- **Integration Tests** - Run sequentially with real browser instances (actions and MCP server)
 
 ## Test Suites
 
-### 1. `redirect-detection.test.js`
-Tests for redirect detection and URL analysis functions:
-- **`getBaseDomain()`** - Extracts base domain from hostnames
-- **`isLikelyAuthUrl()`** - Detects authentication URLs using patterns
-- **`detectRedirectType()`** - Classifies redirects (permanent, auth flow, etc.)
+### Core Tests (Unit - Parallel Execution)
 
-**43 tests** covering:
-- Gmail → mail.google.com permanent redirects
-- Cross-domain SSO (Google, Microsoft, Okta)
-- Same-domain auth path changes
-- Requested auth page detection
-- False positive prevention
+#### 1. `core/browser.test.js` - **64 tests**
+Tests for browser management and tab pooling:
+- Browser instance lifecycle
+- Domain-to-tab mapping
+- Tab creation and reuse
+- Browser reconnection
 
-### 2. `auth-flow.test.js`
-Tests for authentication flow handling:
-- **`waitForAutoAuth()`** - Auto-authentication detection (5s timeout)
-- **`waitForManualAuth()`** - Manual auth completion (10min timeout)
-
-**14 tests** covering:
-- Auto-authentication with valid cookies
-- Cross-domain SSO flows
-- Subdomain landing after auth
-- Timeout handling
-- Error resilience
-
-### 3. `prepare-html.test.js`
+#### 2. `core/html.test.js` - **51 tests**
 Tests for HTML processing:
 - **`cleanHtml()`** - Removes scripts, styles, attributes
 - **`enrichHtml()`** - Converts relative URLs to absolute
 - **`prepareHtml()`** - Combined clean + enrich
 
-**49 tests** for HTML sanitization and URL enrichment.
+#### 3. `core/page.test.js` - **43 tests**
+Tests for page operations and stability:
+- Page navigation
+- Stability detection
+- HTML extraction and processing
+- Page state management
+
+### Action Tests (Integration - Sequential Execution)
+
+#### 4. `actions/click-element.test.js` - **3 tests**
+Tests for `clickElement()`:
+- Parameter validation (url, selector/text)
+- Error handling for unloaded pages
+
+#### 5. `actions/type-text.test.js` - **4 tests**
+Tests for `typeText()`:
+- Parameter validation (url, selector, text)
+- Error handling for unloaded pages
+
+#### 6. `actions/get-interactive-elements.test.js` - **4 tests**
+Tests for `getInteractiveElements()`:
+- Parameter validation
+- Limit parameter handling
+- Real page element discovery
+
+#### 7. `actions/wait-for-element.test.js` - **3 tests**
+Tests for `waitForElement()`:
+- Parameter validation (url, selector/text)
+- Error handling for unloaded pages
+
+#### 8. `actions/get-current-html.test.js` - **4 tests**
+Tests for `getCurrentHtml()`:
+- Parameter validation
+- HTML retrieval from loaded pages
+- `removeUnnecessaryHTML` parameter behavior
+
+#### 9. `actions/fetch-page.test.js` - **3 tests**
+Integration tests for `fetchPage()`:
+- Permanent redirect handling (gmail.com → mail.google.com)
+- Multi-page workflow (eng.ms)
+- HTML cleaning parameter validation
+
+### Authentication & MCP Tests (Integration - Sequential)
+
+#### 10. `core/auth.test.js` - **14 tests**
+Tests for authentication flow handling:
+- **`waitForAutoAuth()`** - Auto-authentication detection
+- **`waitForManualAuth()`** - Manual auth completion
+- Cross-domain SSO flows
+- Subdomain landing after auth
+- Timeout handling
+
+#### 11. `mcp-browser.test.js` - **2 tests**
+Tests for MCP server:
+- Server initialization
+- Tool listing
 
 ## Running Tests
 
@@ -43,32 +88,45 @@ Tests for HTML processing:
 ```bash
 node tests/run-all.js
 ```
+Runs all unit tests in parallel, then integration tests sequentially.
 
 ### Run Individual Test Suite
 ```bash
-node tests/redirect-detection.test.js
-node tests/auth-flow.test.js
-node tests/prepare-html.test.js
-```
+# Unit tests
+node tests/core/browser.test.js
+node tests/core/html.test.js
+node tests/core/page.test.js
 
-## Test Coverage
+# Action tests
+node tests/actions/click-element.test.js
+node tests/actions/type-text.test.js
+node tests/actions/get-interactive-elements.test.js
+node tests/actions/wait-for-element.test.js
+node tests/actions/get-current-html.test.js
+node tests/actions/fetch-page.test.js
 
-**Total: 106 tests**
-- ✅ All redirect scenarios (permanent, auth, same-domain)
-- ✅ Authentication flows (auto-auth, manual, SSO)
-- ✅ HTML processing and sanitization
-- ✅ Edge cases and error handling
+# Authentication & MCP tests
+nodeBrowser Management
+- Browser instance creation and reuse
+- Domain-to-tab mapping and pooling
+- Tab persistence across browser reconnections
+- Proper cleanup and resource management
 
-## Key Scenarios Tested
+### Page Actions
+- Element clicking (navigation and form interactions)
+- Text input to form fields
+- Interactive element discovery
+- Dynamic element waiting
+- Current HTML state retrieval
 
-### Redirect Detection
-- `gmail.com` → `mail.google.com` (permanent redirect)
-- `site.com` → `accounts.google.com` (SSO auth)
-- `site.com/dashboard` → `site.com/login` (same-domain auth)
-- `accounts.google.com` requested directly (no redirect)
+### Redirect & Navigation
+- Permanent redirects (gmail.com → mail.google.com)
+- Cross-domain SSO flows (Google, Microsoft, Okta)
+- Same-domain authentication redirects
+- Multi-page navigation workflows
 
-### Auth Flows
-- Auto-auth with valid session cookies
+### Authentication Flows
+- Auto-authentication with valid cookies
 - Manual auth with cross-domain SSO providers
 - Landing on different subdomain after auth
 - Timeout scenarios with user hints
@@ -77,6 +135,28 @@ node tests/prepare-html.test.js
 - Script/style removal
 - Attribute cleaning (class, id, data-*, events)
 - Relative → absolute URL conversion
+- SVG and comment removal
+- Configurable cleaning via `removeUnnecessaryHTML` parameter
+
+### MCP Server Integration
+- Server initialization and lifecycle
+- Tool discovery and listing
+- Export validation for testing
+
+## Test Execution Strategy
+
+**Fast Parallel Execution** for unit tests:
+- Core tests run simultaneously (~1 second)
+- No browser dependencies or minimal mocking
+
+**Sequential Integration Tests**:
+- Actions run one at a time with real browser
+- Ensures tab state isolation
+- Prevents race conditions
+
+**Total execution time: ~45 seconds**
+- Unit tests (parallel): ~1 second
+- Integration tests (sequential): ~44 seconds
 - SVG and comment removal
 
 ## Mock Objects

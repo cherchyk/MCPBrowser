@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { waitForAutoAuth, waitForManualAuth } from '../src/mcp-browser.js';
+import { waitForAutoAuth, waitForManualAuth } from '../../src/mcp-browser.js';
 
 console.log('🧪 Testing authentication flow functions\n');
 

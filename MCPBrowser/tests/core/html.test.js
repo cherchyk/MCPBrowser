@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { prepareHtml, cleanHtml, enrichHtml } from '../src/mcp-browser.js';
+import { prepareHtml, cleanHtml, enrichHtml } from '../../src/mcp-browser.js';
 
 console.log('🧪 Testing HTML processing functions\n');
 

@@ -70,39 +70,19 @@ export async function getOrCreatePage(browser, hostname, reuseLastKeptPage = tru
 export async function navigateToUrl(page, url, waitUntil, timeout) {
   console.error(`[MCPBrowser] Navigating to: ${url}`);
   
-  // Set up listener for JS-based redirects that happen after page load
-  let jsRedirectDetected = false;
-  let jsRedirectUrl = null;
-  const navigationHandler = (frame) => {
-    if (frame === page.mainFrame()) {
-      jsRedirectUrl = frame.url();
-      jsRedirectDetected = true;
-    }
-  };
-  page.on('framenavigated', navigationHandler);
+  const startTime = Date.now();
   
   try {
-    // Handle slow pages: try networkidle0 first, fallback to load if it takes too long
-    try {
-      await page.goto(url, { waitUntil, timeout });
-    } catch (error) {
-      // If networkidle0 times out or page has issues, try with just 'load'
-      if (error.message.includes('timeout') || error.message.includes('Navigation')) {
-        console.error(`[MCPBrowser] Navigation slow, trying fallback load strategy...`);
-        await page.goto(url, { waitUntil: 'load', timeout });
-      } else {
-        throw error;
-      }
-    }
+    // Simple, fast navigation - no complex fallback logic
+    await page.goto(url, { waitUntil, timeout });
     
-    // Wait briefly for potential JS redirects
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  } finally {
-    // Remove navigation listener
-    page.off('framenavigated', navigationHandler);
+    const loadTime = Date.now() - startTime;
+    console.error(`[MCPBrowser] Navigation completed in ${loadTime}ms: ${page.url()}`);
+  } catch (error) {
+    const elapsed = Date.now() - startTime;
+    console.error(`[MCPBrowser] Navigation error after ${elapsed}ms: ${error.message}`);
+    throw error;
   }
-  
-  console.error(`[MCPBrowser] Navigation completed: ${page.url()}`);
 }
 
 /**

@@ -2,6 +2,30 @@
 
 All notable changes to the MCPBrowser project (both the MCP server and VS Code extension) are documented here.
 
+## [Unreleased] - 2025-12-27
+
+### MCP Server
+
+#### Added
+- **NEW TOOL: `get_current_html`** - Efficiently extracts HTML from already-loaded pages without navigation
+  - 10-50x faster than `fetch_webpage` for post-interaction HTML extraction
+  - Preserves dynamic JavaScript state (no page reload)
+  - Perfect for interactive workflows: click → wait → get HTML
+  - Same HTML cleaning options as `fetch_webpage`
+
+#### Improved
+- **Architecture: Separated navigation from HTML extraction**
+  - `fetch_webpage`: Navigate/load + extract HTML (use for initial page loads)
+  - `get_current_html`: Just extract HTML (use after interactions)
+  - Eliminates unnecessary page reloads after clicks, form fills, waits
+  - Typical workflow savings: 2-5 seconds per interaction
+
+#### Documentation
+- Added `docs/architecture-html-extraction.md` explaining the architectural improvement
+- Added comprehensive test: `tests/get-current-html.test.js`
+- Updated README with `get_current_html` usage examples and performance comparison
+- Added workflow guidance: when to use `get_current_html` vs `fetch_webpage`
+
 ## [0.2.35] - 2025-12-26
 
 ### Documentation

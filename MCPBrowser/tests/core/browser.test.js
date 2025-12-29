@@ -1,7 +1,7 @@
 /**
  * UNIT TESTS - Automated tests using mock objects (NO browser required)
  * These tests validate domain pooling logic without opening Chrome
- * Run with: node tests/domain-tab-pooling.test.js
+ * Run with: node tests/core/browser.test.js
  */
 
 // Mock domain pages map and browser

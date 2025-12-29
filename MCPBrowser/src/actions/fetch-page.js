@@ -3,10 +3,9 @@
  * Handles web page fetching with authentication flows and tab reuse
  */
 
-import { getBrowser } from './core/browser.js';
-import { getOrCreatePage, navigateToUrl, extractAndProcessHtml, waitForPageStability } from './core/page.js';
-import { detectRedirectType, waitForAutoAuth, waitForManualAuth } from './core/auth.js';
-import { domainPages } from './core/browser.js';
+import { getBrowser, domainPages } from '../core/browser.js';
+import { getOrCreatePage, navigateToUrl, extractAndProcessHtml, waitForPageStability } from '../core/page.js';
+import { detectRedirectType, waitForAutoAuth, waitForManualAuth } from '../core/auth.js';
 
 /**
  * Fetch a web page using Chrome browser, with support for authentication flows and tab reuse.
@@ -19,9 +18,10 @@ import { domainPages } from './core/browser.js';
  * @returns {Promise<Object>} Result object with success status, URL, HTML content, or error details
  */
 export async function fetchPage({ url, removeUnnecessaryHTML = true }) {
-  // Hardcoded smart defaults
-  const waitUntil = "networkidle0";
-  const navigationTimeout = 60000;
+  // Hardcoded smart defaults - use 'domcontentloaded' for fastest loading
+  // (waits for HTML parsed, not all resources loaded - much faster for SPAs)
+  const waitUntil = "domcontentloaded";
+  const navigationTimeout = 30000;
   const authCompletionTimeout = 600000;
   const reuseLastKeptPage = true;
   
@@ -116,7 +116,7 @@ export async function fetchPage({ url, removeUnnecessaryHTML = true }) {
       html: processedHtml
     };
   } catch (err) {
-    const hint = "Tab is left open. Complete sign-in there, then call fetch_webpage_protected again with just the URL.";
+    const hint = "Tab is left open. Complete sign-in there, then call fetch_webpage again with just the URL.";
     return { success: false, error: err.message || String(err), pageKeptOpen: true, hint };
   } finally {
     // Tab always stays open - domain-aware reuse handles cleanup

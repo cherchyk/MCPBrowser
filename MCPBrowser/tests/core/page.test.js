@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { getBaseDomain, isLikelyAuthUrl, detectRedirectType } from '../src/mcp-browser.js';
+import { getBaseDomain, isLikelyAuthUrl, detectRedirectType } from '../../src/mcp-browser.js';
 
 console.log('🧪 Testing redirect detection functions\n');
 
