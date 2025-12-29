@@ -10,7 +10,7 @@
   },
   "scripts": {
     "mcp": "node src/mcp-browser.js",
-    "test": "node --test tests/*.test.js"
+    "test": "node tests/run-all.js"
   },
   "keywords": [
     "mcp",
