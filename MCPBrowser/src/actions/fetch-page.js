@@ -15,9 +15,10 @@ import { detectRedirectType, waitForAutoAuth, waitForManualAuth } from '../core/
  * @param {Object} params - Fetch parameters
  * @param {string} params.url - The URL to fetch
  * @param {boolean} [params.removeUnnecessaryHTML=true] - Whether to clean HTML (removes scripts, styles, etc.)
+ * @param {number} [params.postLoadWait=1000] - Milliseconds to wait after page load for SPAs to render
  * @returns {Promise<Object>} Result object with success status, URL, HTML content, or error details
  */
-export async function fetchPage({ url, removeUnnecessaryHTML = true }) {
+export async function fetchPage({ url, removeUnnecessaryHTML = true, postLoadWait = 1000 }) {
   // Hardcoded smart defaults - use 'domcontentloaded' for fastest loading
   // (waits for HTML parsed, not all resources loaded - much faster for SPAs)
   const waitUntil = "domcontentloaded";
@@ -107,12 +108,17 @@ export async function fetchPage({ url, removeUnnecessaryHTML = true }) {
       await waitForPageStability(page);
     }
     
+    // Wait for SPAs to render dynamic content after page load
+    if (postLoadWait > 0) {
+      await new Promise(resolve => setTimeout(resolve, postLoadWait));
+    }
+    
     // Extract and process HTML
     const processedHtml = await extractAndProcessHtml(page, removeUnnecessaryHTML);
     
     return { 
       success: true, 
-      url: page.url(),
+      currentUrl: page.url(),
       html: processedHtml
     };
   } catch (err) {

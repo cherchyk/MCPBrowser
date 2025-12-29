@@ -14,8 +14,7 @@ import { fileURLToPath } from 'url';
 import { fetchPage } from './actions/fetch-page.js';
 import { clickElement } from './actions/click-element.js';
 import { typeText } from './actions/type-text.js';
-import { getInteractiveElements } from './actions/get-interactive-elements.js';
-import { waitForElement } from './actions/wait-for-element.js';
+import { closeTab } from './actions/close-tab.js';
 import { getCurrentHtml } from './actions/get-current-html.js';
 
 // Import functions for testing exports
@@ -42,7 +41,8 @@ async function main() {
         type: "object",
         properties: {
           url: { type: "string", description: "The URL to fetch" },
-          removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true }
+          removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
+          postLoadWait: { type: "number", description: "Milliseconds to wait after page load for SPAs to render dynamic content.", default: 1000 }
         },
         required: ["url"],
         additionalProperties: false,
@@ -60,9 +60,10 @@ async function main() {
           url: { type: "string", description: "The URL of the page (must match a previously fetched page)" },
           selector: { type: "string", description: "CSS selector for the element to click (e.g., '#submit-btn', '.login-button')" },
           text: { type: "string", description: "Text content to search for if selector is not provided (e.g., 'Sign In', 'Submit')" },
-          timeout: { type: "number", description: "Maximum time to wait for element in milliseconds", default: 5000 },
+          waitForElementTimeout: { type: "number", description: "Maximum time to wait for element in milliseconds", default: 1000 },
           returnHtml: { type: "boolean", description: "Whether to wait for stability and return HTML after clicking. Set to false for fast form interactions (checkboxes, radio buttons).", default: true },
-          removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%. Only used when returnHtml is true.", default: true }
+          removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%. Only used when returnHtml is true.", default: true },
+          postClickWait: { type: "number", description: "Milliseconds to wait after click for SPAs to render dynamic content.", default: 1000 }
         },
         required: ["url"],
         additionalProperties: false,
@@ -81,8 +82,11 @@ async function main() {
           selector: { type: "string", description: "CSS selector for the input element (e.g., '#username', 'input[name=\"email\"]')" },
           text: { type: "string", description: "Text to type into the field" },
           clear: { type: "boolean", description: "Whether to clear existing text first", default: true },
-          delay: { type: "number", description: "Delay between keystrokes in milliseconds (simulates human typing)", default: 50 },
-          timeout: { type: "number", description: "Maximum time to wait for element in milliseconds", default: 5000 }
+          typeDelay: { type: "number", description: "Delay between keystrokes in milliseconds (simulates human typing)", default: 50 },
+          waitForElementTimeout: { type: "number", description: "Maximum time to wait for element in milliseconds", default: 5000 },
+          returnHtml: { type: "boolean", description: "Whether to wait for stability and return HTML after typing.", default: true },
+          removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%. Only used when returnHtml is true.", default: true },
+          postTypeWait: { type: "number", description: "Milliseconds to wait after typing for SPAs to render dynamic content.", default: 1000 }
         },
         required: ["url", "selector", "text"],
         additionalProperties: false,
@@ -92,40 +96,20 @@ async function main() {
       }
     },
     {
-      name: "get_interactive_elements",
-      description: "Lists all interactive elements on the page including links, buttons, inputs, and elements with onclick handlers. Useful for discovering what can be clicked or interacted with. The page must be already loaded via fetch_webpage first.",
+      name: "close_tab",
+      description: "Closes the browser tab for the given URL's hostname. This removes the page from the tab pool and forces a fresh session on the next visit to that hostname. Useful for memory management or when you need to clear session state. Note: Uses exact hostname match (www.example.com and example.com are treated as different tabs).",
       inputSchema: {
         type: "object",
         properties: {
-          url: { type: "string", description: "The URL of the page (must match a previously fetched page)" },
-          limit: { type: "number", description: "Maximum number of elements to return", default: 50 }
+          url: { type: "string", description: "The URL whose hostname tab should be closed" }
         },
         required: ["url"],
         additionalProperties: false,
       },
       annotations: {
-        title: "Get Interactive Elements"
+        title: "Close Tab"
       }
     },
-    // Commented out: wait_for_element is no longer needed since click_element now waits for stability automatically
-    // {
-    //   name: "wait_for_element",
-    //   description: "Waits for an element to appear on the page. Useful after clicking something that triggers dynamic content loading. Can wait for element by CSS selector or text content. The page must be already loaded via fetch_webpage first.",
-    //   inputSchema: {
-    //     type: "object",
-    //     properties: {
-    //       url: { type: "string", description: "The URL of the page (must match a previously fetched page)" },
-    //       selector: { type: "string", description: "CSS selector to wait for (e.g., '.success-message', '#result-div')" },
-    //       text: { type: "string", description: "Text content to wait for if selector is not provided" },
-    //       timeout: { type: "number", description: "Maximum time to wait in milliseconds", default: 30000 }
-    //     },
-    //     required: ["url"],
-    //     additionalProperties: false,
-    //   },
-    //   annotations: {
-    //     title: "Wait For Element"
-    //   }
-    // },
     {
       name: "get_current_html",
       description: "Gets the current HTML from an already-loaded page WITHOUT navigating/reloading. Use this after interactions (click, type, wait) to get the updated DOM state efficiently. Much faster than fetch_webpage since it only extracts HTML from the current page state.",
@@ -180,13 +164,9 @@ async function main() {
         result = await typeText(safeArgs);
         break;
         
-      case "get_interactive_elements":
-        result = await getInteractiveElements(safeArgs);
+      case "close_tab":
+        result = await closeTab(safeArgs);
         break;
-        
-      // case "wait_for_element":
-      //   result = await waitForElement(safeArgs);
-      //   break;
         
       case "get_current_html":
         result = await getCurrentHtml(safeArgs);
@@ -229,8 +209,7 @@ export {
   isLikelyAuthUrl,
   clickElement,
   typeText,
-  getInteractiveElements,
-  waitForElement,
+  closeTab,
   getCurrentHtml
 };
 

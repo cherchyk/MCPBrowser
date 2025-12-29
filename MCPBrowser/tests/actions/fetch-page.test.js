@@ -45,14 +45,14 @@ await test('Should handle gmail.com → mail.google.com permanent redirect', asy
   
   console.log(`   ✅ Result: ${result.success ? 'SUCCESS' : 'FAILED'}`);
   if (result.success) {
-    console.log(`   🔗 Final URL: ${result.url}`);
+    console.log(`   🔗 Final URL: ${result.currentUrl}`);
     console.log(`   📄 HTML length: ${result.html?.length || 0} chars`);
   } else {
     console.log(`   ❌ Error: ${result.error}`);
   }
   
   assert.strictEqual(result.success, true, 'Should successfully fetch gmail.com');
-  assert.ok(result.url.includes('mail.google.com'), `Should redirect to mail.google.com, got: ${result.url}`);
+  assert.ok(result.currentUrl.includes('mail.google.com'), `Should redirect to mail.google.com, got: ${result.currentUrl}`);
   assert.ok(result.html && result.html.length > 0, 'Should return HTML content');
   assert.ok(result.html.includes('Gmail') || result.html.includes('Google'), 'HTML should contain Gmail or Google content');
   
@@ -71,7 +71,7 @@ await test('Should fetch eng.ms page, extract links, and load them (full Copilot
   
   console.log(`   ✅ Result: ${result.success ? 'SUCCESS' : 'FAILED'}`);
   if (result.success) {
-    console.log(`   🔗 Final URL: ${result.url}`);
+    console.log(`   🔗 Final URL: ${result.currentUrl}`);
     console.log(`   📄 HTML length: ${result.html?.length || 0} chars`);
   } else {
     console.log(`   ❌ Error: ${result.error}`);
@@ -79,13 +79,13 @@ await test('Should fetch eng.ms page, extract links, and load them (full Copilot
   }
   
   assert.strictEqual(result.success, true, 'Should successfully fetch page after authentication');
-  assert.ok(result.url.includes('eng.ms'), `URL should be from eng.ms domain, got: ${result.url}`);
+  assert.ok(result.currentUrl.includes('eng.ms'), `URL should be from eng.ms domain, got: ${result.currentUrl}`);
   assert.ok(result.html && result.html.length > 0, 'Should return HTML content');
   
   // Step 2: Extract ALL links from HTML, then pick 5 randomly
   console.log(`\n   📋 Step 2: Extracting all links from HTML...`);
   
-  const baseUrl = new URL(result.url);
+  const baseUrl = new URL(result.currentUrl);
   const urlPattern = /href=["']([^"']+)["']/g;
   const allUrls = [];
   let match;
@@ -142,7 +142,7 @@ await test('Should fetch eng.ms page, extract links, and load them (full Copilot
     
     const linkResult = await fetchPage({ url: link });
     
-    console.log(`   ✅ Loaded: ${linkResult.url}`);
+    console.log(`   ✅ Loaded: ${linkResult.currentUrl}`);
     assert.strictEqual(linkResult.success, true, `Should successfully load link ${i+1}: ${link}`);
     assert.ok(linkResult.html && linkResult.html.length > 0, `Link ${i+1} should return HTML content`);
   }
@@ -177,6 +177,41 @@ await test('Should support removeUnnecessaryHTML parameter', async () => {
 });
 
 // ============================================================================
+await test('Should respect postLoadWait parameter (0ms, default, 2000ms)', async () => {
+  const testUrl = 'https://example.com';
+  
+  // Test 1: postLoadWait = 0 (no wait)
+  console.log(`   ⏱️  Test 1: Fetching with postLoadWait=0 (should be fast)`);
+  const start1 = Date.now();
+  const result1 = await fetchPage({ url: testUrl, postLoadWait: 0 });
+  const duration1 = Date.now() - start1;
+  
+  assert.strictEqual(result1.success, true, 'Should successfully fetch with postLoadWait=0');
+  console.log(`   ✅ Completed in ${duration1}ms (no post-load wait)`);
+  
+  // Test 2: Default (1000ms wait)
+  console.log(`   ⏱️  Test 2: Fetching with default postLoadWait (should wait ~1 second)`);
+  const start2 = Date.now();
+  const result2 = await fetchPage({ url: testUrl });
+  const duration2 = Date.now() - start2;
+  
+  assert.strictEqual(result2.success, true, 'Should successfully fetch with default postLoadWait');
+  assert.ok(duration2 >= duration1 + 900, `Should wait ~1 second, took ${duration2}ms vs ${duration1}ms`);
+  console.log(`   ✅ Completed in ${duration2}ms (~1 second post-load wait)`);
+  
+  // Test 3: postLoadWait = 2000 (2 second wait)
+  console.log(`   ⏱️  Test 3: Fetching with postLoadWait=2000 (should wait ~2 seconds)`);
+  const start3 = Date.now();
+  const result3 = await fetchPage({ url: testUrl, postLoadWait: 2000 });
+  const duration3 = Date.now() - start3;
+  
+  assert.strictEqual(result3.success, true, 'Should successfully fetch with postLoadWait=2000');
+  assert.ok(duration3 >= duration1 + 1900, `Should wait ~2 seconds, took ${duration3}ms vs ${duration1}ms`);
+  console.log(`   ✅ Completed in ${duration3}ms (~2 second post-load wait)`);
+  
+  console.log(`   ✅ postLoadWait parameter working correctly`);
+});
+
 // Summary
 // ============================================================================
 

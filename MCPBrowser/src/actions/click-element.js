@@ -34,9 +34,10 @@ import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
  * @param {string} params.url - The URL of the page to interact with
  * @param {string} [params.selector] - CSS selector for the element to click
  * @param {string} [params.text] - Text content to search for (alternative to selector)
- * @param {number} [params.timeout=30000] - Maximum time to wait for element
+ * @param {number} [params.waitForElementTimeout=30000] - Maximum time (ms) to wait for element to appear before failing
  * @param {boolean} [params.returnHtml=true] - Whether to wait for stability and return HTML
  * @param {boolean} [params.removeUnnecessaryHTML=true] - Whether to clean HTML (only if returnHtml is true)
+ * @param {number} [params.postClickWait=1000] - Milliseconds to wait after click for SPAs to render dynamic content
  * @returns {Promise<Object>} Result object with success status and details
  * 
  * @example
@@ -52,7 +53,7 @@ import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
  *   returnHtml: false 
  * });
  */
-export async function clickElement({ url, selector, text, timeout = 30000, returnHtml = true, removeUnnecessaryHTML = true }) {
+export async function clickElement({ url, selector, text, waitForElementTimeout = 30000, returnHtml = true, removeUnnecessaryHTML = true, postClickWait = 1000 }) {
   if (!url) {
     throw new Error("url parameter is required");
   }
@@ -83,7 +84,7 @@ export async function clickElement({ url, selector, text, timeout = 30000, retur
     
     if (selector) {
       // Use CSS selector
-      await page.waitForSelector(selector, { timeout, visible: true });
+      await page.waitForSelector(selector, { timeout: waitForElementTimeout, visible: true });
       elementHandle = await page.$(selector);
     } else {
       // Search by text content
@@ -95,7 +96,7 @@ export async function clickElement({ url, selector, text, timeout = 30000, retur
             return text && text.includes(searchText) && el.offsetParent !== null;
           });
         },
-        { timeout },
+        { timeout: waitForElementTimeout },
         text
       );
       
@@ -119,8 +120,12 @@ export async function clickElement({ url, selector, text, timeout = 30000, retur
     }
 
     // Scroll element into view and click
-    await page.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), elementHandle);
-    await new Promise(r => setTimeout(r, 300)); // Brief delay after scroll
+    // For automation, use instant scroll instead of smooth animation to avoid delays
+    await page.evaluate(el => el.scrollIntoView({ behavior: 'auto', block: 'center' }), elementHandle);
+    // original:
+    // Smooth scroll (commented out for performance):
+    // await page.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), elementHandle);
+    // await new Promise(r => setTimeout(r, 300)); // Brief delay after scroll
     
     await elementHandle.click();
     
@@ -129,19 +134,30 @@ export async function clickElement({ url, selector, text, timeout = 30000, retur
       // This ensures content is fully loaded before returning, just like fetch_webpage does
       await waitForPageStability(page);
       
+      // Wait for SPAs to render dynamic content after click
+      if (postClickWait > 0) {
+        await new Promise(resolve => setTimeout(resolve, postClickWait));
+      }
+      
       const currentUrl = page.url();
       const html = await extractAndProcessHtml(page, removeUnnecessaryHTML);
       
       return {
         success: true,
         message: selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`,
-        url: currentUrl,
+        currentUrl,
         html,
         clicked: selector || `text:"${text}"`
       };
     } else {
-      // Fast click for form interactions - minimal wait
-      await new Promise(r => setTimeout(r, 300));
+      // Wait for page to stabilize even for fast clicks (ensures JS has finished)
+      await waitForPageStability(page);
+      
+      // Wait for SPAs to render dynamic content after click
+      if (postClickWait > 0) {
+        await new Promise(resolve => setTimeout(resolve, postClickWait));
+      }
+      
       const currentUrl = page.url();
       
       return {

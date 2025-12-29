@@ -17,8 +17,7 @@ const unitTests = [
 const integrationTests = [
   'actions/click-element.test.js',
   'actions/type-text.test.js',
-  'actions/get-interactive-elements.test.js',
-  'actions/wait-for-element.test.js',
+  'actions/close-tab.test.js',
   'actions/get-current-html.test.js',
   'actions/fetch-page.test.js',
   'core/auth.test.js',
