@@ -52,7 +52,7 @@ async function installMcpBrowser() {
         vscode.window.showInformationMessage('Installing MCPBrowser npm package...');
         
         // Try with sudo if in Linux/Mac environment (like dev containers)
-        let installCmd = 'npm install -g mcpbrowser@0.2.35';
+        let installCmd = 'npm install -g mcpbrowser@0.2.36';
         
         // Check if we need sudo (Linux/Mac and not running as root)
         if (process.platform !== 'win32' && process.getuid && process.getuid() !== 0) {
@@ -103,7 +103,7 @@ async function configureMcpBrowser() {
         config.servers.MCPBrowser = {
             type: "stdio",
             command: "npx",
-            args: ["-y", "mcpbrowser@0.2.35"],
+            args: ["-y", "mcpbrowser@0.2.36"],
             description: "Web page fetching via browser for sites requiring authentication, anti-bot protection, or JavaScript rendering. Use when standard HTTP requests fail for: (1) auth-required pages (401/403, SSO, corporate intranets), (2) anti-bot verification (CAPTCHA, Cloudflare), (3) JavaScript-heavy sites (SPAs, dynamic content). Opens a browser where the user can authenticate, then automatically extracts content."
         };
 

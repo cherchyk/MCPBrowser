@@ -4,17 +4,25 @@ All notable changes to the MCPBrowser project (both the MCP server and VS Code e
 
 ## [Unreleased]
 
+## [0.2.36] - 2025-12-29
+
 ### MCP Server
-- Interactive features: `click_element`, `type_text`, `wait_for_element`, `get_interactive_elements`
-- `get_current_html` - Efficient HTML extraction without page reload (10-50x faster)
-- `close_tab` - Browser tab management
-- Architecture improvement: separated navigation from HTML extraction
+- ✨ **Interactive features**: `click_element`, `type_text`, `get_current_html`, `close_tab`
+- 🏗️ **Architecture refactor**: Modular structure with separate core/ and actions/ directories
+- ⚡ **Performance**: `get_current_html` - 10-50x faster HTML extraction without page reload
+- 🧪 **Test infrastructure**: Separated unit (158 tests, CI-safe) and integration tests (37 tests)
+- 🔧 **Test runner**: `npm test` runs all, `npm run test:ci` for CI/CD (no browser)
+- 📦 **Codebase**: Refactored from monolithic to clean modular architecture
+
+### VS Code Extension
+- 🔒 **Version pinning**: Extension now installs specific npm version (not @latest)
+- 📝 **Documentation**: Updated deployment checklist with version sync steps
 
 ### Documentation
-- Updated all docs to use correct function names (snake_case)
-- Version synchronization to 0.2.35 across all files
-- Added LICENSE to MCPBrowser/ directory
-- Removed redundant root DEPLOYMENT.md file
+- 📚 **New docs**: `EXAMPLES.md`, `INTERACTIVE_FEATURES.md`, `architecture-html-extraction.md`
+- ✅ **Function naming**: All docs updated to use correct snake_case tool names
+- 🗂️ **Organization**: Added `.github/instructions/` for AI assistant guidance
+- 📄 **LICENSE**: Added to MCPBrowser/ directory for npm distribution
 
 ## [0.2.35] - 2025-12-26
 - Updated deployment checklist with chained commands and proper flags

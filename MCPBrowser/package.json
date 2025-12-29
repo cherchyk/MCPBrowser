@@ -1,6 +1,6 @@
 {
   "name": "mcpbrowser",
-  "version": "0.2.35",
+  "version": "0.2.36",
   "mcpName": "io.github.cherchyk/mcpbrowser",
   "type": "module",
   "description": "MCP server for in-browser web page fetching using Chrome DevTools Protocol",
