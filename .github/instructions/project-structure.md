@@ -8,6 +8,7 @@ This workspace contains two projects:
 
 ### MCP Server (MCPBrowser/)
 - `MCPBrowser/src/mcp-browser.js` - MCP server entry point
+- `MCPBrowser/src/utils.js` - Shared utility functions
 - `MCPBrowser/src/actions/` - Interactive action functions (click, type, wait, etc.)
 - `MCPBrowser/src/core/` - Core modules (browser, page, auth, html)
 - `MCPBrowser/package.json` - npm package metadata and version
@@ -16,15 +17,18 @@ This workspace contains two projects:
 - `MCPBrowser/tests/` - MCP server test suite (195 tests across 11 suites)
 
 ### VS Code Extension (VSCodeExtension/)
-- `VSCodeExtension/src/extension.js` - Extension for auto-configuration
+- `VSCodeExtension/src/extension.js` - Extension for auto-configuration (contains hardcoded npm version at lines ~58 and ~114)
 - `VSCodeExtension/package.json` - Extension metadata and version
 - `VSCodeExtension/README.md` - Extension documentation
+- `VSCodeExtension/PUBLISHING_GUIDE.md` - Publishing instructions
 - `VSCodeExtension/test/` - Extension test suite
 
 ### Root
 - `package.json` - Workspace configuration (npm workspaces)
 - `README.md` - Root overview documentation
 - `CHANGELOG.md` - Version history for both packages
+- `docs/` - Additional documentation (architecture, examples, interactive features)
+- `.github/instructions/` - AI assistant instructions (deployment, project structure)
 
 ## Test Suite Structure
 
@@ -58,11 +62,12 @@ This workspace contains two projects:
 
 ### src/actions/ (Individual action modules)
 - `click-element.js` - clickElement function
-- `type-text.js` - typeText function
-- `get-interactive-elements.js` - getInteractiveElements function
-- `wait-for-element.js` - waitForElement function
-- `get-current-html.js` - getCurrentHtml function
+- `close-tab.js` - closeTab function
 - `fetch-page.js` - fetchPage function
+- `get-current-html.js` - getCurrentHtml function
+- `get-interactive-elements.js` - getInteractiveElements function
+- `type-text.js` - typeText function
+- `wait-for-element.js` - waitForElement function
 
 ### src/core/ (Core functionality modules)
 - `browser.js` - Browser instance management, tab pooling

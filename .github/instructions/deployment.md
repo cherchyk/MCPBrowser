@@ -64,7 +64,14 @@ Update version number in THREE package.json files:
 - `VSCodeExtension/package.json` - Extension version
 - **CRITICAL**: All three must have the SAME version number
 
-### Step 5: Update ALL Descriptions - Two Sources of Truth
+### Step 5: Update Hardcoded npm Version in Extension
+Update the hardcoded npm package version in `VSCodeExtension/src/extension.js`:
+- Find line ~58: `let installCmd = 'npm install -g mcpbrowser@X.X.X';`
+- Find line ~114: `args: ["-y", "mcpbrowser@X.X.X"],`
+- Update BOTH occurrences to match the new version number
+- **CRITICAL**: This ensures the VS Code extension installs the correct npm package version
+
+### Step 6: Update ALL Descriptions - Two Sources of Truth
 **SOURCE OF TRUTH #1 - MCP Server Purpose**: `VSCodeExtension/src/extension.js`
 - Search for `config.servers.MCPBrowser` to find the `description` field
 - This describes WHEN and WHY to use the MCP server (for mcp.json configuration)
@@ -84,23 +91,23 @@ Update version number in THREE package.json files:
 
 **Tip**: Use grep/search to find all `"description"` or `description:` fields, verify each matches appropriate source of truth
 
-### Step 6: Update Docs
+### Step 7: Update Docs
 Update version numbers in ALL documentation files:
 - `README.md` (root overview)
 - `MCPBrowser/README.md` (MCP server docs)
 - `VSCodeExtension/README.md` (extension docs)
 - Search for old version numbers in examples and update to current version
 
-### Step 7: Update Changelog
+### Step 8: Update Changelog
 Update `CHANGELOG.md` (root changelog) with changes
 - **Location**: Single root changelog file at `CHANGELOG.md`
 - **Format**: Entries organized by version with clear "MCP Server" and "VS Code Extension" section headers
 - **Important**: Add changes under the appropriate package section (MCP Server vs VS Code Extension)
 
-### Step 8: Git Commit & Push
+### Step 9: Git Commit & Push
 Commit all changes → `git push origin main`
 
-### Step 9: VERIFY SYNCHRONIZATION
+### Step 10: VERIFY SYNCHRONIZATION
 **CRITICAL**: ALL files must be updated and committed BEFORE publishing
 - Verify all version numbers match in THREE files:
   - `MCPBrowser/package.json`
@@ -110,12 +117,12 @@ Commit all changes → `git push origin main`
 - **STOP** if any file is out of sync - never deploy to just one platform
 - All three platforms (npm, VS Code Marketplace, server.json) must be updated together
 
-### Step 10: Publish to npm
+### Step 11: Publish to npm
 Publish MCP server to npm registry
 - **Single command**: `cd MCPBrowser; npm publish; cd ..`
 - This ensures we return to root after publishing
 
-### Step 11: Publish to VS Code Marketplace
+### Step 12: Publish to VS Code Marketplace
 Publish extension to VS Code Marketplace
 - **Single command**: `cd VSCodeExtension; vsce package --no-dependencies; vsce publish --packagePath mcpbrowser-<VERSION>.vsix; cd ..`
 - This ensures all steps run and we return to root

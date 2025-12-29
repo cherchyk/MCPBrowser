@@ -12,10 +12,10 @@ The new interactive features allow you to:
 
 ## Prerequisites
 
-Before interacting with a page, you **must first load it** using `fetch_webpage_protected`:
+Before interacting with a page, you **must first load it** using `fetch_webpage`:
 
 ```javascript
-fetch_webpage_protected({ url: "https://example.com" })
+fetch_webpage({ url: "https://example.com" })
 ```
 
 All interactive operations work on already-loaded pages and reuse the same browser tab.
@@ -222,7 +222,7 @@ wait_for_element({
 
 ```javascript
 // Step 1: Load the login page
-fetch_webpage_protected({ url: "https://example.com/login" })
+fetch_webpage({ url: "https://example.com/login" })
 
 // Step 2: Fill in credentials
 type_text({ 
@@ -254,7 +254,7 @@ wait_for_element({
 
 ```javascript
 // Step 1: Load the page
-fetch_webpage_protected({ url: "https://shop.example.com" })
+fetch_webpage({ url: "https://shop.example.com" })
 
 // Step 2: Discover search elements
 get_interactive_elements({ 
@@ -292,7 +292,7 @@ click_element({
 
 ```javascript
 // Step 1: Load the form
-fetch_webpage_protected({ url: "https://example.com/contact" })
+fetch_webpage({ url: "https://example.com/contact" })
 
 // Step 2: Fill all fields
 type_text({ 
@@ -336,7 +336,7 @@ wait_for_element({
 click_element({ url: "https://example.com", selector: "#btn" })
 
 // ✅ Correct
-fetch_webpage_protected({ url: "https://example.com" })
+fetch_webpage({ url: "https://example.com" })
 click_element({ url: "https://example.com", selector: "#btn" })
 ```
 
@@ -409,14 +409,14 @@ All interactions happen in the **same browser tab** for the same domain:
 
 ```javascript
 // Opens gmail.com in a new tab
-fetch_webpage_protected({ url: "https://gmail.com/mail" })
+fetch_webpage({ url: "https://gmail.com/mail" })
 
 // Reuses the same tab
 click_element({ url: "https://gmail.com/mail", text: "Compose" })
 type_text({ url: "https://gmail.com/mail", selector: "#to", text: "test@example.com" })
 
 // Opens example.com in a NEW tab (different domain)
-fetch_webpage_protected({ url: "https://example.com" })
+fetch_webpage({ url: "https://example.com" })
 ```
 
 This preserves:
@@ -430,7 +430,7 @@ This preserves:
 ## Limitations
 
 1. **Page must be loaded first** - Can't interact with pages that haven't been fetched
-2. **URL must match exactly** - Use the same URL you used with `fetch_webpage_protected`
+2. **URL must match exactly** - Use the same URL you used with `fetch_webpage`
 3. **Element must be visible** - Hidden elements (display:none) can't be clicked
 4. **No iframe support** - Can only interact with main page content
 5. **Single tab per domain** - Multiple windows of same domain share one tab

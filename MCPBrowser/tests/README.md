@@ -35,34 +35,34 @@ Tests for page operations and stability:
 ### Action Tests (Integration - Sequential Execution)
 
 #### 4. `actions/click-element.test.js` - **3 tests**
-Tests for `clickElement()`:
+Tests for `click_element()`:
 - Parameter validation (url, selector/text)
 - Error handling for unloaded pages
 
 #### 5. `actions/type-text.test.js` - **4 tests**
-Tests for `typeText()`:
+Tests for `type_text()`:
 - Parameter validation (url, selector, text)
 - Error handling for unloaded pages
 
 #### 6. `actions/get-interactive-elements.test.js` - **4 tests**
-Tests for `getInteractiveElements()`:
+Tests for `get_interactive_elements()`:
 - Parameter validation
 - Limit parameter handling
 - Real page element discovery
 
 #### 7. `actions/wait-for-element.test.js` - **3 tests**
-Tests for `waitForElement()`:
+Tests for `wait_for_element()`:
 - Parameter validation (url, selector/text)
 - Error handling for unloaded pages
 
 #### 8. `actions/get-current-html.test.js` - **4 tests**
-Tests for `getCurrentHtml()`:
+Tests for `get_current_html()`:
 - Parameter validation
 - HTML retrieval from loaded pages
 - `removeUnnecessaryHTML` parameter behavior
 
 #### 9. `actions/fetch-page.test.js` - **3 tests**
-Integration tests for `fetchPage()`:
+Integration tests for `fetch_webpage()`:
 - Permanent redirect handling (gmail.com → mail.google.com)
 - Multi-page workflow (eng.ms)
 - HTML cleaning parameter validation
