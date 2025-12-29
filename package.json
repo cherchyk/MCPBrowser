@@ -6,6 +6,7 @@
   "scripts": {
     "test": "cd MCPBrowser && npm test && cd ../VSCodeExtension && npm test",
     "test:ci": "cd MCPBrowser && npm run test:ci && cd ../VSCodeExtension && npm test",
+    "test:unit": "cd MCPBrowser && npm run test:unit",
     "test:mcp": "cd MCPBrowser && npm test",
     "test:extension": "cd VSCodeExtension && npm test",
     "clean": "rimraf node_modules MCPBrowser/node_modules VSCodeExtension/node_modules"

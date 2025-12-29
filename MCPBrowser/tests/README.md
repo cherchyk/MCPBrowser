@@ -84,30 +84,39 @@ Tests for MCP server:
 
 ## Running Tests
 
-### Run All Tests (Locally - includes manual auth tests)
+### Run All Tests - Local Development (includes browser-based integration tests)
 ```bash
 npm test
 # or directly:
 node tests/run-all.js
 ```
-Runs all unit tests in parallel, then integration tests sequentially. All 195 tests will run, including those requiring manual authentication.
+**Runs:** 195 tests total
+- Unit tests (158): Pure functions and mocked browser operations
+- Integration tests (37): Real browser interactions, manual auth flows
 
-### Run Tests for CI/CD (Skip manual auth tests)
+⚠️ **Opens Chrome browser** for integration tests
+
+### Run Unit Tests Only - CI/CD Safe (NO browser required)
 ```bash
 npm run test:ci
-# or with environment variable:
-SKIP_MANUAL_TESTS=true npm test
+# or:
+npm run test:unit
+# or directly:
+node tests/run-unit.js
 ```
-Skips tests that require manual browser authentication (eng.ms tests). Use this in GitHub Actions or other automated pipelines.
+**Runs:** 158 unit tests only
+- ✅ Perfect for GitHub Actions (no browser needed)
+- ✅ Fast (~1 second)
+- Tests: `core/browser.test.js`, `core/html.test.js`, `core/page.test.js`
 
 ### Run Individual Test Suite
 ```bash
-# Unit tests
-node tests/core/browser.test.js
-node tests/core/html.test.js
-node tests/core/page.test.js
+# Unit tests (no browser)
+node tests/core/browser.test.js  # 64 tests
+node tests/core/html.test.js     # 51 tests
+node tests/core/page.test.js     # 43 tests
 
-# Action tests
+# Integration tests (requires browser)
 node tests/actions/click-element.test.js
 node tests/actions/type-text.test.js
 node tests/actions/get-interactive-elements.test.js
