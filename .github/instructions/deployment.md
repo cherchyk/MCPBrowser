@@ -127,8 +127,17 @@ Publish extension to VS Code Marketplace
 - **Single command**: `cd VSCodeExtension; vsce package --no-dependencies; vsce publish --packagePath mcpbrowser-<VERSION>.vsix; cd ..`
 - This ensures all steps run and we return to root
 
+### Step 13: Create GitHub Release
+**CRITICAL**: Create a GitHub release for the new version
+- Use `gh release create v<VERSION>` command
+- Include release notes from CHANGELOG.md
+- Tag format: `v<VERSION>` (e.g., v0.3.1)
+- This makes it easy for users to track versions and download specific releases
+- **Why this matters**: GitHub releases provide version history, download statistics, and integration with dependency management tools
+
 ## Distribution Platforms
 
 1. **npm registry** - `npm publish` (from MCPBrowser/)
 2. **VS Code Marketplace** - `vsce publish` (from VSCodeExtension/)
 3. **MCP Registry** - via MCPBrowser/server.json (auto-indexed)
+4. **GitHub Releases** - `gh release create` (version tracking & downloads)
