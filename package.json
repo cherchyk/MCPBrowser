@@ -4,7 +4,7 @@
   "private": true,
   "description": "MCPBrowser workspace containing MCP server and VS Code extension",
   "scripts": {
-    "install:all": "npm ci && cd MCPBrowser && npm ci && cd ../VSCodeExtension && npm ci && cd ..",
+    "install:all": "npm ci && cd MCPBrowser && npm install && cd ../VSCodeExtension && npm install && cd ..",
     "test": "cd MCPBrowser && npm test && cd ../VSCodeExtension && npm test",
     "test:ci": "cd MCPBrowser && npm run test:ci && cd ../VSCodeExtension && npm test",
     "test:unit": "cd MCPBrowser && npm run test:unit",
