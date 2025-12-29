@@ -76,7 +76,7 @@ Restart Claude Desktop after configuration.
 ```bash
 git clone https://github.com/cherchyk/MCPBrowser.git
 cd MCPBrowser/MCPBrowser  # Navigate to MCP server directory
-npm install
+npm ci  # Install dependencies for MCP server
 ```
 
 ## Prereqs

@@ -47,7 +47,7 @@ See [MCPBrowser README](./MCPBrowser/README.md) for full installation options.
 ```bash
 git clone https://github.com/cherchyk/MCPBrowser.git
 cd MCPBrowser
-npm install
+npm run install:all  # Installs dependencies for all workspace packages
 ```
 
 **Run tests:**
