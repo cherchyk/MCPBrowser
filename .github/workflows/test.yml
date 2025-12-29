@@ -26,8 +26,5 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Run MCP server tests
-      run: npm run test:mcp
-    
-    - name: Run unit tests (excluding integration tests)
-      run: node --test tests/auth-flow.test.js tests/domain-tab-pooling.test.js tests/mcp-server.test.js tests/prepare-html.test.js tests/redirect-detection.test.js
+    - name: Run tests (skip manual auth tests)
+      run: npm run test:ci
