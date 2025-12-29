@@ -1,7 +1,12 @@
 /**
  * Integration tests - REQUIRES REAL CHROME AND USER AUTHENTICATION
  * These tests will actually open Chrome browser and require manual login
- * Run with: node tests/actions/fetch-page.test.js
+ * 
+ * Run locally (all tests):
+ *   npm test
+ * 
+ * Run in CI/CD pipeline (skip manual auth tests):
+ *   SKIP_MANUAL_TESTS=true npm test
  */
 
 import assert from 'assert';
@@ -9,7 +14,11 @@ import { fetchPage, closeBrowser } from '../../src/mcp-browser.js';
 
 console.log('🚀 Starting Integration Tests (REAL CHROME)\n');
 console.log('⚠️  This will open Chrome browser and may require authentication');
-console.log('⚠️  fetchPage function will WAIT for you to complete authentication\n');
+console.log('⚠️  fetchPage function will WAIT for you to complete authentication');
+if (process.env.SKIP_MANUAL_TESTS === 'true') {
+  console.log('⚠️  SKIP_MANUAL_TESTS=true - Manual authentication tests will be skipped');
+}
+console.log('');
 
 let testsPassed = 0;
 let testsFailed = 0;
@@ -60,6 +69,12 @@ await test('Should handle gmail.com → mail.google.com permanent redirect', asy
 });
 
 await test('Should fetch eng.ms page, extract links, and load them (full Copilot workflow)', async () => {
+  // Skip manual auth tests in CI/CD pipeline
+  if (process.env.SKIP_MANUAL_TESTS === 'true') {
+    console.log('   ⏭️  SKIPPED: Manual authentication test (SKIP_MANUAL_TESTS=true)');
+    return;
+  }
+  
   const url = 'https://eng.ms/docs/products/geneva';
   
   // Step 1: Fetch initial page (with auth waiting)
@@ -76,8 +91,6 @@ await test('Should fetch eng.ms page, extract links, and load them (full Copilot
   } else {
     console.log(`   ❌ Error: ${result.error}`);
     console.log(`   💡 Hint: ${result.hint}`);
-    console.log(`   ⚠️  SKIPPING: This test requires manual authentication`);
-    return; // Skip the rest of the test if auth failed
   }
   
   assert.strictEqual(result.success, true, 'Should successfully fetch page after authentication');
@@ -151,16 +164,16 @@ await test('Should fetch eng.ms page, extract links, and load them (full Copilot
 });
 
 await test('Should support removeUnnecessaryHTML parameter', async () => {
+  // Skip manual auth tests in CI/CD pipeline
+  if (process.env.SKIP_MANUAL_TESTS === 'true') {
+    console.log('   ⏭️  SKIPPED: Manual authentication test (SKIP_MANUAL_TESTS=true)');
+    return;
+  }
+  
   const url = 'https://eng.ms/docs/products/geneva';
   
   console.log(`   📄 Fetching with removeUnnecessaryHTML=true (default)`);
   const cleanResult = await fetchPage({ url, removeUnnecessaryHTML: true });
-  
-  // Skip if authentication required
-  if (!cleanResult.success) {
-    console.log(`   ⚠️  SKIPPING: Requires authentication`);
-    return;
-  }
   
   assert.strictEqual(cleanResult.success, true, 'Should successfully fetch with removeUnnecessaryHTML=true');
   assert.ok(cleanResult.html && cleanResult.html.length > 0, 'Should return cleaned HTML');

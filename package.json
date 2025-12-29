@@ -5,6 +5,7 @@
   "description": "MCPBrowser workspace containing MCP server and VS Code extension",
   "scripts": {
     "test": "cd MCPBrowser && npm test && cd ../VSCodeExtension && npm test",
+    "test:ci": "cd MCPBrowser && npm run test:ci && cd ../VSCodeExtension && npm test",
     "test:mcp": "cd MCPBrowser && npm test",
     "test:extension": "cd VSCodeExtension && npm test",
     "clean": "rimraf node_modules MCPBrowser/node_modules VSCodeExtension/node_modules"

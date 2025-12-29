@@ -84,11 +84,21 @@ Tests for MCP server:
 
 ## Running Tests
 
-### Run All Tests
+### Run All Tests (Locally - includes manual auth tests)
 ```bash
+npm test
+# or directly:
 node tests/run-all.js
 ```
-Runs all unit tests in parallel, then integration tests sequentially.
+Runs all unit tests in parallel, then integration tests sequentially. All 195 tests will run, including those requiring manual authentication.
+
+### Run Tests for CI/CD (Skip manual auth tests)
+```bash
+npm run test:ci
+# or with environment variable:
+SKIP_MANUAL_TESTS=true npm test
+```
+Skips tests that require manual browser authentication (eng.ms tests). Use this in GitHub Actions or other automated pipelines.
 
 ### Run Individual Test Suite
 ```bash

@@ -10,7 +10,8 @@
   },
   "scripts": {
     "mcp": "node src/mcp-browser.js",
-    "test": "node tests/run-all.js"
+    "test": "node tests/run-all.js",
+    "test:ci": "cross-env SKIP_MANUAL_TESTS=true node tests/run-all.js"
   },
   "keywords": [
     "mcp",
@@ -35,6 +36,9 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
     "puppeteer-core": "^23.4.1"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
   },
   "engines": {
     "node": ">=18.0.0"
