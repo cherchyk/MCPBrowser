@@ -1,13 +1,13 @@
-# MCPBrowser
+# MCPBrowser (MCP Browser)
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/cherchyk.mcpbrowser.svg)](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 [![npm version](https://img.shields.io/npm/v/mcpbrowser.svg)](https://www.npmjs.com/package/mcpbrowser)
 [![Claude Desktop](https://img.shields.io/badge/Claude-Desktop-5865F2?logo=anthropic)](https://modelcontextprotocol.io/quickstart/user)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**MCPBrowser gives your AI assistant the ability to browse web pages like a human.** Lets AI assistants (Claude, Copilot) access any website — especially those protected by authentication, CAPTCHAs, anti-bot restrictions, or requiring JavaScript rendering. Uses your real Chrome/Edge browser session, so you log in once, and your AI can navigate, click buttons, fill forms, and extract content from sites that block automated requests.
+**MCPBrowser is an MCP browser server that gives AI assistants the ability to browse web pages using a real Chrome or Edge browser.** This browser-based MCP server lets AI assistants (Claude, Copilot) access any website — especially those protected by authentication, CAPTCHAs, anti-bot restrictions, or requiring JavaScript rendering. Uses your real Chrome/Edge browser session for web automation, so you log in once, and your AI can navigate, click buttons, fill forms, and extract content from sites that block automated requests.
 
-Built on the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), MCPBrowser works seamlessly with Claude Desktop, Claude Code (CLI), GitHub Copilot, and any MCP-compatible AI assistant. It handles corporate SSO, CAPTCHAs, Cloudflare protection, SPAs, dashboards, and any site that blocks automated requests. Your AI gets the same access you have — no special APIs, no headless browser detection, just your authenticated browser session.
+Built on the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), this web browser MCP server works seamlessly with Claude Desktop, Claude Code (CLI), GitHub Copilot, and any MCP-compatible AI assistant. It handles corporate SSO, CAPTCHAs, Cloudflare protection, SPAs, dashboards, and any site that blocks automated requests. Your AI gets the same browser access you have — no special APIs, no headless browser detection, just your authenticated browser session.
 
 Example workflow for AI assistant to use MCPBrowser
 

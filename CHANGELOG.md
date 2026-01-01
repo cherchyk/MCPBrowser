@@ -4,6 +4,17 @@ All notable changes to the MCPBrowser project (both the MCP server and VS Code e
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-01-01
+
+### Searchability Improvements
+- 🔍 **Enhanced discoverability**: Improved npm and VS Code marketplace searchability
+- 📝 **README updates**: Added "(MCP Browser)" to all README titles for better search results
+- 🏷️ **Keywords expansion**: npm package keywords increased from 8 to 23 (added: browser, web-browser, playwright, automation, cloudflare, sso, captcha, spa, claude, ai-assistant, cdp, devtools)
+- 🔑 **VS Code keywords**: Extension keywords expanded from 5 to 16 (added: web-browser, scraping, cloudflare, sso, captcha, web-automation, ai-tools, copilot-extension)
+- 📋 **Categories**: Added "Testing" and "Machine Learning" categories to VS Code extension
+- 📄 **Descriptions**: Updated package descriptions to emphasize "browser server", "real browser", and "browser automation"
+- 🎯 **SEO optimization**: Improved README introductions with natural search phrases for better discoverability
+
 ## [0.3.2] - 2025-12-31
 
 ### MCP Server

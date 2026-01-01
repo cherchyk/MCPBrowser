@@ -1,6 +1,6 @@
-# MCPBrowser
+# MCPBrowser (MCP Browser)
 
-**Lightweight MCP server-extension for in-browser web page fetching.** Used when loading web page via browser is preferred - handles login, SSO, anti-crawler restrictions. Should be used when standard fetch_webpage fails.
+**Lightweight MCP browser server extension for GitHub Copilot.** This browser-based MCP server extension enables in-browser web page fetching using your real Chrome or Edge browser. Used when loading web pages via browser automation is preferred - handles login, SSO, CAPTCHA, and anti-crawler restrictions. Should be used when standard fetch_webpage fails.
 
 ## Features
 
