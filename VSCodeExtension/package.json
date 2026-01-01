@@ -63,7 +63,7 @@
     "package": "vsce package"
   },
   "dependencies": {
-    "mcpbrowser": "^0.2.32"
+    "mcpbrowser": "^0.3.3"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
