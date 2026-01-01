@@ -1,7 +1,8 @@
-{\n  "name": "mcpbrowser",
+{
+  "name": "mcpbrowser",
   "displayName": "MCPBrowser",
   "description": "Lightweight MCP server-extension for in-browser web page fetching - handles login, SSO, and anti-crawler restrictions. Should be used when standard fetch_webpage fails",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "cherchyk",
   "icon": "icon.png",
   "engines": {

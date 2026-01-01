@@ -4,6 +4,18 @@ All notable changes to the MCPBrowser project (both the MCP server and VS Code e
 
 ## [Unreleased]
 
+## [0.3.2] - 2025-12-31
+
+### MCP Server
+- 🏷️ **Rebranding**: Changed product name from "MCP Browser" to "MCPBrowser" for consistency
+- 📝 **Documentation**: Updated all README files with improved introduction and consistent branding
+- 📦 **Version management**: Now using @latest tag in all npm commands for simpler deployment
+
+### VS Code Extension
+- 🏷️ **Rebranding**: Updated displayName to "MCPBrowser" for consistent branding
+- 📦 **Version management**: Extension now uses @latest instead of pinned version for automatic updates
+- 🚀 **Deployment**: Simplified deployment process by removing version number updates from docs
+
 ## [0.3.1] - 2025-12-29
 
 ### VS Code Extension
