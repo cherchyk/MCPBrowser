@@ -1,63 +1,91 @@
-# MCP Browser (MCP fetch for protected web resources)
+# MCPBrowser
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/cherchyk.mcpbrowser.svg)](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 [![npm version](https://img.shields.io/npm/v/mcpbrowser.svg)](https://www.npmjs.com/package/mcpbrowser)
 [![Claude Desktop](https://img.shields.io/badge/Claude-Desktop-5865F2?logo=anthropic)](https://modelcontextprotocol.io/quickstart/user)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Enables Claude Code, GitHub Copilot, and Claude Desktop to fetch protected web pages** - handles login-protected web pages, corporate SSO, and anti-crawler restrictions that normal fetching can't handle. Uses your Chrome/Edge browser session via DevTools Protocol.
+**MCPBrowser gives your AI assistant the ability to browse web pages like a human.** Fetch any web page — especially those protected by authentication, CAPTCHAs, anti-bot protection, or requiring JavaScript rendering. Uses your real Chrome/Edge browser so you can log in normally, then automatically extracts content. Works with corporate SSO, login forms, Cloudflare, and JavaScript-heavy sites (SPAs, dashboards).
 
-## 🚀 Installation Options
+This is an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server using [stdio transport](https://modelcontextprotocol.io/docs/concepts/transports#stdio). Your AI assistant uses MCPBrowser when standard HTTP requests fail — pages requiring authentication, CAPTCHA protection, or heavy JavaScript (SPAs). Once connected, MCPBrowser can navigate through websites, interact with elements, and send HTML back to the AI assistant. This gives your AI the ability to browse the web just like you do.
 
-### Option 1: VS Code Extension (Easiest - One Click)
+Example workflow for AI assistant to use MCPBrowser
 
-**From VS Code Marketplace:**
+```
+1. fetch_webpage    → Load the login page
+2. type_text        → Enter username
+3. type_text        → Enter password
+4. click_element    → Click "Sign In"
+5. get_current_html → Extract the content after login
+```
+
+
+## Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+  - [VS Code Extension](#option-1-vs-code-extension)
+  - [Claude Code](#option-2-claude-code)
+  - [Claude Desktop](#option-3-claude-desktop)
+  - [npm Package](#option-4-npm-package)
+- [MCP Tools](#mcp-tools)
+  - [fetch_webpage](#fetch_webpage)
+  - [click_element](#click_element)
+  - [type_text](#type_text)
+  - [get_current_html](#get_current_html)
+  - [close_tab](#close_tab)
+- [Configuration](#configuration-optional)
+- [Troubleshooting](#troubleshooting)
+- [Links](#links)
+
+## Requirements
+
+- Chrome or Edge browser
+- Node.js 18+
+
+## Installation
+
+| # | Platform | Difficulty |
+|---|----------|------------|
+| 1 | [VS Code Extension](#option-1-vs-code-extension) | One Click |
+| 2 | [Claude Code](#option-2-claude-code) | One Command |
+| 3 | [Claude Desktop](#option-3-claude-desktop) | Manual |
+| 4 | [npm Package](#option-4-npm-package) | Manual |
+
+### Option 1: VS Code Extension
+
+Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) or run:
 ```bash
 code --install-extension cherchyk.mcpbrowser
 ```
-Or search "MCPBrowser" in VS Code Extensions view.
 
-**From GitHub Release:**
-Download from [GitHub Releases](https://github.com/cherchyk/MCPBrowser/releases):
+The extension automatically installs and configures everything for GitHub Copilot.
+
+### Option 2: Claude Code
+
 ```bash
-code --install-extension mcpbrowser-0.3.1.vsix
+claude mcp add mcpbrowser --scope user -- npx -y mcpbrowser@latest
 ```
 
-The extension automatically:
-- Installs the MCPBrowser npm package globally
-- Configures mcp.json for Claude Code & GitHub Copilot
-- Complete one-click setup - no manual steps needed
-
-📦 [View on Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
-
-### Option 2: npm Package (Recommended for Manual Setup)
-Published on npm as [mcpbrowser](https://www.npmjs.com/package/mcpbrowser) v0.3.1.
-
-Add to your `mcp.json`:
-```jsonc
-"MCPBrowser": {
-  "type": "stdio",
-  "command": "npx",
-  "args": ["-y", "mcpbrowser@latest"],
-  "description": "Web page fetching via browser for sites requiring authentication, anti-bot protection, or JavaScript rendering. Use when standard HTTP requests fail for: (1) auth-required pages (401/403, SSO, corporate intranets), (2) anti-bot verification (CAPTCHA, Cloudflare), (3) JavaScript-heavy sites (SPAs, dynamic content). Opens a browser where the user can authenticate, then automatically extracts content."
-}
+Verify it's working:
+```bash
+claude mcp list
 ```
 
-**mcp.json Location:**
-- Windows: `%APPDATA%\Code\User\mcp.json`
-- Mac/Linux: `~/.config/Code/User/mcp.json`
+You should see:
+```
+mcpbrowser: npx -y mcpbrowser@latest - ✓ Connected
+```
 
-### Option 3: MCP Registry
-Available in the [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.cherchyk/browser` v0.3.1.
+That's it! Ask Claude to fetch any protected page:
+> "Fetch https://portal.azure.com using mcpbrowser"
 
-Search for "browser" in the registry to find configuration instructions.
+### Option 3: Claude Desktop
 
-### Option 4: Claude Desktop
-Add to your Claude Desktop config file:
+Add to your config file:
 
-**Config Location:**
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-- Mac: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+**Mac:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
 {
@@ -70,246 +98,199 @@ Add to your Claude Desktop config file:
 }
 ```
 
-Restart Claude Desktop after configuration.
+Restart Claude Desktop after saving.
 
-### Option 5: Clone from GitHub (Development)
-```bash
-git clone https://github.com/cherchyk/MCPBrowser.git
-cd MCPBrowser/MCPBrowser  # Navigate to MCP server directory
-npm ci  # Install dependencies for MCP server
-```
+### Option 4: npm Package
 
-## Prereqs
-- Chrome or Edge installed.
-- Node 18+.
+For VS Code (GitHub Copilot) manual setup, add to your `mcp.json`:
 
-## Run (automatic via AI assistants)
-- Add the MCP server entry to your AI assistant's config (see installation options above). The AI assistant will start the server automatically when it needs the tool—no manual launch required.
-- On first use, the server auto-launches Chrome/Edge with remote debugging if it cannot find an existing DevTools endpoint. Defaults: port `9222`, user data dir `%LOCALAPPDATA%/ChromeAuthProfile`. Override with `CHROME_PATH`, `CHROME_USER_DATA_DIR`, or `CHROME_REMOTE_DEBUG_PORT`.
-- Chrome startup is handled inside the MCP server.
+**Windows:** `%APPDATA%\Code\User\mcp.json`
+**Mac/Linux:** `~/.config/Code/User/mcp.json`
 
-## Manual start (optional)
-Only if you want to run it yourself (AI assistants already start it when configured):
-```bash
-npm run mcp
-```
-Or manually:
-```powershell
-& "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="$env:LOCALAPPDATA\ChromeAuthProfile"
-```
-Set `CHROME_PATH` if auto-detect fails; override profile with `CHROME_USER_DATA_DIR`, port with `CHROME_REMOTE_DEBUG_PORT`.
-
-## (Optional) Local runner
-There is no local LLM runner now; AI assistants (Claude Code, GitHub Copilot, Claude Desktop) provide the LLM and call this MCP tool. If you need a standalone agent later, we can add one that reuses the fetch logic.
-
-## Configure in VS Code (Claude Code & GitHub Copilot)
-
-### Step 1: Locate your mcp.json file
-- **Windows**: `%APPDATA%\Code\User\mcp.json`
-- **Linux/Mac**: `~/.config/Code/User/mcp.json`
-
-### Step 2: Add MCPBrowser server configuration
-
-Add this entry to your `mcp.json` file under the `"servers"` section:
-
-```jsonc
-"MCPBrowser": {
-	"type": "stdio",
-	"command": "node",
-	"args": ["<PATH_TO_MCPBROWSER>/src/mcp-browser.js"],
-	"description": "Web page fetching via browser for sites requiring authentication, anti-bot protection, or JavaScript rendering. Use when standard HTTP requests fail for: (1) auth-required pages (401/403, SSO, corporate intranets), (2) anti-bot verification (CAPTCHA, Cloudflare), (3) JavaScript-heavy sites (SPAs, dynamic content). Opens a browser where the user can authenticate, then automatically extracts content."
+```json
+{
+  "servers": {
+    "MCPBrowser": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcpbrowser@latest"]
+    }
+  }
 }
 ```
 
-Replace `<PATH_TO_MCPBROWSER>` with the full path to the MCP server directory in the cloned repository, for example:
-- Windows: `"D:/dev/MCPBrowser/MCPBrowser/src/mcp-browser.js"`
-- Linux/Mac: `"/home/user/MCPBrowser/MCPBrowser/src/mcp-browser.js"`
+## MCP Tools
 
-### Step 3: Reload VS Code
-Restart VS Code or reload the window for the changes to take effect.
+### `fetch_webpage`
 
-### Step 4: Verify
-In Claude Code or Copilot Chat, you should see the `MCPBrowser` server listed. Ask it to fetch an authenticated URL and it will drive your signed-in Chrome session.
-
-## How it works
-- Tool `fetch_webpage` (inside the MCP server) drives your live Chrome/Edge (DevTools Protocol) so it inherits your auth cookies, returning `html` (truncated up to 2M chars) for analysis.
-- **Smart confirmation**: AI assistant asks for confirmation ONLY on first request to a new domain - explains browser will open for authentication. Subsequent requests to same domain work automatically (session preserved).
-- **Domain-aware tab reuse**: Automatically reuses the same tab for URLs on the same domain, preserving authentication session. Different domains open new tabs.
-- **Automatic page loading**: Waits for network idle (`networkidle0`) by default, ensuring JavaScript-heavy pages (SPAs, dashboards) fully load before returning content.
-- **Automatic auth detection**: Detects ANY authentication redirect (domain changes, login/auth/sso/oauth URLs) and waits for you to complete sign-in, then returns to target page.
-- **Universal compatibility**: Works with ANY authenticated site - corporate intranets, SSO, OAuth, SAML, login pages, etc.
-- **Smart timeouts**: 60s default for page fetch, 10 min for auth redirects. Tabs stay open indefinitely for reuse (no auto-close).
-- The AI assistant's LLM invokes this tool via MCP; this repo itself does not run an LLM.
-
-## 🎯 Interactive Features (NEW!)
-
-MCPBrowser now supports **human-like interaction** with web pages! You can click buttons, fill forms, and interact with dynamic content just like a human would.
-
-### Available Tools
-
-#### 1. `click_element` - Click on page elements
-Click on any element - buttons, links, divs with onclick handlers, or any clickable element.
+Fetches web pages using your Chrome/Edge browser. Handles authentication, CAPTCHA, SSO, anti-bot protection, and JavaScript-heavy sites. Opens the URL in a browser tab (reuses existing tab for same domain) and waits for the page to fully load before returning content.
 
 **Parameters:**
-- `url` (required): URL of the page (must be already loaded via `fetch_webpage`)
-- `selector` (optional): CSS selector for the element (e.g., `#submit-btn`, `.login-button`)
-- `text` (optional): Text content to search for if selector not provided (e.g., "Sign In", "Submit")
-- `timeout` (optional): Maximum wait time in milliseconds (default: 30000)
+- `url` (string, required) - The URL to fetch
+- `removeUnnecessaryHTML` (boolean, optional, default: `true`) - Remove unnecessary HTML for size reduction by ~90%
+- `postLoadWait` (number, optional, default: `1000`) - Milliseconds to wait after page load for SPAs to render dynamic content
 
-**Example:**
+**Examples:**
 ```javascript
-// Click by selector
-{ url: "https://example.com", selector: "#login-button" }
+// Basic fetch
+{ url: "https://example.com" }
 
+// Fetch with custom wait time for slow SPAs
+{ url: "https://dashboard.example.com", postLoadWait: 2000 }
+
+// Keep full HTML without cleanup
+{ url: "https://example.com", removeUnnecessaryHTML: false }
+```
+
+---
+
+### `click_element`
+
+Clicks on any clickable element (buttons, links, divs with onclick handlers, etc.). Can target by CSS selector or visible text content. Automatically scrolls element into view and waits for page stability after clicking.
+
+**⚠️ Note:** Page must be already loaded via `fetch_webpage` first.
+
+**Parameters:**
+- `url` (string, required) - The URL of the page (must match a previously fetched page)
+- `selector` (string, optional) - CSS selector for the element (e.g., `#submit-btn`, `.login-button`)
+- `text` (string, optional) - Text content to search for if selector not provided (e.g., "Sign In", "Submit")
+- `returnHtml` (boolean, optional, default: `true`) - Whether to wait for stability and return HTML after clicking. Set to `false` for fast form interactions (checkboxes, radio buttons)
+- `removeUnnecessaryHTML` (boolean, optional, default: `true`) - Remove unnecessary HTML for size reduction. Only used when `returnHtml` is `true`
+- `postClickWait` (number, optional, default: `1000`) - Milliseconds to wait after click for SPAs to render dynamic content
+- `waitForElementTimeout` (number, optional, default: `1000`) - Maximum time to wait for element in milliseconds
+
+**Examples:**
+```javascript
 // Click by text content
 { url: "https://example.com", text: "Sign In" }
+
+// Click by CSS selector
+{ url: "https://example.com", selector: "#login-button" }
+
+// Click without waiting for HTML (fast checkbox toggle)
+{ url: "https://example.com", selector: "#agree-checkbox", returnHtml: false }
+
+// Click with custom wait time
+{ url: "https://example.com", text: "Load More", postClickWait: 2000 }
 ```
 
-#### 2. `type_text` - Type text into input fields
-Type text into input fields, textareas, or any editable element with human-like typing simulation.
+---
+
+### `type_text`
+
+Types text into an input field, textarea, or other editable element. Simulates human-like typing with configurable delay between keystrokes. Automatically clears existing text by default.
+
+**⚠️ Note:** Page must be already loaded via `fetch_webpage` first.
 
 **Parameters:**
-- `url` (required): URL of the page
-- `selector` (required): CSS selector for the input element
-- `text` (required): Text to type
-- `clear` (optional): Clear existing text first (default: true)
-- `delay` (optional): Delay between keystrokes in ms (default: 50)
-- `timeout` (optional): Maximum wait time in milliseconds (default: 30000)
+- `url` (string, required) - The URL of the page (must match a previously fetched page)
+- `selector` (string, required) - CSS selector for the input element (e.g., `#username`, `input[name="email"]`)
+- `text` (string, required) - Text to type into the field
+- `clear` (boolean, optional, default: `true`) - Whether to clear existing text first
+- `typeDelay` (number, optional, default: `50`) - Delay between keystrokes in milliseconds (simulates human typing)
+- `returnHtml` (boolean, optional, default: `true`) - Whether to wait for stability and return HTML after typing
+- `removeUnnecessaryHTML` (boolean, optional, default: `true`) - Remove unnecessary HTML for size reduction. Only used when `returnHtml` is `true`
+- `postTypeWait` (number, optional, default: `1000`) - Milliseconds to wait after typing for SPAs to render dynamic content
+- `waitForElementTimeout` (number, optional, default: `5000`) - Maximum time to wait for element in milliseconds
 
-**Example:**
+**Examples:**
 ```javascript
-{ 
-  url: "https://example.com", 
-  selector: "#username", 
-  text: "myuser@example.com" 
-}
+// Basic text input
+{ url: "https://example.com", selector: "#email", text: "user@example.com" }
+
+// Append text without clearing
+{ url: "https://example.com", selector: "#search", text: " advanced", clear: false }
+
+// Fast typing without human simulation
+{ url: "https://example.com", selector: "#username", text: "john", typeDelay: 0 }
+
+// Type without waiting for HTML return (faster)
+{ url: "https://example.com", selector: "#field", text: "value", returnHtml: false }
 ```
 
-#### 3. `get_interactive_elements` - List all interactive elements
-Discover all clickable and interactive elements on the page - links, buttons, inputs, elements with onclick handlers.
+---
+
+### `get_current_html`
+
+Gets the current HTML from an already-loaded page **WITHOUT** navigating or reloading. Much faster than `fetch_webpage` since it only extracts the current DOM state. Use this after interactions (click, type) to get the updated page content efficiently.
+
+**⚠️ Note:** Page must be already loaded via `fetch_webpage` first.
 
 **Parameters:**
-- `url` (required): URL of the page
-- `limit` (optional): Maximum number of elements to return (default: 50)
+- `url` (string, required) - The URL of the page (must match a previously fetched page)
+- `removeUnnecessaryHTML` (boolean, optional, default: `true`) - Remove unnecessary HTML for size reduction by ~90%
 
-**Returns:** Array of elements with details (tag, text, selector, href, type, id, hasOnClick, role)
-
-**Example:**
+**Examples:**
 ```javascript
-{ url: "https://example.com", limit: 20 }
-```
+// Get current HTML after interactions
+{ url: "https://example.com" }
 
-#### 4. `wait_for_element` - Wait for element to appear
-Wait for an element to appear on the page (useful after clicking something that triggers dynamic content).
-
-**Parameters:**
-- `url` (required): URL of the page
-- `selector` (optional): CSS selector to wait for
-- `text` (optional): Text content to wait for if selector not provided
-- `timeout` (optional): Maximum wait time in milliseconds (default: 30000)
-
-**Example:**
-```javascript
-{ url: "https://example.com", selector: ".success-message" }
-```
-
-#### 5. `get_current_html` - Get updated HTML without reloading (NEW! 🚀)
-**Efficiently** get the current HTML state from an already-loaded page **without navigation or reloading**. Use this after interactions (`click_element`, `type_text`, `wait_for_element`) to get the updated DOM state.
-
-**Why use this instead of `fetch_webpage`?**
-- ⚡ **Much faster** - no page reload, just extracts current DOM
-- 🎯 **More accurate** - captures exact state after interaction
-- 💾 **Preserves state** - doesn't lose dynamic JavaScript state
-- 🔄 **Efficient** - perfect for interactive workflows
-
-**Parameters:**
-- `url` (required): URL of the page (must be already loaded via `fetch_webpage`)
-- `removeUnnecessaryHTML` (optional): Clean HTML for size reduction (default: true, ~90% smaller)
-
-**Example:**
-```javascript
-{ url: "https://example.com", removeUnnecessaryHTML: true }
+// Get full HTML without cleanup
+{ url: "https://example.com", removeUnnecessaryHTML: false }
 ```
 
 **Performance comparison:**
+- `fetch_webpage`: 2-5 seconds (full page reload)
+- `get_current_html`: 0.1-0.3 seconds (just extracts HTML) ✅
+
+---
+
+### `close_tab`
+
+Closes the browser tab for the given URL's hostname. Removes the page from the tab pool and forces a fresh session on the next visit to that hostname. Useful for clearing authentication state, managing memory, or starting fresh with a domain.
+
+**⚠️ Note:** Uses exact hostname match (`www.example.com` and `example.com` are treated as different tabs).
+
+**Parameters:**
+- `url` (string, required) - The URL whose hostname tab should be closed
+
+**Examples:**
+```javascript
+// Close tab for a domain
+{ url: "https://example.com" }
+
+// This will close the tab for portal.azure.com
+{ url: "https://portal.azure.com/dashboard" }
 ```
-fetch_webpage after interaction:  2-5 seconds (reloads page)
-get_current_html after interaction: 0.1-0.3 seconds (just extracts HTML) ✅
-```
 
-### Usage Workflow
+**Use cases:**
+- Clear authentication/session state
+- Free up browser memory
+- Reset to fresh state before new login
 
-**Efficient interactive workflow (NEW!):**
 
-1. **First, fetch the page:**
-   ```javascript
-   fetch_webpage({ url: "https://example.com/login" })
-   ```
 
-2. **Discover interactive elements:**
-   ```javascript
-   get_interactive_elements({ url: "https://example.com/login" })
-   ```
+## Configuration (Optional)
 
-3. **Fill in the form:**
-   ```javascript
-   type_text({ url: "https://example.com/login", selector: "#username", text: "user@example.com" })
-   type_text({ url: "https://example.com/login", selector: "#password", text: "mypassword" })
-   ```
+Environment variables for advanced setup:
 
-4. **Click the submit button:**
-   ```javascript
-   click_element({ url: "https://example.com/login", selector: "#submit" })
-   // or by text: click_element({ url: "https://example.com/login", text: "Sign In" })
-   ```
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `CHROME_PATH` | Path to Chrome/Edge | Auto-detect |
+| `CHROME_USER_DATA_DIR` | Browser profile directory | `%LOCALAPPDATA%/ChromeAuthProfile` |
+| `CHROME_REMOTE_DEBUG_PORT` | DevTools port | `9222` |
 
-5. **Wait for content to load:**
-   ```javascript
-   wait_for_element({ url: "https://example.com/dashboard", selector: ".dashboard-content" })
-   ```
+## Troubleshooting
 
-6. **Get updated HTML efficiently (no reload!):**
-   ```javascript
-   get_current_html({ url: "https://example.com/dashboard" })
-   // ✅ Fast! Just extracts current DOM without reloading the page
-   ```
+**Browser doesn't open?**
+- Make sure Chrome or Edge is installed
+- Try setting `CHROME_PATH` explicitly
 
-**When to use `get_current_html` vs `fetch_webpage`:**
-- Use `fetch_webpage`: Initial page load, navigation to new URLs, auth flows
-- Use `get_current_html`: After clicks, form fills, waits - when page is already loaded ✅
+**Can't connect to browser?**
+- Close all Chrome instances and try again
+- Check if port 9222 is in use
 
-### Key Features
-- ✅ Works with **any clickable element** - not just `<a>` tags (buttons, divs with onclick, etc.)
-- ✅ **Text-based selection** - click elements by their visible text
-- ✅ **Human-like typing** - simulates natural keystroke delays
-- ✅ **Automatic scrolling** - scrolls elements into view before interaction
-- ✅ **Smart element detection** - finds the most specific match when searching by text
-- ✅ **Session preservation** - all interactions happen in the same browser tab
+**Authentication not preserved?**
+- Keep the browser tab open (default behavior)
+- Use the same domain for related requests
 
-## Auth-assisted fetch flow
-- AI assistant can call with just the URL, or with no params if you set an env default (`DEFAULT_FETCH_URL` or `MCP_DEFAULT_FETCH_URL`). By default tabs stay open indefinitely for reuse (domain-aware).
-- First call opens the tab and leaves it open so you can sign in. No extra params needed.
-- After you sign in, call the same URL again; tab stays open for reuse. Set `keepPageOpen: false` to close immediately on success.
-- Optional fields (`authWaitSelector`, `waitForSelector`, `waitForUrlPattern`, etc.) are available but not required.
+## Links
 
-## Configuration
-Optional environment variables for advanced configuration:
-- `CHROME_PATH`: Custom path to Chrome/Edge executable
-- `CHROME_USER_DATA_DIR`: Custom browser profile directory
-- `CHROME_REMOTE_DEBUG_HOST`: DevTools host (default: `127.0.0.1`)
-- `CHROME_REMOTE_DEBUG_PORT`: DevTools port (default: `9222`)
-- `CHROME_WS_ENDPOINT`: Explicit WebSocket endpoint URL
-- `DEFAULT_FETCH_URL` or `MCP_DEFAULT_FETCH_URL`: Default URL when called without params
+- [GitHub](https://github.com/cherchyk/MCPBrowser)
+- [npm](https://www.npmjs.com/package/mcpbrowser)
+- [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
+- [Issues](https://github.com/cherchyk/MCPBrowser/issues)
 
-Set these in your shell or system environment before running the MCP server.
+## License
 
-## Tips
-- **Universal auth**: Works with ANY authenticated site - corporate intranets, SSO, OAuth, SAML, login pages, CAPTCHA, human verification, etc.
-- **No re-authentication needed**: Automatically reuses the same tab for URLs on the same domain, keeping your auth session alive across multiple page fetches
-- **Automatic page loading**: Tool waits for pages to fully load (default 60s timeout, waits for network idle). AI assistant should trust the tool and not retry manually.
-- **Auth redirect handling**: Auto-detects auth redirects by monitoring domain changes and common login URL patterns (`/login`, `/auth`, `/signin`, `/sso`, `/oauth`, `/saml`)
-- **Tabs stay open**: By default tabs remain open indefinitely for reuse. Set `keepPageOpen: false` to close immediately after successful fetch.
-- **Smart domain switching**: When switching domains, automatically closes the old tab and opens a new one to prevent tab accumulation
-- If you hit login pages, verify Chrome/Edge instance is signed in and the site opens there.
-- Use a dedicated profile directory to avoid interfering with your daily browser.
-- For heavy pages, add `waitForSelector` to ensure post-login content appears before extraction.
+MIT

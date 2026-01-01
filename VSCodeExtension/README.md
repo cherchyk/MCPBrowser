@@ -1,4 +1,4 @@
-# MCP Browser
+# MCPBrowser
 
 **Lightweight MCP server-extension for in-browser web page fetching.** Used when loading web page via browser is preferred - handles login, SSO, anti-crawler restrictions. Should be used when standard fetch_webpage fails.
 

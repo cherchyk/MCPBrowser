@@ -103,7 +103,7 @@ async function configureMcpBrowser() {
         config.servers.MCPBrowser = {
             type: "stdio",
             command: "npx",
-            args: ["-y", "mcpbrowser@0.3.1"],
+            args: ["-y", "mcpbrowser@latest"],
             description: "Browser automation for web scraping when standard HTTP requests fail. Use ONLY when pages require: (1) Authentication - login forms, SSO, 401/403 errors, corporate intranets, (2) Anti-bot protection - CAPTCHA, Cloudflare challenges, rate limiting, (3) JavaScript rendering - SPAs, dynamic content loaded after page load. Can fetch pages, click elements, fill forms, and extract content. Opens real browser for user authentication, then automates interactions and extraction. DO NOT use for simple HTML pages that work with regular HTTP GET requests."
         };
 

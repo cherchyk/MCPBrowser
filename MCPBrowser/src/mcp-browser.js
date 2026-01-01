@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MCP Browser Server - Main Entry Point
+ * MCPBrowser Server - Main Entry Point
  * A Model Context Protocol server that provides browser automation capabilities
  * with support for authentication flows, tab reuse, and interactive actions.
  */
