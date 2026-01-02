@@ -4,6 +4,16 @@ All notable changes to the MCPBrowser project (both the MCP server and VS Code e
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-01-02
+
+### MCP Server
+- 🧪 **Tool selection testing framework**: Added automated testing to verify AI models select the correct tools based on user queries
+- 📝 **Improved tool descriptions**: Enhanced tool descriptions for better AI model understanding and tool selection accuracy
+- 📄 **Documentation cleanup**: Removed internal implementation details from README for clearer user-facing documentation
+
+### VS Code Extension
+- 📦 **Version sync**: Updated to mcpbrowser@0.3.3 dependency for consistency
+
 ## [0.3.3] - 2026-01-01
 
 ### Searchability Improvements

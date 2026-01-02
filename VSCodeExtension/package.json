@@ -2,7 +2,7 @@
   "name": "mcpbrowser",
   "displayName": "MCPBrowser - Web Browser MCP Server",
   "description": "Lightweight MCP browser server extension for GitHub Copilot. Fetch web pages using real browser - handles login, SSO, CAPTCHA, and anti-crawler protection.",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "publisher": "cherchyk",
   "icon": "icon.png",
   "engines": {
