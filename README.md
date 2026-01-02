@@ -260,6 +260,8 @@ Closes the browser tab for the given URL's hostname. Removes the page from the t
 - Free up browser memory
 - Reset to fresh state before new login
 
+---
+
 ## Configuration (Optional)
 
 Environment variables for advanced setup:
