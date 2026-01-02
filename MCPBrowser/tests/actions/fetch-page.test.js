@@ -1,6 +1,7 @@
 /**
  * Integration tests - REQUIRES REAL CHROME AND USER AUTHENTICATION
  * These tests will actually open Chrome browser and require manual login
+ * Updated for MCP spec compliance: no success field, use instanceof ErrorResponse
  * 
  * Run locally (all tests):
  *   npm test
@@ -13,6 +14,7 @@
 
 import assert from 'assert';
 import { fetchPage, closeBrowser } from '../../src/mcp-browser.js';
+import { ErrorResponse } from '../../src/core/responses.js';
 
 console.log('🚀 Starting Integration Tests (REAL CHROME)\n');
 console.log('⚠️  This will open Chrome browser and may require authentication');
@@ -51,15 +53,16 @@ await test('Should handle gmail.com → mail.google.com permanent redirect', asy
   
   const result = await fetchPage({ url });
   
-  console.log(`   ✅ Result: ${result.success ? 'SUCCESS' : 'FAILED'}`);
-  if (result.success) {
+  const isSuccess = !(result instanceof ErrorResponse);
+  console.log(`   ✅ Result: ${isSuccess ? 'SUCCESS' : 'FAILED'}`);
+  if (isSuccess) {
     console.log(`   🔗 Final URL: ${result.currentUrl}`);
     console.log(`   📄 HTML length: ${result.html?.length || 0} chars`);
   } else {
-    console.log(`   ❌ Error: ${result.error}`);
+    console.log(`   ❌ Error: ${result.message}`);
   }
   
-  assert.strictEqual(result.success, true, 'Should successfully fetch gmail.com');
+  assert.ok(isSuccess, 'Should successfully fetch gmail.com');
   assert.ok(result.currentUrl.includes('mail.google.com'), `Should redirect to mail.google.com, got: ${result.currentUrl}`);
   assert.ok(result.html && result.html.length > 0, 'Should return HTML content');
   assert.ok(result.html.includes('Gmail') || result.html.includes('Google'), 'HTML should contain Gmail or Google content');
@@ -77,16 +80,16 @@ await test('Should fetch eng.ms page, extract links, and load them (full Copilot
   
   const result = await fetchPage({ url });
   
-  console.log(`   ✅ Result: ${result.success ? 'SUCCESS' : 'FAILED'}`);
-  if (result.success) {
+  console.log(`   ✅ Result: ${!(result instanceof ErrorResponse) ? 'SUCCESS' : 'FAILED'}`);
+  if (!(result instanceof ErrorResponse)) {
     console.log(`   🔗 Final URL: ${result.currentUrl}`);
     console.log(`   📄 HTML length: ${result.html?.length || 0} chars`);
   } else {
-    console.log(`   ❌ Error: ${result.error}`);
+    console.log(`   ❌ Error: ${result.message}`);
     console.log(`   💡 Hint: ${result.hint}`);
   }
   
-  assert.strictEqual(result.success, true, 'Should successfully fetch page after authentication');
+  assert.strictEqual(!(result instanceof ErrorResponse), true, 'Should successfully fetch page after authentication');
   assert.ok(result.currentUrl.includes('eng.ms'), `URL should be from eng.ms domain, got: ${result.currentUrl}`);
   assert.ok(result.html && result.html.length > 0, 'Should return HTML content');
   
@@ -151,7 +154,7 @@ await test('Should fetch eng.ms page, extract links, and load them (full Copilot
     const linkResult = await fetchPage({ url: link });
     
     console.log(`   ✅ Loaded: ${linkResult.currentUrl}`);
-    assert.strictEqual(linkResult.success, true, `Should successfully load link ${i+1}: ${link}`);
+    assert.strictEqual(!(linkResult instanceof ErrorResponse), true, `Should successfully load link ${i+1}: ${link}`);
     assert.ok(linkResult.html && linkResult.html.length > 0, `Link ${i+1} should return HTML content`);
   }
 });
@@ -162,7 +165,7 @@ await test('Should support removeUnnecessaryHTML parameter', async () => {
   console.log(`   📄 Fetching with removeUnnecessaryHTML=true (default)`);
   const cleanResult = await fetchPage({ url, removeUnnecessaryHTML: true });
   
-  assert.strictEqual(cleanResult.success, true, 'Should successfully fetch with removeUnnecessaryHTML=true');
+  assert.strictEqual(!(cleanResult instanceof ErrorResponse), true, 'Should successfully fetch with removeUnnecessaryHTML=true');
   assert.ok(cleanResult.html && cleanResult.html.length > 0, 'Should return cleaned HTML');
   assert.ok(!cleanResult.html.includes('<script'), 'Cleaned HTML should not contain script tags');
   assert.ok(!cleanResult.html.includes('<style'), 'Cleaned HTML should not contain style tags');
@@ -172,7 +175,7 @@ await test('Should support removeUnnecessaryHTML parameter', async () => {
   console.log(`   📄 Fetching with removeUnnecessaryHTML=false`);
   const rawResult = await fetchPage({ url, removeUnnecessaryHTML: false });
   
-  assert.strictEqual(rawResult.success, true, 'Should successfully fetch with removeUnnecessaryHTML=false');
+  assert.strictEqual(!(rawResult instanceof ErrorResponse), true, 'Should successfully fetch with removeUnnecessaryHTML=false');
   assert.ok(rawResult.html && rawResult.html.length > 0, 'Should return raw HTML');
   console.log(`   ✅ Raw HTML length: ${rawResult.html.length} chars`);
   
@@ -194,7 +197,7 @@ await test('Should respect postLoadWait parameter (0ms, default, 2000ms)', async
   const result1 = await fetchPage({ url: testUrl, postLoadWait: 0 });
   const duration1 = Date.now() - start1;
   
-  assert.strictEqual(result1.success, true, 'Should successfully fetch with postLoadWait=0');
+  assert.ok(!(result1 instanceof ErrorResponse), 'Should successfully fetch with postLoadWait=0');
   console.log(`   ✅ Completed in ${duration1}ms (no post-load wait)`);
   
   // Test 2: Default (1000ms wait)
@@ -203,7 +206,7 @@ await test('Should respect postLoadWait parameter (0ms, default, 2000ms)', async
   const result2 = await fetchPage({ url: testUrl });
   const duration2 = Date.now() - start2;
   
-  assert.strictEqual(result2.success, true, 'Should successfully fetch with default postLoadWait');
+  assert.ok(!(result2 instanceof ErrorResponse), 'Should successfully fetch with default postLoadWait');
   assert.ok(duration2 >= duration1 + 900, `Should wait ~1 second, took ${duration2}ms vs ${duration1}ms`);
   console.log(`   ✅ Completed in ${duration2}ms (~1 second post-load wait)`);
   
@@ -213,7 +216,7 @@ await test('Should respect postLoadWait parameter (0ms, default, 2000ms)', async
   const result3 = await fetchPage({ url: testUrl, postLoadWait: 2000 });
   const duration3 = Date.now() - start3;
   
-  assert.strictEqual(result3.success, true, 'Should successfully fetch with postLoadWait=2000');
+  assert.ok(!(result3 instanceof ErrorResponse), 'Should successfully fetch with postLoadWait=2000');
   assert.ok(duration3 >= duration1 + 1900, `Should wait ~2 seconds, took ${duration3}ms vs ${duration1}ms`);
   console.log(`   ✅ Completed in ${duration3}ms (~2 second post-load wait)`);
   

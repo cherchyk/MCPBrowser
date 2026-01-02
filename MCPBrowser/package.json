@@ -12,7 +12,7 @@
     "mcp": "node src/mcp-browser.js",
     "test": "node tests/run-all.js",
     "test:unit": "node tests/run-unit.js",
-    "test:ci": "node tests/run-unit.js"
+    "test:descriptions": "node tests/tool-selection/run-tool-selection-tests.js"
   },
   "keywords": [
     "mcp",

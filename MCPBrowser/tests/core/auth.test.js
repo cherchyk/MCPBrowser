@@ -1,7 +1,8 @@
 import assert from 'assert';
 import { waitForAutoAuth, waitForManualAuth } from '../../src/mcp-browser.js';
 
-console.log('🧪 Testing authentication flow functions\n');
+console.log('🧪 Testing authentication flow functions (internal utility functions)\n');
+console.log('📝 Note: These functions return plain objects, not response classes\n');
 
 let testsPassed = 0;
 let testsFailed = 0;

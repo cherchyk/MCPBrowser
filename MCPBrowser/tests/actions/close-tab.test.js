@@ -1,10 +1,12 @@
 /**
  * Tests for close-tab action
+ * Updated for MCP spec compliance: no success field, use instanceof ErrorResponse
  */
 
 import { closeTab } from '../../src/actions/close-tab.js';
 import { fetchPage } from '../../src/actions/fetch-page.js';
 import { domainPages, getBrowser, closeBrowser } from '../../src/core/browser.js';
+import { ErrorResponse } from '../../src/core/responses.js';
 
 /**
  * Test: Close tab for a loaded domain
@@ -19,8 +21,8 @@ async function testCloseLoadedTab() {
       removeUnnecessaryHTML: false 
     });
     
-    if (!fetchResult.success) {
-      throw new Error(`Failed to load page: ${fetchResult.error}`);
+    if (fetchResult instanceof ErrorResponse) {
+      throw new Error(`Failed to load page: ${fetchResult.message}`);
     }
     
     console.log('✓ Page loaded successfully');
@@ -34,8 +36,8 @@ async function testCloseLoadedTab() {
     // Close the tab
     const closeResult = await closeTab({ url: 'https://example.com' });
     
-    if (!closeResult.success) {
-      throw new Error(`Failed to close tab: ${closeResult.error}`);
+    if (closeResult instanceof ErrorResponse) {
+      throw new Error(`Failed to close tab: ${closeResult.message}`);
     }
     
     console.log(`✓ Close result: ${closeResult.message}`);
@@ -65,12 +67,12 @@ async function testCloseNonExistentTab() {
     // Try to close a tab that doesn't exist
     const closeResult = await closeTab({ url: 'https://never-loaded-domain.com' });
     
-    if (!closeResult.success) {
-      throw new Error(`Close failed unexpectedly: ${closeResult.error}`);
+    if (closeResult instanceof ErrorResponse) {
+      throw new Error(`Close failed unexpectedly: ${closeResult.message}`);
     }
     
-    if (!closeResult.alreadyClosed) {
-      throw new Error('Expected alreadyClosed flag to be true');
+    if (!closeResult.message.includes('No open tab found')) {
+      throw new Error(`Expected message about no tab found, got: ${closeResult.message}`);
     }
     
     console.log(`✓ Close result: ${closeResult.message}`);
@@ -96,8 +98,8 @@ async function testCloseSameDomainTwice() {
       removeUnnecessaryHTML: false 
     });
     
-    if (!fetchResult.success) {
-      throw new Error(`Failed to load page: ${fetchResult.error}`);
+    if (fetchResult instanceof ErrorResponse) {
+      throw new Error(`Failed to load page: ${fetchResult.message}`);
     }
     
     console.log('✓ Page loaded successfully');
@@ -105,8 +107,8 @@ async function testCloseSameDomainTwice() {
     // Close once
     const firstClose = await closeTab({ url: 'https://example.org/some/path' });
     
-    if (!firstClose.success) {
-      throw new Error(`First close failed: ${firstClose.error}`);
+    if (firstClose instanceof ErrorResponse) {
+      throw new Error(`First close failed: ${firstClose.message}`);
     }
     
     console.log(`✓ First close: ${firstClose.message}`);
@@ -114,12 +116,12 @@ async function testCloseSameDomainTwice() {
     // Close again - should handle gracefully
     const secondClose = await closeTab({ url: 'https://example.org' });
     
-    if (!secondClose.success) {
-      throw new Error(`Second close failed: ${secondClose.error}`);
+    if (secondClose instanceof ErrorResponse) {
+      throw new Error(`Second close failed: ${secondClose.message}`);
     }
     
-    if (!secondClose.alreadyClosed) {
-      throw new Error('Expected alreadyClosed flag to be true on second close');
+    if (!secondClose.message.includes('No open tab found') && !secondClose.message.includes('already closed')) {
+      throw new Error(`Expected message about no tab or already closed, got: ${secondClose.message}`);
     }
     
     console.log(`✓ Second close: ${secondClose.message}`);
@@ -141,21 +143,21 @@ async function testInvalidUrl() {
   try {
     // Test with missing URL
     const result1 = await closeTab({});
-    if (result1.success) {
+    if (!(result1 instanceof ErrorResponse)) {
       throw new Error('Expected failure for missing URL');
     }
     console.log('✓ Correctly rejected missing URL');
     
     // Test with null URL
     const result2 = await closeTab({ url: null });
-    if (result2.success) {
+    if (!(result2 instanceof ErrorResponse)) {
       throw new Error('Expected failure for null URL');
     }
     console.log('✓ Correctly rejected null URL');
     
     // Test with empty string
     const result3 = await closeTab({ url: '' });
-    if (result3.success) {
+    if (!(result3 instanceof ErrorResponse)) {
       throw new Error('Expected failure for empty URL');
     }
     console.log('✓ Correctly rejected empty URL');
@@ -187,8 +189,8 @@ async function testDomainExtraction() {
     // Close using same hostname (must match exactly)
     const closeResult = await closeTab({ url: 'https://www.example.net' });
     
-    if (!closeResult.success) {
-      throw new Error(`Close failed: ${closeResult.error}`);
+    if (closeResult instanceof ErrorResponse) {
+      throw new Error(`Close failed: ${closeResult.message}`);
     }
     
     if (closeResult.hostname !== 'www.example.net') {
@@ -224,7 +226,7 @@ async function testFreshSessionAfterClose() {
       removeUnnecessaryHTML: false 
     });
     
-    if (!firstLoad.success) {
+    if (firstLoad instanceof ErrorResponse) {
       throw new Error('First load failed');
     }
     
@@ -236,7 +238,7 @@ async function testFreshSessionAfterClose() {
     // Close tab
     const closeResult = await closeTab({ url: 'https://httpbin.org' });
     
-    if (!closeResult.success) {
+    if (closeResult instanceof ErrorResponse) {
       throw new Error('Close failed');
     }
     
@@ -248,7 +250,7 @@ async function testFreshSessionAfterClose() {
       removeUnnecessaryHTML: false 
     });
     
-    if (!secondLoad.success) {
+    if (secondLoad instanceof ErrorResponse) {
       throw new Error('Second load failed');
     }
     
@@ -289,7 +291,7 @@ async function testCloseAfterRedirect() {
       removeUnnecessaryHTML: false 
     });
     
-    if (!fetchResult.success) {
+    if (fetchResult instanceof ErrorResponse) {
       throw new Error('Failed to load page');
     }
     
@@ -306,8 +308,8 @@ async function testCloseAfterRedirect() {
     // Close using final URL (should still work via URL search)
     const closeResult = await closeTab({ url: finalUrl });
     
-    if (!closeResult.success) {
-      throw new Error(`Close failed: ${closeResult.error}`);
+    if (closeResult instanceof ErrorResponse) {
+      throw new Error(`Close failed: ${closeResult.message}`);
     }
     
     console.log(`✓ Closed tab using final URL: ${fetchResult.currentUrl}`);

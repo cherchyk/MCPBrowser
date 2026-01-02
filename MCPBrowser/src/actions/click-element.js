@@ -1,5 +1,5 @@
 /**
- * click.js - Click element action
+ * click-element.js - Click element action
  * 
  * This function handles two distinct use cases:
  * 
@@ -26,6 +26,105 @@
 
 import { getBrowser, domainPages } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
+import { MCPResponse, ErrorResponse } from '../core/responses.js';
+
+/**
+ * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
+ */
+
+// ============================================================================
+// RESPONSE CLASS
+// ============================================================================
+
+/**
+ * Response for successful click_element operations
+ */
+export class ClickElementSuccessResponse extends MCPResponse {
+  /**
+   * @param {string} currentUrl - URL after click
+   * @param {string} message - Success message
+   * @param {string|null} html - Page HTML if returnHtml was true
+   * @param {string[]} nextSteps - Suggested next actions
+   */
+  constructor(currentUrl, message, html, nextSteps) {
+    super(nextSteps);
+    
+    if (typeof currentUrl !== 'string') {
+      throw new TypeError('currentUrl must be a string');
+    }
+    if (typeof message !== 'string') {
+      throw new TypeError('message must be a string');
+    }
+    if (html !== null && typeof html !== 'string') {
+      throw new TypeError('html must be a string or null');
+    }
+    
+    this.currentUrl = currentUrl;
+    this.message = message;
+    this.html = html;
+  }
+
+  _getAdditionalFields() {
+    return {
+      currentUrl: this.currentUrl,
+      message: this.message,
+      html: this.html
+    };
+  }
+
+  getTextSummary() {
+    return this.message || "Element clicked successfully";
+  }
+}
+
+// ============================================================================
+// TOOL DEFINITION
+// ============================================================================
+
+/**
+ * @type {Tool}
+ */
+export const CLICK_ELEMENT_TOOL = {
+  name: "click_element",
+  title: "Click Element",
+  description: "**BROWSER INTERACTION** - Clicks elements on browser-loaded pages. Use this for navigation (clicking links/buttons), form submission, and any user interaction that requires clicking.\n\nWorks with any clickable element including buttons, links, or elements with onclick handlers. Can target by CSS selector or text content. Waits for page stability and returns updated HTML by default.\n\n**PREREQUISITE**: Page MUST be loaded with fetch_webpage first. This tool operates on an already-loaded page in the browser.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      url: { type: "string", description: "The URL of the page (must match a previously fetched page)" },
+      selector: { type: "string", description: "CSS selector for the element to click (e.g., '#submit-btn', '.login-button')" },
+      text: { type: "string", description: "Text content to search for if selector is not provided (e.g., 'Sign In', 'Submit')" },
+      waitForElementTimeout: { type: "number", description: "Maximum time to wait for element in milliseconds", default: 1000 },
+      returnHtml: { type: "boolean", description: "Whether to wait for stability and return HTML after clicking. Set to false for fast form interactions (checkboxes, radio buttons).", default: true },
+      removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%. Only used when returnHtml is true.", default: true },
+      postClickWait: { type: "number", description: "Milliseconds to wait after click for SPAs to render dynamic content.", default: 1000 }
+    },
+    required: ["url"],
+    additionalProperties: false,
+  },
+  outputSchema: {
+    type: "object",
+    properties: {
+      currentUrl: { type: "string", description: "URL after click" },
+      message: { type: "string", description: "Success message" },
+      html: { 
+        type: ["string", "null"], 
+        description: "Page HTML if returnHtml was true, null otherwise" 
+      },
+      nextSteps: { 
+        type: "array", 
+        items: { type: "string" },
+        description: "Suggested next actions"
+      }
+    },
+    required: ["currentUrl", "message", "html", "nextSteps"],
+    additionalProperties: false
+  }
+};
+
+// ============================================================================
+// ACTION FUNCTION
+// ============================================================================
 
 /**
  * Click on an element on the page
@@ -73,10 +172,12 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
   let page = domainPages.get(hostname);
   
   if (!page || page.isClosed()) {
-    return {
-      success: false,
-      error: `No open page found for ${hostname}. Please fetch the page first using fetch_webpage.`
-    };
+    return new ErrorResponse(
+      `No open page found for ${hostname}. Please fetch the page first using fetch_webpage.`,
+      [
+        "Use fetch_webpage to load the page first"
+      ]
+    );
   }
 
   try {
@@ -113,10 +214,14 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     }
 
     if (!elementHandle || !elementHandle.asElement()) {
-      return {
-        success: false,
-        error: selector ? `Element not found: ${selector}` : `Element with text "${text}" not found`
-      };
+      return new ErrorResponse(
+        selector ? `Element not found: ${selector}` : `Element with text "${text}" not found`,
+        [
+          "Use get_current_html to verify page content",
+          "Try a different selector or text",
+          "Check if the element is visible on the page"
+        ]
+      );
     }
 
     // Scroll element into view and click
@@ -142,13 +247,17 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       const currentUrl = page.url();
       const html = await extractAndProcessHtml(page, removeUnnecessaryHTML);
       
-      return {
-        success: true,
-        message: selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`,
+      return new ClickElementSuccessResponse(
         currentUrl,
+        selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`,
         html,
-        clicked: selector || `text:"${text}"`
-      };
+        [
+          "Use click_element again to navigate further",
+          "Use type_text to fill forms if needed",
+          "Use get_current_html to refresh page state",
+          "Use close_tab when finished"
+        ]
+      );
     } else {
       // Wait for page to stabilize even for fast clicks (ensures JS has finished)
       await waitForPageStability(page);
@@ -160,17 +269,25 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       
       const currentUrl = page.url();
       
-      return {
-        success: true,
-        message: selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`,
+      return new ClickElementSuccessResponse(
         currentUrl,
-        clicked: selector || `text:"${text}"`
-      };
+        selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`,
+        null,
+        [
+          "Use get_current_html to see updated page state",
+          "Use click_element or type_text for more interactions",
+          "Use close_tab when finished"
+        ]
+      );
     }
   } catch (err) {
-    return {
-      success: false,
-      error: `Failed to click element: ${err.message}`
-    };
+    return new ErrorResponse(
+      `Failed to click element: ${err.message}`,
+      [
+        "Use get_current_html to check current page state",
+        "Verify the selector or text is correct",
+        "Try fetch_webpage to reload if page is stale"
+      ]
+    );
   }
 }

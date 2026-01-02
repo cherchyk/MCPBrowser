@@ -1,9 +1,110 @@
 /**
- * type.js - Type text into input fields
+ * type-text.js - Type text into input fields
  */
 
 import { getBrowser, domainPages } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
+import { MCPResponse, ErrorResponse } from '../core/responses.js';
+
+/**
+ * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
+ */
+
+// ============================================================================
+// RESPONSE CLASS
+// ============================================================================
+
+/**
+ * Response for successful type_text operations
+ */
+export class TypeTextSuccessResponse extends MCPResponse {
+  /**
+   * @param {string} currentUrl - URL after typing
+   * @param {string} message - Success message
+   * @param {string|null} html - Page HTML if returnHtml was true
+   * @param {string[]} nextSteps - Suggested next actions
+   */
+  constructor(currentUrl, message, html, nextSteps) {
+    super(nextSteps);
+    
+    if (typeof currentUrl !== 'string') {
+      throw new TypeError('currentUrl must be a string');
+    }
+    if (typeof message !== 'string') {
+      throw new TypeError('message must be a string');
+    }
+    if (html !== null && typeof html !== 'string') {
+      throw new TypeError('html must be a string or null');
+    }
+    
+    this.currentUrl = currentUrl;
+    this.message = message;
+    this.html = html;
+  }
+
+  _getAdditionalFields() {
+    return {
+      currentUrl: this.currentUrl,
+      message: this.message,
+      html: this.html
+    };
+  }
+
+  getTextSummary() {
+    return this.message || "Text typed successfully";
+  }
+}
+
+// ============================================================================
+// TOOL DEFINITION
+// ============================================================================
+
+/**
+ * @type {Tool}
+ */
+export const TYPE_TEXT_TOOL = {
+  name: "type_text",
+  title: "Type Text",
+  description: "**BROWSER INTERACTION** - Types text into input fields on browser-loaded pages. Use this for filling forms, entering search queries, or any text input on the page.\n\nWorks with input fields, textareas, and other editable elements.\n\n**PREREQUISITE**: Page MUST be loaded with fetch_webpage first. This tool operates on an already-loaded page in the browser.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      url: { type: "string", description: "The URL of the page (must match a previously fetched page)" },
+      selector: { type: "string", description: "CSS selector for the input element (e.g., '#username', 'input[name=\"email\"]')" },
+      text: { type: "string", description: "Text to type into the field" },
+      clear: { type: "boolean", description: "Whether to clear existing text first", default: true },
+      typeDelay: { type: "number", description: "Delay between keystrokes in milliseconds (simulates human typing)", default: 50 },
+      waitForElementTimeout: { type: "number", description: "Maximum time to wait for element in milliseconds", default: 5000 },
+      returnHtml: { type: "boolean", description: "Whether to wait for stability and return HTML after typing.", default: true },
+      removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%. Only used when returnHtml is true.", default: true },
+      postTypeWait: { type: "number", description: "Milliseconds to wait after typing for SPAs to render dynamic content.", default: 1000 }
+    },
+    required: ["url", "selector", "text"],
+    additionalProperties: false
+  },
+  outputSchema: {
+    type: "object",
+    properties: {
+      currentUrl: { type: "string", description: "URL after typing" },
+      message: { type: "string", description: "Success message" },
+      html: { 
+        type: ["string", "null"], 
+        description: "Page HTML if returnHtml was true, null otherwise" 
+      },
+      nextSteps: { 
+        type: "array", 
+        items: { type: "string" },
+        description: "Suggested next actions"
+      }
+    },
+    required: ["currentUrl", "message", "html", "nextSteps"],
+    additionalProperties: false
+  }
+};
+
+// ============================================================================
+// ACTION FUNCTION
+// ============================================================================
 
 /**
  * Type text into an input field
@@ -43,10 +144,12 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
   let page = domainPages.get(hostname);
   
   if (!page || page.isClosed()) {
-    return {
-      success: false,
-      error: `No open page found for ${hostname}. Please fetch the page first using fetch_webpage_protected.`
-    };
+    return new ErrorResponse(
+      `No open page found for ${hostname}. Please fetch the page first using fetch_webpage_protected.`,
+      [
+        "Use fetch_webpage to load the page first"
+      ]
+    );
   }
 
   try {
@@ -71,14 +174,17 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
       const currentUrl = page.url();
       const html = await extractAndProcessHtml(page, removeUnnecessaryHTML);
       
-      return {
-        success: true,
-        message: `Typed text into: ${selector}`,
+      return new TypeTextSuccessResponse(
         currentUrl,
+        `Typed text into: ${selector}`,
         html,
-        selector,
-        textLength: String(text).length
-      };
+        [
+          "Use type_text to fill additional fields",
+          "Use click_element to submit the form or navigate",
+          "Use get_current_html to check for validation messages",
+          "Use close_tab when finished"
+        ]
+      );
     } else {
       // Wait for page to stabilize even without returning HTML
       await waitForPageStability(page);
@@ -90,18 +196,25 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
       
       const currentUrl = page.url();
       
-      return {
-        success: true,
-        message: `Typed text into: ${selector}`,
+      return new TypeTextSuccessResponse(
         currentUrl,
-        selector,
-        textLength: String(text).length
-      };
+        `Typed text into: ${selector}`,
+        null,
+        [
+          "Use get_current_html to see updated page state",
+          "Use type_text for additional fields or click_element to submit",
+          "Use close_tab when finished"
+        ]
+      );
     }
   } catch (err) {
-    return {
-      success: false,
-      error: `Failed to type text: ${err.message}`
-    };
+    return new ErrorResponse(
+      `Failed to type text: ${err.message}`,
+      [
+        "Use get_current_html to verify page state",
+        "Check if the selector is correct",
+        "Verify the input field is visible and enabled"
+      ]
+    );
   }
 }

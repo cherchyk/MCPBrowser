@@ -1,5 +1,11 @@
+/**
+ * Tests for clickElement action
+ * Updated for MCP spec compliance: no success field, use instanceof ErrorResponse
+ */
+
 import assert from 'assert';
 import { clickElement, fetchPage, getBrowser, closeBrowser } from '../../src/mcp-browser.js';
+import { ErrorResponse } from '../../src/core/responses.js';
 
 console.log('🧪 Testing clickElement action\n');
 
@@ -57,8 +63,8 @@ await test('Should return error if page not loaded', async () => {
     url: 'https://unloaded-domain-test.com', 
     selector: 'button' 
   });
-  assert.strictEqual(result.success, false);
-  assert.match(result.error, /No open page found/);
+  assert.strictEqual(result instanceof ErrorResponse, true);
+  assert.match(result.message, /No open page found/);
 });
 
 // ============================================================================

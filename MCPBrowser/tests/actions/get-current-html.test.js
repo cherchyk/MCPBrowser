@@ -1,5 +1,11 @@
+/**
+ * Tests for getCurrentHtml action
+ * Updated for MCP spec compliance: no success field, use instanceof ErrorResponse
+ */
+
 import assert from 'assert';
 import { getCurrentHtml, fetchPage, clickElement, getBrowser, closeBrowser } from '../../src/mcp-browser.js';
+import { ErrorResponse } from '../../src/core/responses.js';
 
 console.log('🧪 Testing getCurrentHtml action\n');
 
@@ -45,20 +51,20 @@ await test('Should require url parameter', async () => {
 
 await test('Should return error if page not loaded', async () => {
   const result = await getCurrentHtml({ url: 'https://never-loaded-domain-12345.com' });
-  assert.strictEqual(result.success, false);
-  assert.match(result.error, /No open page found/);
+  assert.strictEqual(result instanceof ErrorResponse, true);
+  assert.match(result.message, /No open page found/);
 });
 
 await test('Should get current HTML from loaded page', async () => {
   // First fetch a page
   const fetchResult = await fetchPage({ url: testUrl });
-  assert.strictEqual(fetchResult.success, true, 'Should fetch page successfully');
+  assert.strictEqual(!(fetchResult instanceof ErrorResponse), true, 'Should fetch page successfully');
   
   // Get current HTML
   const result = await getCurrentHtml({ url: testUrl });
-  assert.strictEqual(result.success, true, 'Should get HTML successfully');
+  assert.strictEqual(!(result instanceof ErrorResponse), true, 'Should get HTML successfully');
   assert.ok(result.html, 'Should return HTML content');
-  assert.ok(result.url, 'Should return current URL');
+  assert.ok(result.currentUrl, 'Should return current URL');
   assert.ok(result.html.length > 0, 'HTML should not be empty');
 });
 
@@ -71,7 +77,7 @@ await test('Should respect removeUnnecessaryHTML parameter', async () => {
     url: testUrl,
     removeUnnecessaryHTML: true 
   });
-  assert.strictEqual(cleanedResult.success, true);
+  assert.strictEqual(!(cleanedResult instanceof ErrorResponse), true);
   const cleanedLength = cleanedResult.html.length;
   
   // Get raw HTML
@@ -79,7 +85,7 @@ await test('Should respect removeUnnecessaryHTML parameter', async () => {
     url: testUrl,
     removeUnnecessaryHTML: false 
   });
-  assert.strictEqual(rawResult.success, true);
+  assert.strictEqual(!(rawResult instanceof ErrorResponse), true);
   const rawLength = rawResult.html.length;
   
   // Raw should be longer than cleaned

@@ -10,7 +10,8 @@ const __dirname = dirname(__filename);
 const unitTests = [
   'core/browser.test.js',  // Unit test with mocks
   'core/html.test.js',     // Unit test
-  'core/page.test.js'      // Unit test
+  'core/page.test.js',     // Unit test
+  'tool-selection/tool-selection.test.js' // Tool description testing (no browser required)
 ];
 
 // Slow integration tests (require browser) - RUN SEQUENTIALLY

@@ -1,5 +1,11 @@
+/**
+ * Tests for typeText action
+ * Updated for MCP spec compliance: no success field, use instanceof ErrorResponse
+ */
+
 import assert from 'assert';
 import { typeText, getBrowser, closeBrowser } from '../../src/mcp-browser.js';
+import { ErrorResponse } from '../../src/core/responses.js';
 
 console.log('🧪 Testing typeText action\n');
 
@@ -66,8 +72,8 @@ await test('Should return error if page not loaded', async () => {
     selector: 'input',
     text: 'test' 
   });
-  assert.strictEqual(result.success, false);
-  assert.match(result.error, /No open page found/);
+  assert.strictEqual(result instanceof ErrorResponse, true);
+  assert.match(result.message, /No open page found/);
 });
 
 // ============================================================================
