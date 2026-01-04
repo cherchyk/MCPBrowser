@@ -68,8 +68,17 @@ export async function waitForAutoAuth(page, hostname, originalBase, timeoutMs = 
       const checkHostname = new URL(checkUrl).hostname;
       const checkBase = getBaseDomain(checkHostname);
       
-      // Check if returned to original domain/base and no longer on auth URL
-      if ((checkHostname === hostname || checkBase === originalBase) && !isLikelyAuthUrl(checkUrl)) {
+      // Extract root domain word (e.g., "google" from both "gmail.com" and "google.com")
+      const getRoot = (domain) => domain.split('.')[0];
+      const originalRoot = getRoot(originalBase);
+      const checkRoot = getRoot(checkBase);
+      
+      // Check if returned to original domain/base or related domain
+      const isRelatedDomain = checkHostname === hostname ||
+                              checkBase === originalBase || 
+                              (originalRoot === checkRoot && originalRoot.length > 3); // Avoid false positives
+      
+      if (isRelatedDomain && !isLikelyAuthUrl(checkUrl)) {
         console.error(`[MCPBrowser] Auto-authentication successful! Now at: ${checkUrl}`);
         return { success: true, hostname: checkHostname };
       }
@@ -93,7 +102,7 @@ export async function waitForAutoAuth(page, hostname, originalBase, timeoutMs = 
  */
 export async function waitForManualAuth(page, hostname, originalBase, timeoutMs = 600000) {
   console.error(`[MCPBrowser] Auto-authentication did not complete. Waiting for user...`);
-  console.error(`[MCPBrowser] Will wait for return to ${hostname} or same base domain (${originalBase})`);
+  console.error(`[MCPBrowser] Will wait for return to ${hostname} or related domain under ${originalBase}`);
   
   const deadline = Date.now() + timeoutMs;
   
@@ -103,8 +112,20 @@ export async function waitForManualAuth(page, hostname, originalBase, timeoutMs 
       const checkHostname = new URL(checkUrl).hostname;
       const checkBase = getBaseDomain(checkHostname);
       
-      // Auth complete if back to original domain OR same base domain AND not on auth page
-      if ((checkHostname === hostname || checkBase === originalBase) && !isLikelyAuthUrl(checkUrl)) {
+      // Extract root domain word (e.g., "google" from both "gmail.com" and "google.com")
+      const getRoot = (domain) => domain.split('.')[0];
+      const originalRoot = getRoot(originalBase);
+      const checkRoot = getRoot(checkBase);
+      
+      // Auth complete if:
+      // 1. Exact hostname match, OR
+      // 2. Same base domain (e.g., mail.google.com vs accounts.google.com), OR
+      // 3. Related services sharing root (e.g., gmail.com vs google.com - both share "google")
+      const isRelatedDomain = checkHostname === hostname ||
+                              checkBase === originalBase || 
+                              (originalRoot === checkRoot && originalRoot.length > 3); // Avoid false positives with short names
+      
+      if (isRelatedDomain && !isLikelyAuthUrl(checkUrl)) {
         console.error(`[MCPBrowser] Authentication completed! Now at: ${checkUrl}`);
         
         if (checkHostname !== hostname) {

@@ -66,6 +66,11 @@ export const FETCH_WEBPAGE_TOOL = {
     type: "object",
     properties: {
       url: { type: "string", description: "The URL to fetch" },
+      browser: { 
+        type: "string", 
+        description: "Browser to use: 'chrome' or 'edge'. Leave empty for auto-detection. Chrome/Edge use CDP to access existing sessions for authenticated sites.",
+        enum: ["", "chrome", "edge"]
+      },
       removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
       postLoadWait: { type: "number", description: "Milliseconds to wait after page load for SPAs to render dynamic content.", default: 1000 }
     },
@@ -99,11 +104,12 @@ export const FETCH_WEBPAGE_TOOL = {
  * and convert relative URLs to absolute.
  * @param {Object} params - Fetch parameters
  * @param {string} params.url - The URL to fetch
+ * @param {string} [params.browser=''] - Browser type (chrome, edge) or empty for auto-detect
  * @param {boolean} [params.removeUnnecessaryHTML=true] - Whether to clean HTML (removes scripts, styles, etc.)
  * @param {number} [params.postLoadWait=1000] - Milliseconds to wait after page load for SPAs to render
  * @returns {Promise<Object>} Result object with success status, URL, HTML content, or error details
  */
-export async function fetchPage({ url, removeUnnecessaryHTML = true, postLoadWait = 1000 }) {
+export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = true, postLoadWait = 1000 }) {
   // Handle missing URL with environment variable fallback
   if (!url) {
     const fallbackUrl = process.env.DEFAULT_FETCH_URL || process.env.MCP_DEFAULT_FETCH_URL;
@@ -132,12 +138,12 @@ export async function fetchPage({ url, removeUnnecessaryHTML = true, postLoadWai
     throw new Error(`Invalid URL: ${url}`);
   }
 
-  const browser = await getBrowser();
+  const browserInstance = await getBrowser(browser);
   let page = null;
   
   try {
     // Get or create page for this domain
-    page = await getOrCreatePage(browser, hostname, reuseLastKeptPage);
+    page = await getOrCreatePage(browserInstance, hostname, reuseLastKeptPage);
     
     // Navigate to URL with fallback strategy
     await navigateToUrl(page, url, waitUntil, navigationTimeout);

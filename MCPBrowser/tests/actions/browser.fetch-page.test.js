@@ -13,8 +13,11 @@
  */
 
 import assert from 'assert';
-import { fetchPage, closeBrowser } from '../../src/mcp-browser.js';
+import { fetchPage } from '../../src/mcp-browser.js';
 import { ErrorResponse } from '../../src/core/responses.js';
+import { runWithBrowsers } from '../browsers/browser-runner.js';
+
+const browserParam = process.argv[2] || '';
 
 console.log('🚀 Starting Integration Tests (REAL CHROME)\n');
 console.log('⚠️  This will open Chrome browser and may require authentication');
@@ -45,13 +48,15 @@ function test(description, fn) {
 // Integration Tests
 // ============================================================================
 
-await test('Should handle gmail.com → mail.google.com permanent redirect', async () => {
+await runWithBrowsers(async (browserType) => {
+
+await test(`[${browserType}] Should handle gmail.com → mail.google.com permanent redirect`, async () => {
   const url = 'https://gmail.com';
   
   console.log(`   📄 Fetching ${url}`);
   console.log(`   💡 This should detect permanent redirect and return content immediately`);
   
-  const result = await fetchPage({ url });
+  const result = await fetchPage({ url, browser: browserType });
   
   const isSuccess = !(result instanceof ErrorResponse);
   console.log(`   ✅ Result: ${isSuccess ? 'SUCCESS' : 'FAILED'}`);
@@ -70,7 +75,7 @@ await test('Should handle gmail.com → mail.google.com permanent redirect', asy
   console.log(`   ✅ Permanent redirect handled correctly (gmail.com → mail.google.com)`);
 });
 
-await test('Should fetch eng.ms page, extract links, and load them (full Copilot workflow)', async () => {
+await test(`[${browserType}] Should fetch eng.ms page, extract links, and load them (full Copilot workflow)`, async () => {
   const url = 'https://eng.ms/docs/products/geneva';
   
   // Step 1: Fetch initial page (with auth waiting)
@@ -78,7 +83,7 @@ await test('Should fetch eng.ms page, extract links, and load them (full Copilot
   console.log(`   ⏳ Function will wait up to 10 minutes for authentication...`);
   console.log(`   💡 Complete login in the browser that opens`);
   
-  const result = await fetchPage({ url });
+  const result = await fetchPage({ url, browser: browserType });
   
   console.log(`   ✅ Result: ${!(result instanceof ErrorResponse) ? 'SUCCESS' : 'FAILED'}`);
   if (!(result instanceof ErrorResponse)) {
@@ -151,7 +156,7 @@ await test('Should fetch eng.ms page, extract links, and load them (full Copilot
     const link = linksToTest[i];
     console.log(`   📄 Loading link ${i+1}/${linksToTest.length}: ${link}`);
     
-    const linkResult = await fetchPage({ url: link });
+    const linkResult = await fetchPage({ url: link, browser: browserType });
     
     console.log(`   ✅ Loaded: ${linkResult.currentUrl}`);
     assert.strictEqual(!(linkResult instanceof ErrorResponse), true, `Should successfully load link ${i+1}: ${link}`);
@@ -159,11 +164,11 @@ await test('Should fetch eng.ms page, extract links, and load them (full Copilot
   }
 });
 
-await test('Should support removeUnnecessaryHTML parameter', async () => {
+await test(`[${browserType}] Should support removeUnnecessaryHTML parameter`, async () => {
   const url = 'https://eng.ms/docs/products/geneva';
   
   console.log(`   📄 Fetching with removeUnnecessaryHTML=true (default)`);
-  const cleanResult = await fetchPage({ url, removeUnnecessaryHTML: true });
+  const cleanResult = await fetchPage({ url, browser: browserType, removeUnnecessaryHTML: true });
   
   assert.strictEqual(!(cleanResult instanceof ErrorResponse), true, 'Should successfully fetch with removeUnnecessaryHTML=true');
   assert.ok(cleanResult.html && cleanResult.html.length > 0, 'Should return cleaned HTML');
@@ -173,7 +178,7 @@ await test('Should support removeUnnecessaryHTML parameter', async () => {
   console.log(`   ✅ Cleaned HTML length: ${cleanResult.html.length} chars`);
   
   console.log(`   📄 Fetching with removeUnnecessaryHTML=false`);
-  const rawResult = await fetchPage({ url, removeUnnecessaryHTML: false });
+  const rawResult = await fetchPage({ url, browser: browserType, removeUnnecessaryHTML: false });
   
   assert.strictEqual(!(rawResult instanceof ErrorResponse), true, 'Should successfully fetch with removeUnnecessaryHTML=false');
   assert.ok(rawResult.html && rawResult.html.length > 0, 'Should return raw HTML');
@@ -188,13 +193,13 @@ await test('Should support removeUnnecessaryHTML parameter', async () => {
 });
 
 // ============================================================================
-await test('Should respect postLoadWait parameter (0ms, default, 2000ms)', async () => {
+await test(`[${browserType}] Should respect postLoadWait parameter (0ms, default, 2000ms)`, async () => {
   const testUrl = 'https://example.com';
   
   // Test 1: postLoadWait = 0 (no wait)
   console.log(`   ⏱️  Test 1: Fetching with postLoadWait=0 (should be fast)`);
   const start1 = Date.now();
-  const result1 = await fetchPage({ url: testUrl, postLoadWait: 0 });
+  const result1 = await fetchPage({ url: testUrl, browser: browserType, postLoadWait: 0 });
   const duration1 = Date.now() - start1;
   
   assert.ok(!(result1 instanceof ErrorResponse), 'Should successfully fetch with postLoadWait=0');
@@ -203,7 +208,7 @@ await test('Should respect postLoadWait parameter (0ms, default, 2000ms)', async
   // Test 2: Default (1000ms wait)
   console.log(`   ⏱️  Test 2: Fetching with default postLoadWait (should wait ~1 second)`);
   const start2 = Date.now();
-  const result2 = await fetchPage({ url: testUrl });
+  const result2 = await fetchPage({ url: testUrl, browser: browserType });
   const duration2 = Date.now() - start2;
   
   assert.ok(!(result2 instanceof ErrorResponse), 'Should successfully fetch with default postLoadWait');
@@ -213,7 +218,7 @@ await test('Should respect postLoadWait parameter (0ms, default, 2000ms)', async
   // Test 3: postLoadWait = 2000 (2 second wait)
   console.log(`   ⏱️  Test 3: Fetching with postLoadWait=2000 (should wait ~2 seconds)`);
   const start3 = Date.now();
-  const result3 = await fetchPage({ url: testUrl, postLoadWait: 2000 });
+  const result3 = await fetchPage({ url: testUrl, browser: browserType, postLoadWait: 2000 });
   const duration3 = Date.now() - start3;
   
   assert.ok(!(result3 instanceof ErrorResponse), 'Should successfully fetch with postLoadWait=2000');
@@ -223,6 +228,8 @@ await test('Should respect postLoadWait parameter (0ms, default, 2000ms)', async
   console.log(`   ✅ postLoadWait parameter working correctly`);
 });
 
+}, browserParam);
+
 // Summary
 // ============================================================================
 
@@ -230,14 +237,8 @@ console.log('\n' + '='.repeat(50));
 console.log(`Tests passed: ${testsPassed}`);
 console.log(`Tests failed: ${testsFailed}`);
 console.log('='.repeat(50));
-console.log('\n💡 Browser left open for manual inspection');
-
-// Close browser connection to allow process to exit
-await closeBrowser();
 
 if (testsFailed > 0) {
   process.exit(1);
 }
-
-// Exit immediately
 process.exit(0);

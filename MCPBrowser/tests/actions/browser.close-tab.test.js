@@ -1,23 +1,28 @@
 /**
  * Tests for close-tab action
  * Updated for MCP spec compliance: no success field, use instanceof ErrorResponse
+ * Updated to test with all available browsers
  */
 
 import { closeTab } from '../../src/actions/close-tab.js';
 import { fetchPage } from '../../src/actions/fetch-page.js';
-import { domainPages, getBrowser, closeBrowser } from '../../src/core/browser.js';
+import { domainPages } from '../../src/core/browser.js';
 import { ErrorResponse } from '../../src/core/responses.js';
+import { runWithBrowsers } from '../browsers/browser-runner.js';
+
+const browserParam = process.argv[2] || '';
 
 /**
  * Test: Close tab for a loaded domain
  */
-async function testCloseLoadedTab() {
-  console.log('\n=== Test: Close tab for a loaded domain ===');
+async function testCloseLoadedTab(browserType) {
+  console.log(`\n=== Test: Close tab for a loaded domain (${browserType}) ===`);
   
   try {
     // First, load a page
     const fetchResult = await fetchPage({ 
       url: 'https://example.com',
+      browser: browserType,
       removeUnnecessaryHTML: false 
     });
     
@@ -60,8 +65,8 @@ async function testCloseLoadedTab() {
 /**
  * Test: Close tab for non-existent domain
  */
-async function testCloseNonExistentTab() {
-  console.log('\n=== Test: Close tab for non-existent domain ===');
+async function testCloseNonExistentTab(browserType) {
+  console.log(`\n=== Test: Close tab for non-existent domain (${browserType}) ===`);
   
   try {
     // Try to close a tab that doesn't exist
@@ -88,13 +93,14 @@ async function testCloseNonExistentTab() {
 /**
  * Test: Close same domain twice
  */
-async function testCloseSameDomainTwice() {
-  console.log('\n=== Test: Close same domain twice ===');
+async function testCloseSameDomainTwice(browserType) {
+  console.log(`\n=== Test: Close same domain twice (${browserType}) ===`);
   
   try {
     // Load a page
     const fetchResult = await fetchPage({ 
       url: 'https://example.org',
+      browser: browserType,
       removeUnnecessaryHTML: false 
     });
     
@@ -137,8 +143,8 @@ async function testCloseSameDomainTwice() {
 /**
  * Test: Invalid URL parameter
  */
-async function testInvalidUrl() {
-  console.log('\n=== Test: Invalid URL parameter ===');
+async function testInvalidUrl(browserType) {
+  console.log(`\n=== Test: Invalid URL parameter (${browserType}) ===`);
   
   try {
     // Test with missing URL
@@ -162,7 +168,7 @@ async function testInvalidUrl() {
     }
     console.log('✓ Correctly rejected empty URL');
     
-    console.log('✅ Test passed: Invalid URL parameter');
+    console.log(`✅ Test passed: Invalid URL parameter (${browserType})`);
     return true;
     
   } catch (error) {
@@ -174,13 +180,14 @@ async function testInvalidUrl() {
 /**
  * Test: Hostname extraction from various URLs
  */
-async function testDomainExtraction() {
-  console.log('\n=== Test: Hostname extraction from various URLs ===');
+async function testDomainExtraction(browserType) {
+  console.log(`\n=== Test: Hostname extraction from various URLs (${browserType}) ===`);
   
   try {
     // Load page with path and query
     await fetchPage({ 
       url: 'https://www.example.net/path/to/page?query=value#hash',
+      browser: browserType,
       removeUnnecessaryHTML: false 
     });
     
@@ -204,7 +211,7 @@ async function testDomainExtraction() {
       throw new Error('Tab still exists after close');
     }
     
-    console.log('✅ Test passed: Hostname extraction');
+    console.log(`✅ Test passed: Hostname extraction (${browserType})`);
     return true;
     
   } catch (error) {
@@ -216,13 +223,14 @@ async function testDomainExtraction() {
 /**
  * Test: Fresh session after closing tab
  */
-async function testFreshSessionAfterClose() {
-  console.log('\n=== Test: Fresh session after closing tab ===');
+async function testFreshSessionAfterClose(browserType) {
+  console.log(`\n=== Test: Fresh session after closing tab (${browserType}) ===`);
   
   try {
     // Load page first time
     const firstLoad = await fetchPage({ 
       url: 'https://httpbin.org/html',
+      browser: browserType,
       removeUnnecessaryHTML: false 
     });
     
@@ -247,6 +255,7 @@ async function testFreshSessionAfterClose() {
     // Load again - should create new page
     const secondLoad = await fetchPage({ 
       url: 'https://httpbin.org/html',
+      browser: browserType,
       removeUnnecessaryHTML: false 
     });
     
@@ -269,7 +278,7 @@ async function testFreshSessionAfterClose() {
     // Clean up
     await closeTab({ url: 'https://httpbin.org' });
     
-    console.log('✅ Test passed: Fresh session after close');
+    console.log(`✅ Test passed: Fresh session after close (${browserType})`);
     return true;
     
   } catch (error) {
@@ -281,13 +290,14 @@ async function testFreshSessionAfterClose() {
 /**
  * Test: Close tab after redirect using final URL
  */
-async function testCloseAfterRedirect() {
-  console.log('\n=== Test: Close tab after redirect using final URL ===');
+async function testCloseAfterRedirect(browserType) {
+  console.log(`\n=== Test: Close tab after redirect using final URL (${browserType}) ===`);
   
   try {
     // Load a page that redirects (httpbin redirects)
     const fetchResult = await fetchPage({ 
       url: 'https://httpbin.org/redirect-to?url=https%3A%2F%2Fhttpbin.org%2Fhtml',
+      browser: browserType,
       removeUnnecessaryHTML: false 
     });
     
@@ -320,7 +330,7 @@ async function testCloseAfterRedirect() {
     }
     
     console.log('✓ Tab removed from pool');
-    console.log('✅ Test passed: Close after redirect using final URL');
+    console.log(`✅ Test passed: Close after redirect using final URL (${browserType})`);
     return true;
     
   } catch (error) {
@@ -333,17 +343,18 @@ async function testCloseAfterRedirect() {
  * Run all tests
  */
 async function runAllTests() {
-  console.log('Starting close-tab.test.js...\n');
-  
   const results = [];
   
-  results.push(await testCloseLoadedTab());
-  results.push(await testCloseNonExistentTab());
-  results.push(await testCloseSameDomainTwice());
-  results.push(await testInvalidUrl());
-  results.push(await testDomainExtraction());
-  results.push(await testFreshSessionAfterClose());
-  results.push(await testCloseAfterRedirect());
+  // Run tests across all available browsers
+  await runWithBrowsers(async (browserType) => {
+    results.push(await testCloseLoadedTab(browserType));
+    results.push(await testCloseNonExistentTab(browserType));
+    results.push(await testCloseSameDomainTwice(browserType));
+    results.push(await testInvalidUrl(browserType));
+    results.push(await testDomainExtraction(browserType));
+    results.push(await testFreshSessionAfterClose(browserType));
+    results.push(await testCloseAfterRedirect(browserType));
+  }, browserParam);
   
   const passed = results.filter(r => r).length;
   const total = results.length;
@@ -351,9 +362,6 @@ async function runAllTests() {
   console.log(`\n${'='.repeat(50)}`);
   console.log(`Tests completed: ${passed}/${total} passed`);
   console.log(`${'='.repeat(50)}`);
-  
-  // Clean up browser
-  await closeBrowser();
   
   if (passed === total) {
     console.log('✅ All tests passed!');

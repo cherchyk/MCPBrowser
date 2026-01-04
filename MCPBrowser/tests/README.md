@@ -1,195 +1,135 @@
 # MCPBrowser Tests
 
-Comprehensive test suite for MCPBrowser covering core functionality, actions, and integration scenarios.
+Test suite for MCPBrowser covering core functionality, actions, and multi-browser scenarios.
+
+## Quick Start
+
+```bash
+# Run all tests (unit + browser integration)
+npm test
+
+# Unit tests only (CI/CD safe, no browser required)
+npm run test:ci
+node tests/run-unit.js
+
+# Browser tests only (requires browser)
+node tests/run-browser.js              # All browsers
+node tests/run-browser.js chrome       # Chrome only
+node tests/run-browser.js edge         # Edge only
+
+# Individual test suites
+node tests/core/browser.test.js         # Browser management (64 tests)
+node tests/core/html.test.js            # HTML processing (51 tests)
+node tests/core/page.test.js            # Page operations (43 tests)
+
+# Individual action tests (supports browser param)
+node tests/actions/browser.click-element.test.js        # All browsers
+node tests/actions/browser.click-element.test.js chrome # Chrome only
+node tests/actions/browser.fetch-page.test.js edge      # Edge only
+```
 
 ## Test Organization
 
-Tests are organized to mirror the source code structure:
-- **Unit Tests** - Run in parallel for fast execution (core modules)
-- **Integration Tests** - Run sequentially with real browser instances (actions and MCP server)
+The test suite is split into two runners for optimal execution:
 
-## Test Suites
+### Unit Tests - `run-unit.js` (8 suites)
+**Fast parallel execution, NO browser required** - Perfect for CI/CD
 
-### Core Tests (Unit - Parallel Execution)
+- `core/browser.test.js` - Browser lifecycle and tab pooling (uses mocks)
+- `core/html.test.js` - HTML cleaning and enrichment (pure functions)
+- `core/page.test.js` - Page navigation and stability (uses mocks)
+- `core/responses.test.js` - Response class validation
+- `core/auth.test.js` - Authentication flows (uses mock pages)
+- `mcp-browser.test.js` - MCP server initialization (uses mocks)
+- `verify-structured-output.test.js` - MCP output format compliance
+- `verify-nextsteps.test.js` - NextSteps field validation
 
-#### 1. `core/browser.test.js` - **64 tests**
-Tests for browser management and tab pooling:
-- Browser instance lifecycle
-- Domain-to-tab mapping
-- Tab creation and reuse
-- Browser reconnection
+**Run:** `node tests/run-unit.js` (~8 seconds, parallel execution)
 
-#### 2. `core/html.test.js` - **51 tests**
-Tests for HTML processing:
-- **`cleanHtml()`** - Removes scripts, styles, attributes
-- **`enrichHtml()`** - Converts relative URLs to absolute
-- **`prepareHtml()`** - Combined clean + enrich
+### Browser Tests - `run-browser.js` (5 suites)
+**Sequential execution, BROWSER required** - Real browser integration
 
-#### 3. `core/page.test.js` - **43 tests**
-Tests for page operations and stability:
-- Page navigation
-- Stability detection
-- HTML extraction and processing
-- Page state management
+- `actions/browser.click-element.test.js` - Click action across browsers
+- `actions/browser.type-text.test.js` - Text input action across browsers
+- `actions/browser.close-tab.test.js` - Tab management across browsers
+- `actions/browser.get-current-html.test.js` - HTML retrieval across browsers
+- `actions/browser.fetch-page.test.js` - Page fetching across browsers
 
-### Action Tests (Integration - Sequential Execution)
+**Run:** `node tests/run-browser.js [browser]`
+- Without browser param: Runs on all available browsers
+- With browser param: Runs only on specified browser (chrome, edge)
 
-#### 4. `actions/click-element.test.js` - **3 tests**
-Tests for `click_element()`:
-- Parameter validation (url, selector/text)
-- Error handling for unloaded pages
+### Complete Test Suite - `run-all.js`
+Orchestrates both runners sequentially:
+1. Runs `run-unit.js` (all unit tests in parallel)
+2. Runs `run-browser.js` (all browser tests sequentially)
+3. Reports overall summary
 
-#### 5. `actions/type-text.test.js` - **4 tests**
-Tests for `type_text()`:
-- Parameter validation (url, selector, text)
-- Error handling for unloaded pages
+**Run:** `npm test` or `node tests/run-all.js`
 
-#### 6. `actions/get-interactive-elements.test.js` - **4 tests**
-Tests for `get_interactive_elements()`:
-- Parameter validation
-- Limit parameter handling
-- Real page element discovery
+## Multi-Browser Support
 
-#### 7. `actions/wait-for-element.test.js` - **3 tests**
-Tests for `wait_for_element()`:
-- Parameter validation (url, selector/text)
-- Error handling for unloaded pages
+All browser action tests support running on specific browsers:
 
-#### 8. `actions/get-current-html.test.js` - **4 tests**
-Tests for `get_current_html()`:
-- Parameter validation
-- HTML retrieval from loaded pages
-- `removeUnnecessaryHTML` parameter behavior
-
-#### 9. `actions/fetch-page.test.js` - **3 tests**
-Integration tests for `fetch_webpage()`:
-- Permanent redirect handling (gmail.com → mail.google.com)
-- Multi-page workflow (eng.ms)
-- HTML cleaning parameter validation
-
-### Authentication & MCP Tests (Integration - Sequential)
-
-#### 10. `core/auth.test.js` - **14 tests**
-Tests for authentication flow handling:
-- **`waitForAutoAuth()`** - Auto-authentication detection
-- **`waitForManualAuth()`** - Manual auth completion
-- Cross-domain SSO flows
-- Subdomain landing after auth
-- Timeout handling
-
-#### 11. `mcp-browser.test.js` - **2 tests**
-Tests for MCP server:
-- Server initialization
-- Tool listing
-
-## Running Tests
-
-### Run All Tests - Local Development (includes browser-based integration tests)
 ```bash
-npm test
-# or directly:
-node tests/run-all.js
+# Using run-browser.js (runs all 5 browser test suites)
+node tests/run-browser.js              # All available browsers
+node tests/run-browser.js chrome       # Chrome only
+node tests/run-browser.js edge         # Edge only
+
+# Individual test files (runs single test suite)
+node tests/actions/browser.click-element.test.js        # All browsers
+node tests/actions/browser.click-element.test.js chrome # Chrome only
+node tests/actions/browser.type-text.test.js edge       # Edge only
 ```
-**Runs:** 195 tests total
-- Unit tests (158): Pure functions and mocked browser operations
-- Integration tests (37): Real browser interactions, manual auth flows
 
-⚠️ **Opens Chrome browser** for integration tests
+**Supported Browsers:**
+- **Chrome** (CDP) - Port 9222, reuses existing browser session
+- **Edge** (CDP) - Port 9223, reuses existing browser session
 
-### Run Unit Tests Only - CI/CD Safe (NO browser required)
-```bash
-npm run test:ci
-# or:
-npm run test:unit
-# or directly:
-node tests/run-unit.js
+Tests gracefully skip unavailable browsers with warnings.
+
+## Test Infrastructure
+
+**Browser Runner** ([browsers/browser-runner.js](browsers/browser-runner.js))
+```javascript
+import { runWithBrowsers } from '../browsers/browser-runner.js';
+
+// Runs on all browsers or specific one via process.argv[2]
+await runWithBrowsers(async (browserType) => {
+  // Your tests receive browserType: 'chrome', 'edge', etc.
+}, browserParam);
 ```
-**Runs:** 158 unit tests only
-- ✅ Perfect for GitHub Actions (no browser needed)
-- ✅ Fast (~1 second)
-- Tests: `core/browser.test.js`, `core/html.test.js`, `core/page.test.js`
 
-### Run Individual Test Suite
+**Browser Helper** ([browsers/browser-test-helper.js](browsers/browser-test-helper.js))
+- `getAvailableBrowsers()` - Returns browsers with availability status
+- `getAllBrowsers()` - All browsers regardless of availability
+- `isBrowserAvailable(type)` - Check specific browser
+
+## Key Features Tested
+
+✅ Browser tab pooling and reuse  
+✅ Authentication flows (auto/manual, SSO)  
+✅ HTML cleaning and URL enrichment  
+✅ Element interaction (click, type)  
+✅ Page stability and navigation  
+✅ Permanent redirects (gmail.com → mail.google.com)  
+✅ Multi-browser compatibility
+
+## Tool Selection Tests
+
 ```bash
-# Unit tests (no browser)
-node tests/core/browser.test.js  # 64 tests
-node tests/core/html.test.js     # 51 tests
-node tests/core/page.test.js     # 43 tests
+npm run test:descriptions
+# or
+node tests/tool-selection/run-tool-selection-tests.js
+```
 
-# Integration tests (requires browser)
-node tests/actions/click-element.test.js
-node tests/actions/type-text.test.js
-node tests/actions/get-interactive-elements.test.js
-node tests/actions/wait-for-element.test.js
-node tests/actions/get-current-html.test.js
-node tests/actions/fetch-page.test.js
+Validates tool descriptions against 12 scenarios covering auth-required sites, SPAs, and form interactions. See [tool-selection/TOOL_SELECTION_README.md](tool-selection/TOOL_SELECTION_README.md).
 
-# Authentication & MCP tests
-nodeBrowser Management
-- Browser instance creation and reuse
-- Domain-to-tab mapping and pooling
-- Tab persistence across browser reconnections
-- Proper cleanup and resource management
+## CI/CD
 
-### Page Actions
-- Element clicking (navigation and form interactions)
-- Text input to form fields
-- Interactive element discovery
-- Dynamic element waiting
-- Current HTML state retrieval
+```bash
+npm run test:ci  # Runs run-unit.js: 8 test suites, ~8 seconds, no browser needed
+```
 
-### Redirect & Navigation
-- Permanent redirects (gmail.com → mail.google.com)
-- Cross-domain SSO flows (Google, Microsoft, Okta)
-- Same-domain authentication redirects
-- Multi-page navigation workflows
-
-### Authentication Flows
-- Auto-authentication with valid cookies
-- Manual auth with cross-domain SSO providers
-- Landing on different subdomain after auth
-- Timeout scenarios with user hints
-
-### HTML Processing
-- Script/style removal
-- Attribute cleaning (class, id, data-*, events)
-- Relative → absolute URL conversion
-- SVG and comment removal
-- Configurable cleaning via `removeUnnecessaryHTML` parameter
-
-### MCP Server Integration
-- Server initialization and lifecycle
-- Tool discovery and listing
-- Export validation for testing
-
-## Test Execution Strategy
-
-**Fast Parallel Execution** for unit tests:
-- Core tests run simultaneously (~1 second)
-- No browser dependencies or minimal mocking
-
-**Sequential Integration Tests**:
-- Actions run one at a time with real browser
-- Ensures tab state isolation
-- Prevents race conditions
-
-**Total execution time: ~45 seconds**
-- Unit tests (parallel): ~1 second
-- Integration tests (sequential): ~44 seconds
-- SVG and comment removal
-
-## Mock Objects
-
-Tests use mock `Page` objects that simulate Puppeteer's page behavior:
-- Configurable URL transitions
-- Timing controls for async auth flows
-- Error simulation for robustness testing
-
-## Fast Execution
-
-All tests complete in **~15 seconds**:
-- Pure function tests (redirect detection): instant
-- Async tests (auth flows): ~10 seconds
-- HTML processing: instant
-
-Fixed module import issue that previously caused hanging by preventing MCP server auto-start during test imports.
+Perfect for GitHub Actions - no browser dependencies, all tests use mocks or pure functions.

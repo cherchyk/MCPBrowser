@@ -8,9 +8,14 @@ const __dirname = dirname(__filename);
 
 // Pure unit tests - NO BROWSER REQUIRED (perfect for CI/CD)
 const unitTests = [
-  'core/browser.test.js',  // Tests browser management with mocks
-  'core/html.test.js',     // Tests HTML processing (pure functions)
-  'core/page.test.js'      // Tests page operations with mocks
+  'core/browser.test.js',     // Browser management with mocks
+  'core/html.test.js',        // HTML processing (pure functions)
+  'core/page.test.js',        // Page operations with mocks
+  'core/responses.test.js',   // Response class validation
+  'core/auth.test.js',        // Auth flows with mock pages
+  'mcp-browser.test.js',      // MCP server initialization
+  'verify-structured-output.test.js', // MCP output format
+  'verify-nextsteps.test.js'  // NextSteps field validation
 ];
 
 console.log('🧪 Running Unit Tests (No Browser Required)');
