@@ -12,57 +12,7 @@ on:
       - 'MCPBrowser/server.json'
 
 jobs:
-  check-version:
-    runs-on: ubuntu-latest
-    outputs:
-      should-deploy: ${{ steps.version-check.outputs.should-deploy }}
-      version: ${{ steps.version-check.outputs.version }}
-      
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 2  # Need previous commit to compare
-    
-    - name: Check if version was bumped
-      id: version-check
-      run: |
-        # Get current versions
-        MCP_VERSION=$(node -p "require('./MCPBrowser/package.json').version")
-        EXT_VERSION=$(node -p "require('./VSCodeExtension/package.json').version")
-        SERVER_VERSION=$(node -p "require('./MCPBrowser/server.json').version")
-        
-        echo "MCP Version: $MCP_VERSION"
-        echo "Extension Version: $EXT_VERSION"
-        echo "Server.json Version: $SERVER_VERSION"
-        
-        # Check if all versions match
-        if [ "$MCP_VERSION" != "$EXT_VERSION" ] || [ "$MCP_VERSION" != "$SERVER_VERSION" ]; then
-          echo "::error::Version mismatch! All three files must have the same version."
-          echo "MCP: $MCP_VERSION, Extension: $EXT_VERSION, Server: $SERVER_VERSION"
-          exit 1
-        fi
-        
-        # Get previous version from git
-        git checkout HEAD~1 -- MCPBrowser/package.json 2>/dev/null || true
-        PREV_VERSION=$(node -p "require('./MCPBrowser/package.json').version" 2>/dev/null || echo "0.0.0")
-        git checkout HEAD -- MCPBrowser/package.json
-        
-        echo "Previous version: $PREV_VERSION"
-        echo "Current version: $MCP_VERSION"
-        
-        # Check if version was bumped
-        if [ "$MCP_VERSION" != "$PREV_VERSION" ]; then
-          echo "Version was bumped from $PREV_VERSION to $MCP_VERSION"
-          echo "should-deploy=true" >> $GITHUB_OUTPUT
-          echo "version=$MCP_VERSION" >> $GITHUB_OUTPUT
-        else
-          echo "Version was not changed, skipping deployment"
-          echo "should-deploy=false" >> $GITHUB_OUTPUT
-        fi
-
   test:
-    needs: check-version
-    if: needs.check-version.outputs.should-deploy == 'true'
     runs-on: ubuntu-latest
     
     steps:
@@ -84,9 +34,9 @@ jobs:
       run: npm run test:ci
 
   deploy:
-    needs: [check-version, test]
-    if: needs.check-version.outputs.should-deploy == 'true'
     runs-on: ubuntu-latest
+    needs: test
+    if: always() && needs.test.result == 'success'
     
     steps:
     - uses: actions/checkout@v4
@@ -107,6 +57,7 @@ jobs:
       run: npm install -g @vscode/vsce
     
     - name: Verify version synchronization
+      id: version
       run: |
         MCP_VERSION=$(node -p "require('./MCPBrowser/package.json').version")
         EXT_VERSION=$(node -p "require('./VSCodeExtension/package.json').version")
@@ -118,6 +69,7 @@ jobs:
         fi
         
         echo "✅ All versions synchronized at $MCP_VERSION"
+        echo "version=$MCP_VERSION" >> $GITHUB_OUTPUT
     
     - name: Verify npm token (dry-run)
       run: |
@@ -156,7 +108,7 @@ jobs:
       if: github.ref == 'refs/heads/main'
       run: |
         cd VSCodeExtension
-        vsce publish --packagePath mcpbrowser-${{ needs.check-version.outputs.version }}.vsix
+        vsce publish --packagePath mcpbrowser-${{ steps.version.outputs.version }}.vsix
       env:
         VSCE_PAT: ${{ secrets.VSCE_PAT }}
     
@@ -169,7 +121,7 @@ jobs:
     - name: Extract changelog for version
       id: changelog
       run: |
-        VERSION=${{ needs.check-version.outputs.version }}
+        VERSION=${{ steps.version.outputs.version }}
         
         # Extract changelog section for this version
         # This is a simple extraction - adjust regex based on your CHANGELOG format
@@ -188,7 +140,7 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        VERSION=${{ needs.check-version.outputs.version }}
+        VERSION=${{ steps.version.outputs.version }}
         
         # Create release with changelog
         gh release create "v$VERSION" \
@@ -204,7 +156,7 @@ jobs:
     
     - name: Deployment Summary
       run: |
-        VERSION=${{ needs.check-version.outputs.version }}
+        VERSION=${{ steps.version.outputs.version }}
         if [ "${{ github.ref }}" == "refs/heads/main" ]; then
           echo "🎉 Successfully deployed version $VERSION to:"
           echo "  ✅ npm registry"
