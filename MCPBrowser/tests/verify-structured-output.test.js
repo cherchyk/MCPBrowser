@@ -128,7 +128,7 @@ await test('fetch_webpage success should have MCP-compliant structure', async ()
   // Check structuredContent
   assert.ok(result.structuredContent, 'Should have structuredContent field');
   assert.strictEqual(typeof result.structuredContent, 'object', 'structuredContent should be an object');
-  assert.strictEqual(result.structuredContent.success, true, 'structuredContent.success should be true');
+  // Per MCP spec: success/error indicated by isError flag, not in structuredContent
   assert.ok(result.structuredContent.html, 'structuredContent should have html');
   assert.ok(result.structuredContent.currentUrl, 'structuredContent should have currentUrl');
   assert.ok(Array.isArray(result.structuredContent.nextSteps), 'structuredContent should have nextSteps array');
