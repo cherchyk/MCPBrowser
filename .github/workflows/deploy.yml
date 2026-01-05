@@ -23,7 +23,7 @@ jobs:
         cd ../VSCodeExtension && npm install
     
     - name: Run tests (skip manual auth tests)
-      run: npm run test:ci
+      run: npm run test:unit
 
   deploy:
     runs-on: ubuntu-latest
