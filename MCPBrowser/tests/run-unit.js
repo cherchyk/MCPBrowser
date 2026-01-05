@@ -13,9 +13,8 @@ const unitTests = [
   'core/page.test.js',        // Page operations with mocks
   'core/responses.test.js',   // Response class validation
   'core/auth.test.js',        // Auth flows with mock pages
-  'mcp-browser.test.js',      // MCP server initialization
-  'verify-structured-output.test.js', // MCP output format
-  'verify-nextsteps.test.js'  // NextSteps field validation
+  'mcp-browser.test.js'       // MCP server initialization
+  // Excluded from CI: verify-structured-output.test.js, verify-nextsteps.test.js (require browser)
 ];
 
 console.log('🧪 Running Unit Tests (No Browser Required)');
