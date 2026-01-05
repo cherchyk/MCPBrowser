@@ -53,7 +53,7 @@ jobs:
       run: |
         MCP_VERSION=$(node -p "require('./MCPBrowser/package.json').version")
         EXT_VERSION=$(node -p "require('./VSCodeExtension/package.json').version")
-        SERVER_VERSION=$(node -p "require('./MCPBrowser/server.json').version")
+        SERVER_VERSION=$(node -p "require('./server.json').version")
         
         if [ "$MCP_VERSION" != "$EXT_VERSION" ] || [ "$MCP_VERSION" != "$SERVER_VERSION" ]; then
           echo "::error::Version mismatch detected!"
