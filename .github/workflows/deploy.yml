@@ -2,14 +2,6 @@ name: Deploy to npm and VS Code Marketplace
 
 on:
   push:
-    branches:
-      - main
-      - feature/pipeline  # For testing only - will not publish
-    paths:
-      # Only trigger if version files changed (indicating a release)
-      - 'MCPBrowser/package.json'
-      - 'VSCodeExtension/package.json'
-      - 'MCPBrowser/server.json'
 
 jobs:
   test:
