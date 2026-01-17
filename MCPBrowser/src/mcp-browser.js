@@ -24,10 +24,10 @@ import { getCurrentHtml, GET_CURRENT_HTML_TOOL } from './actions/get-current-htm
 
 // Import functions for testing exports
 import { getBrowser, closeBrowser } from './core/browser.js';
-import { getOrCreatePage, navigateToUrl, extractAndProcessHtml, waitForPageStability } from './core/page.js';
-import { detectRedirectType, waitForAutoAuth, waitForManualAuth } from './core/auth.js';
+import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml, waitForPageStability } from './core/page.js';
+import { detectRedirectType, waitForAutoAuth, waitForManualAuth, detectLoginPage, isLikelyAuthUrl } from './core/auth.js';
 import { cleanHtml, enrichHtml, prepareHtml } from './core/html.js';
-import { getBaseDomain, isLikelyAuthUrl } from './utils.js';
+import { getBaseDomain } from './utils.js';
 
 /**
  * Main entry point for the MCP server.
@@ -102,10 +102,13 @@ export {
   cleanHtml, 
   enrichHtml,
   getOrCreatePage,
+  queueRequest,
   navigateToUrl,
+  waitForPageReady,
   detectRedirectType,
   waitForAutoAuth,
   waitForManualAuth,
+  detectLoginPage,
   waitForPageStability,
   extractAndProcessHtml,
   getBaseDomain,

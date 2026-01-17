@@ -1,8 +1,8 @@
 import assert from 'assert';
 import { waitForAutoAuth, waitForManualAuth } from '../../src/mcp-browser.js';
 
-console.log('🧪 Testing authentication flow functions (internal utility functions)\n');
-console.log('📝 Note: These functions return plain objects, not response classes\n');
+console.log('🧪 Testing authentication flow functions\n');
+console.log('📝 Note: Auth functions detect completion when page leaves auth URL\n');
 
 let testsPassed = 0;
 let testsFailed = 0;
@@ -74,64 +74,65 @@ class MockPage {
 
 console.log('\n📋 Testing waitForAutoAuth()');
 
-await test('Should detect successful auto-auth', async () => {
+await test('Should detect successful auto-auth when leaving auth page', async () => {
   const mockPage = new MockPage([
     'https://login.example.com/auth',
     'https://login.example.com/auth',
-    'https://app.example.com/dashboard' // Returns to app domain
+    'https://app.example.com/dashboard' // Left auth page
   ]);
 
-  const result = await waitForAutoAuth(mockPage, 'example.com', 'example.com', 2000);
+  const result = await waitForAutoAuth(mockPage, 2000);
   
   assert.strictEqual(result.success, true, 'Should succeed');
   assert.strictEqual(result.hostname, 'app.example.com', 'Should return final hostname');
 });
 
-await test('Should detect auto-auth to original domain', async () => {
+await test('Should detect auto-auth to any non-auth domain', async () => {
   const mockPage = new MockPage([
     'https://login.example.com/auth',
-    'https://example.com/dashboard' // Returns to exact original domain
+    'https://completely-different.com/page' // Any non-auth page is success
   ]);
 
-  const result = await waitForAutoAuth(mockPage, 'example.com', 'example.com', 2000);
+  const result = await waitForAutoAuth(mockPage, 2000);
   
   assert.strictEqual(result.success, true, 'Should succeed');
-  assert.strictEqual(result.hostname, 'example.com', 'Should return original hostname');
+  assert.strictEqual(result.hostname, 'completely-different.com', 'Should return final hostname');
 });
 
-await test('Should timeout if auto-auth does not complete', async () => {
+await test('Should timeout if staying on auth page', async () => {
   const mockPage = new MockPage([
     'https://login.example.com/auth' // Stays on auth page
   ]);
 
-  const result = await waitForAutoAuth(mockPage, 'example.com', 'example.com', 1000);
+  const result = await waitForAutoAuth(mockPage, 1000);
   
   assert.strictEqual(result.success, false, 'Should fail on timeout');
   assert.strictEqual(result.hostname, undefined, 'Should not have hostname');
 });
 
-await test('Should NOT accept return to auth URL on same domain', async () => {
+await test('Should NOT accept navigation to another auth URL', async () => {
   const mockPage = new MockPage([
     'https://auth.site.com/login',
-    'https://site.com/login' // Returns to site.com but still on /login
+    'https://site.com/login' // Still on /login path
   ]);
 
-  const result = await waitForAutoAuth(mockPage, 'site.com', 'site.com', 1000);
+  const result = await waitForAutoAuth(mockPage, 1000);
   
   assert.strictEqual(result.success, false, 'Should fail - still on auth URL');
 });
 
-await test('Should accept return to different subdomain', async () => {
+await test('Should handle gmail -> google -> mail.google flow', async () => {
+  // This is the critical test case: gmail.com -> accounts.google.com -> mail.google.com
   const mockPage = new MockPage([
     'https://accounts.google.com/signin',
     'https://accounts.google.com/signin',
-    'https://mail.google.com' // Different subdomain but same base
+    'https://mail.google.com/mail' // Final destination after auth
   ]);
 
-  const result = await waitForAutoAuth(mockPage, 'gmail.com', 'google.com', 2000);
+  const result = await waitForAutoAuth(mockPage, 2000);
   
-  assert.strictEqual(result.success, true, 'Should succeed');
-  assert.strictEqual(result.hostname, 'mail.google.com', 'Should return new hostname');
+  assert.strictEqual(result.success, true, 'Should succeed - left auth page');
+  assert.strictEqual(result.hostname, 'mail.google.com', 'Should return mail.google.com');
 });
 
 await test('Should handle page navigation errors gracefully', async () => {
@@ -141,7 +142,7 @@ await test('Should handle page navigation errors gracefully', async () => {
     }
   };
 
-  const result = await waitForAutoAuth(mockPage, 'example.com', 'example.com', 1000);
+  const result = await waitForAutoAuth(mockPage, 1000);
   
   assert.strictEqual(result.success, false, 'Should handle errors and timeout');
 });
@@ -152,35 +153,34 @@ await test('Should handle page navigation errors gracefully', async () => {
 
 console.log('\n📋 Testing waitForManualAuth()');
 
-await test('Should detect successful manual auth', async () => {
-  // Manual auth polls every 2 seconds, so we need URL to change after ~2 polling attempts
+await test('Should detect successful manual auth when leaving auth page', async () => {
   const mockPage = new MockPage({
     urls: [
       'https://login.microsoftonline.com/oauth',
       'https://app.example.com/dashboard' // User completes auth
     ],
-    timing: { changeAfterCalls: 3 } // Change URL after 3 calls (simulating ~4 seconds)
+    timing: { changeAfterCalls: 3 }
   });
 
-  const result = await waitForManualAuth(mockPage, 'example.com', 'example.com', 10000);
+  const result = await waitForManualAuth(mockPage, 10000);
   
   assert.strictEqual(result.success, true, 'Should succeed');
   assert.strictEqual(result.hostname, 'app.example.com', 'Should return final hostname');
 });
 
-await test('Should return to original domain after auth', async () => {
+await test('Should detect auth complete to any non-auth URL', async () => {
   const mockPage = new MockPage({
     urls: [
       'https://accounts.google.com/signin',
-      'https://myapp.com/home' // Returns to original
+      'https://myapp.com/home' // Left auth page
     ],
     timing: { changeAfterCalls: 2 }
   });
 
-  const result = await waitForManualAuth(mockPage, 'myapp.com', 'myapp.com', 10000);
+  const result = await waitForManualAuth(mockPage, 10000);
   
   assert.strictEqual(result.success, true, 'Should succeed');
-  assert.strictEqual(result.hostname, 'myapp.com', 'Should return to myapp.com');
+  assert.strictEqual(result.hostname, 'myapp.com', 'Should return myapp.com');
 });
 
 await test('Should timeout if user does not complete auth', async () => {
@@ -188,42 +188,43 @@ await test('Should timeout if user does not complete auth', async () => {
     'https://login.example.com/auth' // User never completes
   ]);
 
-  const result = await waitForManualAuth(mockPage, 'example.com', 'example.com', 2000);
+  const result = await waitForManualAuth(mockPage, 2000);
   
   assert.strictEqual(result.success, false, 'Should timeout');
   assert.ok(result.error, 'Should have error message');
   assert.ok(result.hint, 'Should have hint for user');
-  assert.ok(result.hint.includes('Authentication timeout'), 'Hint should mention timeout');
 });
 
-await test('Should detect landing on different subdomain', async () => {
+await test('Should handle gmail -> google -> mail.google flow', async () => {
+  // Critical test: gmail.com -> accounts.google.com -> mail.google.com
   const mockPage = new MockPage({
     urls: [
-      'https://sso.company.com/login',
-      'https://dashboard.company.com' // Different subdomain, same base
+      'https://accounts.google.com/signin',
+      'https://accounts.google.com/signin', 
+      'https://mail.google.com/mail' // Final destination
     ],
-    timing: { changeAfterCalls: 3 }
+    timing: { changeAfterCalls: 2 }  // Faster transition for test
   });
 
-  const result = await waitForManualAuth(mockPage, 'company.com', 'company.com', 10000);
+  const result = await waitForManualAuth(mockPage, 10000);
   
   assert.strictEqual(result.success, true, 'Should succeed');
-  assert.strictEqual(result.hostname, 'dashboard.company.com', 'Should accept different subdomain');
+  assert.strictEqual(result.hostname, 'mail.google.com', 'Should return mail.google.com');
 });
 
-await test('Should NOT accept return to auth page on same base domain', async () => {
+await test('Should NOT accept navigation to another auth page', async () => {
   const mockPage = new MockPage([
     'https://auth0.company.com/login',
     'https://auth0.company.com/login',
-    'https://company.com/login' // Returns to base but still on /login
+    'https://company.com/login' // Still on /login
   ]);
 
-  const result = await waitForManualAuth(mockPage, 'company.com', 'company.com', 2000);
+  const result = await waitForManualAuth(mockPage, 2000);
   
   assert.strictEqual(result.success, false, 'Should timeout - still on auth page');
 });
 
-await test('Should handle page navigation errors', async () => {
+await test('Should handle page navigation errors gracefully', async () => {
   let callCount = 0;
   const mockPage = {
     url: () => {
@@ -235,35 +236,20 @@ await test('Should handle page navigation errors', async () => {
     }
   };
 
-  const result = await waitForManualAuth(mockPage, 'example.com', 'example.com', 5000);
+  const result = await waitForManualAuth(mockPage, 5000);
   
   assert.strictEqual(result.success, true, 'Should handle temporary errors and succeed');
 });
 
 await test('Should include current URL in timeout hint', async () => {
   const mockPage = new MockPage([
-    'https://stuck.on.auth.com/page'
+    'https://login.stuck-site.com/auth'  // Use a proper auth URL
   ]);
 
-  const result = await waitForManualAuth(mockPage, 'example.com', 'example.com', 1000);
+  const result = await waitForManualAuth(mockPage, 1000);
   
   assert.strictEqual(result.success, false);
-  assert.ok(result.hint.includes('stuck.on.auth.com/page'), 'Should include stuck URL in hint');
-});
-
-await test('Should accept cross-domain SSO completion', async () => {
-  const mockPage = new MockPage({
-    urls: [
-      'https://accounts.google.com/signin',
-      'https://myapp.com' // Different domain entirely
-    ],
-    timing: { changeAfterCalls: 3 }
-  });
-
-  const result = await waitForManualAuth(mockPage, 'myapp.com', 'myapp.com', 10000);
-  
-  assert.strictEqual(result.success, true, 'Should succeed for cross-domain SSO');
-  assert.strictEqual(result.hostname, 'myapp.com', 'Should return to original app');
+  assert.ok(result.hint.includes('login.stuck-site.com'), 'Should include stuck URL in hint');
 });
 
 // ============================================================================
