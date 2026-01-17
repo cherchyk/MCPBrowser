@@ -41,7 +41,7 @@ async function main() {
   const __dirname = dirname(__filename);
   const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8'));
   
-  const server = new Server({ name: "✅ MCP Browser", version: packageJson.version }, { capabilities: { tools: {} } });
+  const server = new Server({ name: "MCP Browser", version: packageJson.version }, { capabilities: { tools: {} } });
 
   // Assemble tools from action imports
   const tools = [

@@ -86,7 +86,7 @@ export class ClickElementSuccessResponse extends MCPResponse {
  */
 export const CLICK_ELEMENT_TOOL = {
   name: "click_element",
-  title: "✅ Click Element",
+  title: "Click Element",
   description: "**BROWSER INTERACTION** - Clicks elements on browser-loaded pages. Use this for navigation (clicking links/buttons), form submission, and any user interaction that requires clicking.\n\nWorks with any clickable element including buttons, links, or elements with onclick handlers. Can target by CSS selector or text content. Waits for page stability and returns updated HTML by default.\n\n**PREREQUISITE**: Page MUST be loaded with fetch_webpage first. This tool operates on an already-loaded page in the browser.",
   inputSchema: {
     type: "object",

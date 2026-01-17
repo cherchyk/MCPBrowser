@@ -64,7 +64,7 @@ export class TypeTextSuccessResponse extends MCPResponse {
  */
 export const TYPE_TEXT_TOOL = {
   name: "type_text",
-  title: "✅ Type Text",
+  title: "Type Text",
   description: "**BROWSER INTERACTION** - Types text into input fields on browser-loaded pages. Use this for filling forms, entering search queries, or any text input on the page.\n\nWorks with input fields, textareas, and other editable elements.\n\n**PREREQUISITE**: Page MUST be loaded with fetch_webpage first. This tool operates on an already-loaded page in the browser.",
   inputSchema: {
     type: "object",
