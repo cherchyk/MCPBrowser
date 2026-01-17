@@ -36,7 +36,7 @@ All 5 tools conform to the specification:
   description: "...",
   inputSchema: {
     type: "object",
-    properties: { url, removeUnnecessaryHTML, postLoadWait },
+    properties: { url, browser, removeUnnecessaryHTML, postLoadWait },
     required: ["url"],
     additionalProperties: false
   },

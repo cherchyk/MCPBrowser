@@ -1,5 +1,6 @@
 import assert from 'assert';
-import { getBaseDomain, isLikelyAuthUrl } from '../../src/utils.js';
+import { getBaseDomain } from '../../src/utils.js';
+import { isLikelyAuthUrl } from '../../src/core/auth.js';
 import { detectRedirectType } from '../../src/core/auth.js';
 
 console.log('🧪 Testing redirect detection functions\n');

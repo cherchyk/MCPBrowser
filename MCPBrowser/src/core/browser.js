@@ -9,7 +9,7 @@ import os from 'os';
 
 // Browser state
 export let cachedBrowser = null;
-export let domainPages = new Map(); // hostname -> page mapping for tab reuse across domains
+export let domainPages = new Map(); // hostname -> page mapping for tab reuse (can have multiple hostnames pointing to same page after redirects)
 
 // Browser instances cache
 const browserInstances = new Map();

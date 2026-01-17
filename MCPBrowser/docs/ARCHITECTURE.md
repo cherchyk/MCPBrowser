@@ -264,6 +264,30 @@ new FetchPageSuccessResponse(123, "html", []);
 - Easy to add new common fields
 - Error responses shared by all tools
 
+## Request Queue System
+
+MCPBrowser uses a **simple sequential queue** for processing requests:
+
+- **No locks** - Locks lead to deadlocks. Instead, use a simple FIFO queue.
+- **One URL at a time** - Process sequentially to avoid race conditions
+- **Tab reuse per domain** - Multiple hostnames can share one tab (e.g., gmail.com → mail.google.com)
+
+```
+Queue: [url1(eng.ms), url2(eng.ms), url3(dev.azure)]
+
+Processing (sequential):
+1. url1(eng.ms)    → NEW tab      → load → done
+2. url2(eng.ms)    → REUSE tab    → load → done
+3. url3(dev.azure) → NEW tab      → load → done
+
+Result: 2 tabs (one per unique host)
+```
+
+**Key files:**
+- `page.js` - Queue implementation (`queueRequest()`, `processQueue()`)
+- `browser.js` - Tab management (`domainPages` Map)
+- `fetch-page.js` - Uses queue via `queueRequest()`
+
 ## Future Improvements
 
 Potential enhancements:

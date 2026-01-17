@@ -123,19 +123,19 @@ For VS Code (GitHub Copilot) manual setup, add to your `mcp.json`:
 
 ### `fetch_webpage`
 
-Fetches web pages using your Chrome/Edge browser. Handles authentication, CAPTCHA, SSO, anti-bot protection, and JavaScript-heavy sites. Opens the URL in a browser tab (reuses existing tab for same domain) and waits for the page to fully load before returning content.
+Fetches web pages using your Chrome/Edge browser. Handles authentication, CAPTCHA, SSO, anti-bot protection, and JavaScript-heavy sites. Opens the URL in a browser tab (reuses existing tab for same domain) and waits for the page to fully load before returning content. **Automatically detects SPAs** (React, Vue, Angular) and waits for JavaScript to render content.
 
 **Parameters:**
 - `url` (string, required) - The URL to fetch
 - `removeUnnecessaryHTML` (boolean, optional, default: `true`) - Remove unnecessary HTML for size reduction by ~90%
-- `postLoadWait` (number, optional, default: `1000`) - Milliseconds to wait after page load for SPAs to render dynamic content
+- `postLoadWait` (number, optional, default: `0`) - Additional milliseconds to wait after page load before extracting HTML. Use for pages that need extra time to render.
 
 **Examples:**
 ```javascript
 // Basic fetch
 { url: "https://example.com" }
 
-// Fetch with custom wait time for slow SPAs
+// Fetch with extra wait time for slow-rendering pages
 { url: "https://dashboard.example.com", postLoadWait: 2000 }
 
 // Keep full HTML without cleanup
