@@ -60,7 +60,7 @@ export class FetchPageSuccessResponse extends MCPResponse {
  */
 export const FETCH_WEBPAGE_TOOL = {
   name: "fetch_webpage",
-  title: "Fetch Web Page",
+  title: "✅ Fetch Web Page",
   description: "Fetches web pages using Chrome/Edge browser with full JavaScript rendering and authentication support. **REQUIRED for corporate/enterprise sites, any page requiring login/SSO, anti-bot/CAPTCHA pages, and JavaScript-heavy applications.** Use this as the DEFAULT for all webpage fetching - it handles simple HTML pages too. Opens browser for user authentication when needed. Never use generic HTTP fetch for pages that might require authentication.",
   inputSchema: {
     type: "object",
