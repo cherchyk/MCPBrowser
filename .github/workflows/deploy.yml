@@ -3,6 +3,9 @@ name: Deploy to npm and VS Code Marketplace
 on:
   push:
 
+permissions:
+  contents: write
+    
 jobs:
   test:
     runs-on: ubuntu-latest
