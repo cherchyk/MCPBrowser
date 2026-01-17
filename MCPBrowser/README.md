@@ -1,4 +1,4 @@
-# MCPBrowser (MCP Browser)
+# ✅ MCPBrowser (MCP Browser)
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/cherchyk.mcpbrowser.svg)](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 [![npm version](https://img.shields.io/npm/v/mcpbrowser.svg)](https://www.npmjs.com/package/mcpbrowser)
