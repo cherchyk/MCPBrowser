@@ -6,6 +6,7 @@
 import { ChromeBrowser } from '../browsers/chrome.js';
 import { EdgeBrowser } from '../browsers/edge.js';
 import os from 'os';
+import logger from './logger.js';
 
 // Browser state
 export let cachedBrowser = null;
@@ -29,13 +30,13 @@ async function detectDefaultBrowser() {
   
   for (const browser of browsers) {
     if (await browser.isAvailable()) {
-      console.error(`[MCPBrowser] Auto-detected ${browser.getType()} as default browser`);
+      logger.info(`Auto-detected ${browser.getType()} as default browser`);
       return browser.getType();
     }
   }
   
   // Fallback to Chrome
-  console.error('[MCPBrowser] No browser detected, defaulting to Chrome');
+  logger.info('No browser detected, defaulting to Chrome');
   return 'chrome';
 }
 
@@ -88,7 +89,7 @@ export async function GetBrowser(type = '') {
 export async function rebuildDomainPagesMap(browser) {
   try {
     const pages = await browser.pages();
-    console.error(`[MCPBrowser] Reconnected to browser with ${pages.length} existing tabs`);
+    logger.info(`Reconnected to browser with ${pages.length} existing tabs`);
     
     for (const page of pages) {
       try {
@@ -105,7 +106,7 @@ export async function rebuildDomainPagesMap(browser) {
         const hostname = new URL(pageUrl).hostname;
         if (hostname && !domainPages.has(hostname)) {
           domainPages.set(hostname, page);
-          console.error(`[MCPBrowser] Mapped existing tab for domain: ${hostname} (${pageUrl})`);
+          logger.info(`Tab mapped: ${hostname}`);
         }
       } catch (err) {
         // Skip pages that are inaccessible or have invalid URLs
@@ -114,10 +115,10 @@ export async function rebuildDomainPagesMap(browser) {
     }
     
     if (domainPages.size > 0) {
-      console.error(`[MCPBrowser] Restored ${domainPages.size} domain-to-tab mappings`);
+      logger.info(`Restored ${domainPages.size} domain-to-tab mappings`);
     }
   } catch (err) {
-    console.error(`[MCPBrowser] Warning: Could not rebuild domain pages map: ${err.message}`);
+    logger.info(`Could not rebuild domain pages map: ${err.message}`);
   }
 }
 

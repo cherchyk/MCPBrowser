@@ -3,6 +3,7 @@
  */
 
 import { getBaseDomain } from '../utils.js';
+import logger from './logger.js';
 
 // ============================================================================
 // AUTH URL DETECTION
@@ -123,7 +124,7 @@ export function detectRedirectType(url, hostname, currentUrl, currentHostname) {
  * @returns {Promise<Object>} Object with success status and final hostname
  */
 export async function waitForAutoAuth(page, timeoutMs = DEFAULT_AUTO_AUTH_TIMEOUT) {
-  console.error(`[MCPBrowser] Checking for auto-authentication (${timeoutMs / 1000} sec)...`);
+  logger.info(`Checking for auto-authentication (${timeoutMs}ms timeout)...`);
   
   const deadline = Date.now() + timeoutMs;
   
@@ -135,7 +136,7 @@ export async function waitForAutoAuth(page, timeoutMs = DEFAULT_AUTO_AUTH_TIMEOU
       // Browser handles redirects - we just need to detect when auth flow ends
       if (!isLikelyAuthUrl(checkUrl)) {
         const checkHostname = new URL(checkUrl).hostname;
-        console.error(`[MCPBrowser] Auto-authentication successful! Now at: ${checkUrl}`);
+        logger.info(`Auto-authentication successful: ${checkUrl}`);
         return { success: true, hostname: checkHostname };
       }
       
@@ -241,12 +242,11 @@ export async function waitForManualAuth(page, timeoutMs = DEFAULT_MANUAL_AUTH_TI
   
   // Log login page detection
   if (isLoginPage && shouldExtendTimeout) {
-    console.error(`[MCPBrowser] 🔐 LOGIN PAGE DETECTED!`);
-    console.error(`[MCPBrowser] Indicators found: ${loginDetection.indicators.join(', ')}`);
-    console.error(`[MCPBrowser] Extended wait time to ${effectiveTimeoutMinutes} minutes for user authentication`);
+    logger.info(`Login page detected: ${page.url()} (${loginDetection.indicators.join(', ')})`);
+    logger.info(`Extended wait time to ${effectiveTimeoutMinutes} minutes for user authentication`);
   }
   
-  console.error(`[MCPBrowser] Auto-authentication did not complete. Waiting for user...`);
+  logger.info(`Waiting for manual authentication (${effectiveTimeoutMinutes} min timeout, loginPage=${isLoginPage})...`);
   
   // Send initial waiting notification
   if (onStatusChange) {
@@ -262,8 +262,6 @@ export async function waitForManualAuth(page, timeoutMs = DEFAULT_MANUAL_AUTH_TI
     });
   }
   
-  console.error(`[MCPBrowser] Waiting for user to complete authentication (${effectiveTimeoutMinutes} min timeout)...`);
-  
   const deadline = Date.now() + effectiveTimeout;
   let lastStatusUpdate = Date.now();
   
@@ -274,7 +272,7 @@ export async function waitForManualAuth(page, timeoutMs = DEFAULT_MANUAL_AUTH_TI
       // Auth complete when we leave the auth page
       if (!isLikelyAuthUrl(checkUrl)) {
         const checkHostname = new URL(checkUrl).hostname;
-        console.error(`[MCPBrowser] ✅ Authentication completed! Now at: ${checkUrl}`);
+        logger.info(`Manual authentication successful: ${checkUrl}`);
         
         if (onStatusChange) {
           onStatusChange({

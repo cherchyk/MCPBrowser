@@ -10,6 +10,7 @@ import { existsSync } from "fs";
 import os from "os";
 import path from "path";
 import { spawn } from "child_process";
+import logger from '../core/logger.js';
 
 /**
  * Base class for all Chromium-based browsers
@@ -115,7 +116,7 @@ export class ChromiumBrowser extends BaseBrowser {
         '--no-default-browser-check'
       ];
 
-      console.error(`[MCPBrowser] Launching ${this.config.name} with remote debugging on port ${this.config.port}...`);
+      logger.info(`Launching ${this.config.name} with remote debugging on port ${this.config.port}...`);
       
       const child = spawn(execPath, args, {
         detached: true,
@@ -129,7 +130,7 @@ export class ChromiumBrowser extends BaseBrowser {
       
       while (Date.now() - startTime < maxWaitTime) {
         if (await this.devtoolsAvailable()) {
-          console.error(`[MCPBrowser] ${this.config.name} is ready on port ${this.config.port}`);
+          logger.info(`Connected to ${this.config.name} on port ${this.config.port}`);
           return;
         }
         await new Promise(resolve => setTimeout(resolve, 500));

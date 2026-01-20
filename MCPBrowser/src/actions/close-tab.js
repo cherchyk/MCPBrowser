@@ -4,6 +4,7 @@
 
 import { domainPages } from '../core/browser.js';
 import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import logger from '../core/logger.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -95,6 +96,9 @@ export const CLOSE_TAB_TOOL = {
  * @returns {Promise<object>} Result indicating success or failure
  */
 export async function closeTab({ url }) {
+  const startTime = Date.now();
+  logger.info(`close_tab called: url=${url}`);
+  
   try {
     // Validate URL
     if (!url || typeof url !== 'string') {
@@ -171,7 +175,7 @@ export async function closeTab({ url }) {
     // Remove from domain pool
     domainPages.delete(hostname);
     
-    console.error(`[MCPBrowser] Closed tab for hostname: ${hostname}`);
+    logger.info(`close_tab completed: closed tab for ${hostname}`);
     
     return new CloseTabSuccessResponse(
       `Successfully closed tab for ${hostname}`,
@@ -182,7 +186,7 @@ export async function closeTab({ url }) {
     );
     
   } catch (error) {
-    console.error(`[MCPBrowser] Error closing tab:`, error);
+    logger.error(`close_tab failed: ${error.message}`);
     return new ErrorResponse(
       error.message,
       [
