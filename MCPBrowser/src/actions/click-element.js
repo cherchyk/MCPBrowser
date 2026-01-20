@@ -27,6 +27,7 @@
 import { getBrowser, domainPages } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
 import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import logger from '../core/logger.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -153,6 +154,8 @@ export const CLICK_ELEMENT_TOOL = {
  * });
  */
 export async function clickElement({ url, selector, text, waitForElementTimeout = 30000, returnHtml = true, removeUnnecessaryHTML = true, postClickWait = 1000 }) {
+  logger.info(`click_element called: ${selector || `text="${text}"`}`);
+  
   if (!url) {
     throw new Error("url parameter is required");
   }
@@ -172,6 +175,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
   let page = domainPages.get(hostname);
   
   if (!page || page.isClosed()) {
+    logger.error(`No open page found for ${hostname}`);
     return new ErrorResponse(
       `No open page found for ${hostname}. Please fetch the page first using fetch_webpage.`,
       [
@@ -232,11 +236,13 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     // await page.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), elementHandle);
     // await new Promise(r => setTimeout(r, 300)); // Brief delay after scroll
     
+    logger.info(`Clicking: ${selector || `text="${text}"`}`);
     await elementHandle.click();
     
     if (returnHtml) {
       // Wait for page to stabilize (handles both navigation and SPA content updates)
       // This ensures content is fully loaded before returning, just like fetch_webpage does
+      logger.info('Waiting for page stability...');
       await waitForPageStability(page);
       
       // Wait for SPAs to render dynamic content after click
@@ -246,6 +252,8 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       
       const currentUrl = page.url();
       const html = await extractAndProcessHtml(page, removeUnnecessaryHTML);
+      
+      logger.info(`click_element completed: ${selector || `text="${text}"`}`);
       
       return new ClickElementSuccessResponse(
         currentUrl,
@@ -260,6 +268,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       );
     } else {
       // Wait for page to stabilize even for fast clicks (ensures JS has finished)
+      logger.info('Waiting for page stability (fast mode)...');
       await waitForPageStability(page);
       
       // Wait for SPAs to render dynamic content after click
@@ -268,6 +277,8 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       }
       
       const currentUrl = page.url();
+      
+      logger.info(`click_element completed: ${selector || `text="${text}"`}`);
       
       return new ClickElementSuccessResponse(
         currentUrl,
@@ -281,6 +292,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       );
     }
   } catch (err) {
+    logger.error(`click_element failed: ${err.message}`);
     return new ErrorResponse(
       `Failed to click element: ${err.message}`,
       [

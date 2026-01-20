@@ -7,6 +7,7 @@
 
 import { domainPages } from './browser.js';
 import { cleanHtml, enrichHtml } from './html.js';
+import logger from './logger.js';
 
 // ============================================================================
 // SIMPLE REQUEST QUEUE (No Locks)
@@ -42,7 +43,7 @@ async function processQueue() {
     const queueLength = requestQueue.length;
     
     if (queueLength > 0) {
-      console.error(`[MCPBrowser] Processing request (${queueLength} more in queue)`);
+      logger.info(`Queue: ${queueLength} requests waiting`);
     }
     
     try {
@@ -78,7 +79,7 @@ export async function getOrCreatePage(browser, hostname, reuseLastKeptPage = tru
     if (!existingPage.isClosed()) {
       page = existingPage;
       await page.bringToFront().catch(() => {});
-      console.error(`[MCPBrowser] Reusing existing tab for domain: ${hostname}`);
+      logger.info(`Tab reused: ${hostname}`);
     } else {
       // Page was closed externally, remove from map
       domainPages.delete(hostname);
@@ -110,7 +111,7 @@ export async function getOrCreatePage(browser, hostname, reuseLastKeptPage = tru
     }
     // Add new page to domain map
     domainPages.set(hostname, page);
-    console.error(`[MCPBrowser] Created new tab for domain: ${hostname}`);
+    logger.info(`Tab created: ${hostname}`);
   }
   
   return page;
@@ -196,7 +197,7 @@ export async function isItSPA(page) {
  * @returns {Promise<void>}
  */
 export async function navigateToUrl(page, url, waitUntil, timeout) {
-  console.error(`[MCPBrowser] Navigating to: ${url}`);
+  logger.info(`Navigating to: ${url}`);
   
   const startTime = Date.now();
   
@@ -204,10 +205,10 @@ export async function navigateToUrl(page, url, waitUntil, timeout) {
     await page.goto(url, { waitUntil, timeout });
     
     const loadTime = Date.now() - startTime;
-    console.error(`[MCPBrowser] Navigation completed in ${loadTime}ms: ${page.url()}`);
+    logger.info(`Navigation complete: ${page.url()} (${loadTime}ms)`);
   } catch (error) {
     const elapsed = Date.now() - startTime;
-    console.error(`[MCPBrowser] Navigation error after ${elapsed}ms: ${error.message}`);
+    logger.error(`Navigation failed: ${error.message} after ${elapsed}ms`);
     throw error;
   }
 }
@@ -222,8 +223,7 @@ export async function waitForPageReady(page) {
   const spaCheck = await isItSPA(page);
   
   if (spaCheck.isSPA) {
-    console.error(`[MCPBrowser] 🔄 SPA detected: ${spaCheck.indicators.join(', ')}`);
-    console.error(`[MCPBrowser] Waiting for JavaScript to render content...`);
+    logger.info(`SPA detected: ${spaCheck.indicators.join(', ')}`);
     
     // Wait for SPA to render
     await new Promise(resolve => setTimeout(resolve, 3000));
@@ -234,7 +234,7 @@ export async function waitForPageReady(page) {
     } catch {
       // OK if timeout - SPA might have websockets or long-polling
     }
-    console.error(`[MCPBrowser] SPA content ready`);
+    logger.info('SPA content ready');
   } else {
     // For non-SPAs, just wait briefly for any pending network requests
     try {
@@ -252,17 +252,17 @@ export async function waitForPageReady(page) {
  * @returns {Promise<void>}
  */
 export async function waitForPageStability(page) {
-  console.error(`[MCPBrowser] Waiting for page to stabilize...`);
+  logger.info('Waiting for page stability (network idle)...');
   
   // Give time for any triggered actions to complete
   await new Promise(resolve => setTimeout(resolve, 2000));
   
   try {
     await page.waitForNetworkIdle({ timeout: 5000 });
-    console.error(`[MCPBrowser] Page stabilized`);
+    logger.info('Page stabilized');
   } catch {
     // Ignore timeout - page may have long-polling or websockets
-    console.error(`[MCPBrowser] Network still active, continuing anyway`);
+    logger.info('Network still active, continuing anyway');
   }
 }
 

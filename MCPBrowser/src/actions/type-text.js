@@ -5,6 +5,7 @@
 import { getBrowser, domainPages } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
 import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import logger from '../core/logger.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -121,6 +122,9 @@ export const TYPE_TEXT_TOOL = {
  * @returns {Promise<Object>} Result object with success status and details
  */
 export async function typeText({ url, selector, text, clear = true, typeDelay = 50, waitForElementTimeout = 30000, returnHtml = true, removeUnnecessaryHTML = true, postTypeWait = 1000 }) {
+  const startTime = Date.now();
+  logger.info(`type_text called: selector=${selector}, url=${url}`);
+  
   if (!url) {
     throw new Error("url parameter is required");
   }
@@ -144,6 +148,7 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
   let page = domainPages.get(hostname);
   
   if (!page || page.isClosed()) {
+    logger.error(`type_text: No open page found for ${hostname}`);
     return new ErrorResponse(
       `No open page found for ${hostname}. Please fetch the page first using fetch_webpage_protected.`,
       [
@@ -160,10 +165,12 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
       await page.keyboard.press('Backspace');
     }
     
+    logger.info(`Typing into: ${selector}`);
     await page.type(selector, String(text), { delay: typeDelay });
     
     if (returnHtml) {
       // Wait for page to stabilize (handles form validation, autocomplete, etc.)
+      logger.info('Waiting for page stability after typing...');
       await waitForPageStability(page);
       
       // Wait for SPAs to render dynamic content after typing
@@ -173,6 +180,8 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
       
       const currentUrl = page.url();
       const html = await extractAndProcessHtml(page, removeUnnecessaryHTML);
+      
+      logger.info(`type_text completed: typed into ${selector}`);
       
       return new TypeTextSuccessResponse(
         currentUrl,
@@ -187,6 +196,7 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
       );
     } else {
       // Wait for page to stabilize even without returning HTML
+      logger.info('Waiting for page stability after typing (fast mode)...');
       await waitForPageStability(page);
       
       // Wait for SPAs to render dynamic content after typing
@@ -195,6 +205,8 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
       }
       
       const currentUrl = page.url();
+      
+      logger.info(`type_text completed: typed into ${selector} (no HTML)`);
       
       return new TypeTextSuccessResponse(
         currentUrl,
@@ -208,6 +220,7 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
       );
     }
   } catch (err) {
+    logger.error(`type_text failed: ${err.message}`);
     return new ErrorResponse(
       `Failed to type text: ${err.message}`,
       [

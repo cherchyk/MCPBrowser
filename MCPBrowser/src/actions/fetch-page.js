@@ -7,6 +7,7 @@ import { getBrowser, domainPages } from '../core/browser.js';
 import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml, waitForPageStability } from '../core/page.js';
 import { detectRedirectType, waitForAutoAuth, waitForManualAuth } from '../core/auth.js';
 import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import logger from '../core/logger.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -113,12 +114,15 @@ export const FETCH_WEBPAGE_TOOL = {
  * @returns {Promise<Object>} Result object with success status, URL, HTML content, or error details
  */
 export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = true, postLoadWait = 0 }) {
+  logger.info(`fetch_webpage called: url=${url}`);
+  
   // Handle missing URL with environment variable fallback
   if (!url) {
     const fallbackUrl = process.env.DEFAULT_FETCH_URL || process.env.MCP_DEFAULT_FETCH_URL;
     if (fallbackUrl) {
       url = fallbackUrl;
     } else {
+      logger.error("Missing url parameter");
       return new ErrorResponse(
         "Missing url parameter and no DEFAULT_FETCH_URL/MCP_DEFAULT_FETCH_URL configured",
         ["Set DEFAULT_FETCH_URL or MCP_DEFAULT_FETCH_URL environment variable", "Provide url parameter in the request"]
@@ -131,6 +135,7 @@ export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = tru
   try {
     hostname = new URL(url).hostname;
   } catch {
+    logger.error(`Invalid URL: ${url}`);
     return new ErrorResponse(`Invalid URL: ${url}`, []);
   }
 
@@ -170,7 +175,7 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
     const redirectInfo = detectRedirectType(url, hostname, currentUrl, currentHostname);
     
     if (redirectInfo.type === 'requested_auth') {
-      console.error(`[MCPBrowser] User requested auth page directly, returning content`);
+      logger.info('User requested auth page directly, returning content');
       // Update domain mapping if needed
       if (redirectInfo.currentHostname !== hostname) {
         domainPages.delete(hostname);
@@ -178,13 +183,13 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
         hostname = redirectInfo.currentHostname;
       }
     } else if (redirectInfo.type === 'permanent') {
-      console.error(`[MCPBrowser] Permanent redirect detected: ${hostname} → ${redirectInfo.currentHostname}`);
+      logger.info(`Redirect: ${hostname} → ${redirectInfo.currentHostname}`);
       
       // Check if we already have a tab for the redirected hostname
       // (can happen after reconnect - we mapped mail.google.com but not gmail.com)
       const existingPage = domainPages.get(redirectInfo.currentHostname);
       if (existingPage && existingPage !== page && !existingPage.isClosed()) {
-        console.error(`[MCPBrowser] Found existing tab for ${redirectInfo.currentHostname}, reusing it`);
+        logger.info(`Found existing tab for ${redirectInfo.currentHostname}, reusing it`);
         // Close the new tab we just opened, use the existing one
         await page.close().catch(() => {});
         domainPages.delete(hostname);
@@ -192,20 +197,20 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
         // Map original hostname to existing page
         domainPages.set(hostname, existingPage);
       } else {
-        console.error(`[MCPBrowser] Mapping both hostnames to same tab for future reuse`);
         // Map both original and final hostname to the same page
         domainPages.set(hostname, page);
         domainPages.set(redirectInfo.currentHostname, page);
       }
       hostname = redirectInfo.currentHostname;
     } else if (redirectInfo.type === 'auth') {
-      console.error(`[MCPBrowser] Authentication flow detected (${redirectInfo.flowType})`);
-      console.error(`[MCPBrowser] Current location: ${redirectInfo.currentUrl}`);
+      logger.info(`Authentication required: ${redirectInfo.flowType}`);
+      logger.info(`Auth URL: ${redirectInfo.currentUrl}`);
       
       // Try auto-auth first (check if existing session works)
       const autoAuthResult = await waitForAutoAuth(page);
       
       if (autoAuthResult.success) {
+        logger.info(`Auto-auth successful, now at: ${page.url()}`);
         // Update hostname to where we landed
         if (autoAuthResult.hostname !== hostname) {
           domainPages.delete(hostname);
@@ -217,6 +222,7 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
         const manualAuthResult = await waitForManualAuth(page, authCompletionTimeout);
         
         if (!manualAuthResult.success) {
+          logger.error(`Authentication failed: ${manualAuthResult.error}`);
           return new ErrorResponse(
             manualAuthResult.error,
             [
@@ -233,6 +239,7 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
           domainPages.set(manualAuthResult.hostname, page);
           hostname = manualAuthResult.hostname;
         }
+        logger.info(`Authentication successful, now at: ${page.url()}`);
       }
       
       // Wait for page stability after auth
@@ -241,12 +248,14 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
     
     // Additional wait if requested (for pages that need extra time)
     if (postLoadWait > 0) {
-      console.error(`[MCPBrowser] Waiting ${postLoadWait}ms (postLoadWait)...`);
+      logger.info(`Waiting ${postLoadWait}ms (postLoadWait)...`);
       await new Promise(resolve => setTimeout(resolve, postLoadWait));
     }
     
     // Extract and process HTML
     const processedHtml = await extractAndProcessHtml(page, removeUnnecessaryHTML);
+    
+    logger.info(`fetch_webpage completed: ${page.url()}`);
     
     return new FetchPageSuccessResponse(
       page.url(),
@@ -259,6 +268,7 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
       ]
     );
   } catch (err) {
+    logger.error(`fetch_webpage failed: ${err.message || String(err)}`);
     return new ErrorResponse(
       err.message || String(err),
       [

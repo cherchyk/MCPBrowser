@@ -14,6 +14,7 @@ import { dirname, join } from 'path';
 
 // Import response classes
 import { ErrorResponse } from './core/responses.js';
+import logger from './core/logger.js';
 
 // Import core functionality
 import { fetchPage, FETCH_WEBPAGE_TOOL } from './actions/fetch-page.js';
@@ -91,6 +92,7 @@ async function main() {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  logger.info(`MCPBrowser server v${packageJson.version} started`);
 }
 
 // Export for testing
@@ -123,7 +125,7 @@ export {
 if (import.meta.url === new URL(process.argv[1], 'file://').href || 
     fileURLToPath(import.meta.url) === process.argv[1]) {
   main().catch((err) => {
-    console.error(err);
+    logger.error(`Server failed: ${err.message}`);
     process.exit(1);
   });
 }

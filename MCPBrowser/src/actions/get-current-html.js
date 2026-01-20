@@ -5,6 +5,7 @@
 import { getBrowser, domainPages } from '../core/browser.js';
 import { extractAndProcessHtml } from '../core/page.js';
 import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import logger from '../core/logger.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -98,6 +99,9 @@ export const GET_CURRENT_HTML_TOOL = {
  * @returns {Promise<Object>} Result object with current HTML
  */
 export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
+  const startTime = Date.now();
+  logger.info(`get_current_html called: url=${url}`);
+  
   if (!url) {
     throw new Error("url parameter is required");
   }
@@ -113,6 +117,7 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
   let page = domainPages.get(hostname);
   
   if (!page || page.isClosed()) {
+    logger.error(`get_current_html: No open page found for ${hostname}`);
     return new ErrorResponse(
       `No open page found for ${hostname}. Please fetch the page first using fetch_webpage.`,
       [
@@ -125,6 +130,8 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
     const currentUrl = page.url();
     const html = await extractAndProcessHtml(page, removeUnnecessaryHTML);
     
+    logger.info(`get_current_html completed: got HTML from ${currentUrl}`);
+    
     return new GetCurrentHtmlSuccessResponse(
       currentUrl,
       html,
@@ -135,6 +142,7 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
       ]
     );
   } catch (err) {
+    logger.error(`get_current_html failed: ${err.message}`);
     return new ErrorResponse(
       `Failed to get HTML: ${err.message}`,
       [

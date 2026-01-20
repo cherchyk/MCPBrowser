@@ -270,6 +270,28 @@ Environment variables for advanced setup:
 | `CHROME_USER_DATA_DIR` | Browser profile directory | `%LOCALAPPDATA%/ChromeAuthProfile` |
 | `CHROME_REMOTE_DEBUG_PORT` | DevTools port | `9222` |
 
+## Observability & Logging
+
+MCPBrowser logs all operations to help you understand what's happening:
+
+```
+[MCPBrowser] fetch_webpage called: url=https://example.com
+[MCPBrowser] Tab created: example.com
+[MCPBrowser] Navigating to: https://example.com
+[MCPBrowser] Navigation complete: https://example.com (1234ms)
+[MCPBrowser] SPA detected: React, minimal content (0 chars)
+[MCPBrowser] SPA content ready
+[MCPBrowser] fetch_webpage completed: https://example.com
+```
+
+**Error messages are marked with ❌:**
+```
+[MCPBrowser] ❌ fetch_webpage failed: net::ERR_NAME_NOT_RESOLVED
+[MCPBrowser] ❌ No open page found for example.com
+```
+
+Logs go to `stderr` so they don't interfere with MCP protocol on `stdout`.
+
 ## Troubleshooting
 
 **Browser doesn't open?**
