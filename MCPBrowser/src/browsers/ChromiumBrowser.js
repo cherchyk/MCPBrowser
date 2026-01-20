@@ -121,7 +121,7 @@ export class ChromiumBrowser extends BaseBrowser {
       const child = spawn(execPath, args, {
         detached: true,
         stdio: 'ignore',
-        windowsHide: true
+        windowsHide: false  // Keep window visible for authentication
       });
       child.unref();
 
