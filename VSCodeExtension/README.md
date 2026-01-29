@@ -8,6 +8,13 @@
 - 🔐 **Authentication Support**: Fetches web pages in your Chrome/Edge browser - authenticate once, reuse sessions automatically
 - 🤖 **Bypass Anti-Crawler**: Fetch sites that block automated tools, including CAPTCHA and human verification
 
+## Requirements
+
+- Chrome or Edge browser
+- [Node.js 18+](https://nodejs.org/) (includes npm)
+
+> **Note:** Node.js must be installed on your system. This extension uses Node.js to run the MCP server. VS Code does not include Node.js - download from [nodejs.org](https://nodejs.org/) if not already installed.
+
 ## How It Works
 
 When Copilot needs to fetch a web page via browser:
