@@ -41,7 +41,9 @@ Example workflow for AI assistant to use MCPBrowser
 ## Requirements
 
 - Chrome or Edge browser
-- Node.js 18+
+- [Node.js 18+](https://nodejs.org/) (includes npm)
+
+> **Note:** Node.js must be installed on your system. The VS Code extension and npm package both require Node.js to run the MCP server. Download from [nodejs.org](https://nodejs.org/) if not already installed.
 
 ## Installation
 
