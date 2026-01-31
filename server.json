@@ -3,6 +3,11 @@
   "name": "io.github.cherchyk/mcpbrowser",
   "title": "MCP Browser",
   "description": "Fetch web pages using Chrome/Edge browser with auth, anti-bot, and JavaScript rendering support",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/cherchyk/MCPBrowser/main/VSCodeExtension/icon.png"
+    }
+  ],
   "repository": {
     "url": "https://github.com/cherchyk/MCPBrowser",
     "source": "github"
