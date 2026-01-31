@@ -1,17 +1,23 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.cherchyk/mcpbrowser",
-  "description": "In-browser web page fetching using Chrome DevTools Protocol. Handles auth-required pages, anti-bot/crawler blocks, and JavaScript-heavy sites",
+  "title": "MCP Browser",
+  "description": "Fetch web pages using Chrome/Edge browser with auth, anti-bot, and JavaScript rendering support",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/cherchyk/MCPBrowser/main/VSCodeExtension/icon.png"
+    }
+  ],
   "repository": {
     "url": "https://github.com/cherchyk/MCPBrowser",
     "source": "github"
   },
-  "version": "0.3.12",
+  "version": "0.3.14",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "mcpbrowser",
-      "version": "0.2.32",
+      "version": "0.3.14",
       "transport": {
         "type": "stdio"
       }

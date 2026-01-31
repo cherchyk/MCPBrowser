@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write  # Required for MCP Registry OIDC authentication
     
 jobs:
   test:
@@ -93,6 +94,23 @@ jobs:
       run: |
         echo "⏭️ Skipping npm publish - not on main branch"
         echo "Branch: ${{ github.ref }}"
+
+    - name: Publish to MCP Registry
+      if: github.ref == 'refs/heads/main'
+      run: |
+        # Install mcp-publisher
+        curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+        
+        # Authenticate using GitHub OIDC (no secrets needed!)
+        ./mcp-publisher login github-oidc
+        
+        # Publish to MCP Registry
+        ./mcp-publisher publish
+    
+    - name: Skip MCP Registry publish (not on main branch)
+      if: github.ref != 'refs/heads/main'
+      run: |
+        echo "⏭️ Skipping MCP Registry publish - not on main branch"
     
     - name: Package VS Code Extension
       run: |
@@ -155,9 +173,9 @@ jobs:
         if [ "${{ github.ref }}" == "refs/heads/main" ]; then
           echo "🎉 Successfully deployed version $VERSION to:"
           echo "  ✅ npm registry"
+          echo "  ✅ MCP Registry (Visual Studio & other MCP clients)"
           echo "  ✅ VS Code Marketplace"
           echo "  ✅ GitHub Releases"
-          echo "  ✅ MCP Registry (via server.json)"
         else
           echo "✅ Pipeline test successful on branch: ${{ github.ref }}"
           echo "  ✅ Version check passed"
