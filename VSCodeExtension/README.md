@@ -1,5 +1,7 @@
 # ✅ MCPBrowser (MCP Browser)
 
+> ⚠️ **Security Notice:** MCPBrowser extracts webpage content and provides it to your AI agent (e.g., GitHub Copilot, Claude), which then sends it to its LLM provider (e.g., Anthropic, OpenAI, GitHub) for processing. Make sure you trust both your agent and the LLM provider it uses — especially when accessing pages with sensitive or private data.
+
 **Lightweight MCP browser server extension for GitHub Copilot.** This browser-based MCP server extension enables in-browser web page fetching using your real Chrome or Edge browser. Used when loading web pages via browser automation is preferred - handles login, SSO, CAPTCHA, and anti-crawler restrictions. Should be used when standard fetch_webpage fails.
 
 ## Features
