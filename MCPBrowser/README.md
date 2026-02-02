@@ -5,6 +5,8 @@
 [![Claude Desktop](https://img.shields.io/badge/Claude-Desktop-5865F2?logo=anthropic)](https://modelcontextprotocol.io/quickstart/user)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+> ⚠️ **Security Notice:** MCPBrowser extracts webpage content and provides it to your AI agent (e.g., GitHub Copilot, Claude), which then sends it to its LLM provider (e.g., Anthropic, OpenAI, GitHub) for processing. Make sure you trust both your agent and the LLM provider it uses — especially when accessing pages with sensitive or private data.
+
 **MCPBrowser is an MCP browser server that gives AI assistants the ability to browse web pages using a real Chrome or Edge browser.** This browser-based MCP server fetches any web page — especially those protected by authentication, CAPTCHAs, anti-bot protection, or requiring JavaScript rendering. Uses your real Chrome/Edge browser for web automation so you can log in normally, then automatically extracts content. Works with corporate SSO, login forms, Cloudflare, and JavaScript-heavy sites (SPAs, dashboards).
 
 This is an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server using [stdio transport](https://modelcontextprotocol.io/docs/concepts/transports#stdio). Your AI assistant uses this web browser MCP server when standard HTTP requests fail — pages requiring authentication, CAPTCHA protection, or heavy JavaScript (SPAs). Once connected, the browser MCP server can navigate through websites, interact with elements, and send HTML back to the AI assistant. This gives your AI the ability to browse the web just like you do.
