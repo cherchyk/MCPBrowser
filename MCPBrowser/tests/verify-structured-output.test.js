@@ -137,7 +137,7 @@ await test('fetch_webpage success should have MCP-compliant structure', async ()
   console.log(`   Structured data keys: ${Object.keys(result.structuredContent).join(', ')}`);
 });
 
-await test('click_element error should have MCP-compliant error structure', async () => {
+await test('click_element for non-loaded page should have MCP-compliant informational structure', async () => {
   const result = await callMcpTool('click_element', { url: 'https://nonexistent-domain-12345.com', selector: '#test' });
   
   // Check required fields
@@ -147,13 +147,15 @@ await test('click_element error should have MCP-compliant error structure', asyn
   // Check content item structure
   const contentItem = result.content[0];
   assert.strictEqual(contentItem.type, 'text', 'Content type should be text');
-  assert.ok(contentItem.text.includes('Error:'), 'Text should indicate error');
+  assert.ok(contentItem.text.includes('No open page found'), 'Text should indicate page not loaded');
   
-  // Check isError flag
-  assert.strictEqual(result.isError, true, 'isError should be true for errors');
+  // InformationalResponse should NOT be an error (not red in UI)
+  assert.strictEqual(result.isError, false, 'isError should be false for informational responses (not red)');
   
-  // Errors should NOT have structuredContent per MCP spec
-  assert.strictEqual(result.structuredContent, undefined, 'Errors should not have structuredContent');
+  // InformationalResponse SHOULD have structuredContent (unlike ErrorResponse)
+  assert.ok(result.structuredContent, 'InformationalResponse should have structuredContent');
+  assert.strictEqual(result.structuredContent.status, 'action_required', 'Should have action_required status');
+  assert.ok(Array.isArray(result.structuredContent.nextSteps), 'Should have nextSteps array');
   
   console.log(`   Error text: ${contentItem.text}`);
 });

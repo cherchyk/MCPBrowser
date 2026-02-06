@@ -22,6 +22,8 @@ import { clickElement, CLICK_ELEMENT_TOOL } from './actions/click-element.js';
 import { typeText, TYPE_TEXT_TOOL } from './actions/type-text.js';
 import { closeTab, CLOSE_TAB_TOOL } from './actions/close-tab.js';
 import { getCurrentHtml, GET_CURRENT_HTML_TOOL } from './actions/get-current-html.js';
+import { takeScreenshot, TAKE_SCREENSHOT_TOOL } from './actions/take-screenshot.js';
+import { scrollPage, SCROLL_PAGE_TOOL } from './actions/scroll-page.js';
 
 // Import functions for testing exports
 import { getBrowser, closeBrowser } from './core/browser.js';
@@ -50,7 +52,9 @@ async function main() {
     CLICK_ELEMENT_TOOL,
     TYPE_TEXT_TOOL,
     CLOSE_TAB_TOOL,
-    GET_CURRENT_HTML_TOOL
+    GET_CURRENT_HTML_TOOL,
+    TAKE_SCREENSHOT_TOOL,
+    SCROLL_PAGE_TOOL
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
@@ -81,6 +85,14 @@ async function main() {
           
         case "get_current_html":
           result = await getCurrentHtml(safeArgs);
+          break;
+          
+        case "take_screenshot":
+          result = await takeScreenshot(safeArgs);
+          break;
+          
+        case "scroll_page":
+          result = await scrollPage(safeArgs);
           break;
           
         default:
@@ -130,7 +142,9 @@ export {
   clickElement,
   typeText,
   closeTab,
-  getCurrentHtml
+  getCurrentHtml,
+  takeScreenshot,
+  scrollPage
 };
 
 // Run the MCP server only if this is the main module (not imported for testing)

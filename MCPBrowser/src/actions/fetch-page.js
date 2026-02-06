@@ -6,7 +6,7 @@
 import { getBrowser, domainPages } from '../core/browser.js';
 import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml, waitForPageStability } from '../core/page.js';
 import { detectRedirectType, waitForAutoAuth, waitForManualAuth } from '../core/auth.js';
-import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import { MCPResponse, ErrorResponse, HttpStatusResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
 /**
@@ -163,7 +163,7 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
     let page = await getOrCreatePage(browserInstance, hostname, reuseLastKeptPage);
     
     // Navigate to URL (pure navigation)
-    await navigateToUrl(page, url, waitUntil, navigationTimeout);
+    const { statusCode, statusText } = await navigateToUrl(page, url, waitUntil, navigationTimeout);
     
     // Wait for page content to be ready (handles SPAs automatically)
     await waitForPageReady(page);
@@ -227,8 +227,8 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
             manualAuthResult.error,
             [
               "Complete authentication in the browser window",
-              "Call fetch_webpage again with the same URL to retry",
-              "Use close_tab to reset the session if authentication fails"
+              "Call MCPBrowser's fetch_webpage again with the same URL to retry",
+              "Use MCPBrowser's close_tab to reset the session if authentication fails"
             ]
           );
         }
@@ -257,14 +257,26 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
     
     logger.info(`fetch_webpage completed: ${page.url()}`);
     
+    // Check for non-2xx HTTP status codes - return informational response (not red error)
+    if (statusCode && (statusCode >= 400 && statusCode < 600)) {
+      logger.info(`HTTP ${statusCode} ${statusText} - returning as informational response`);
+      return new HttpStatusResponse(
+        page.url(),
+        statusCode,
+        statusText,
+        processedHtml
+      );
+    }
+    
     return new FetchPageSuccessResponse(
       page.url(),
       processedHtml,
       [
-        "Use click_element to interact with buttons/links on the page",
-        "Use type_text to fill in form fields",
-        "Use get_current_html to re-check page state after interactions",
-        "Use close_tab when finished to free browser resources"
+        "Use MCPBrowser's click_element to interact with buttons/links on the page",
+        "Use MCPBrowser's type_text to fill in form fields",
+        "Use MCPBrowser's get_current_html to re-check page state after interactions",
+        "Use MCPBrowser's take_screenshot if page has charts, images, or complex visual layout that's hard to understand from HTML",
+        "Use MCPBrowser's close_tab when finished to free browser resources"
       ]
     );
   } catch (err) {
@@ -273,8 +285,8 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
       err.message || String(err),
       [
         "Complete authentication in the browser if prompted",
-        "Call fetch_webpage again with the same URL to retry",
-        "Use close_tab to reset the session if needed"
+        "Call MCPBrowser's fetch_webpage again with the same URL to retry",
+        "Use MCPBrowser's close_tab to reset the session if needed"
       ]
     );
   }

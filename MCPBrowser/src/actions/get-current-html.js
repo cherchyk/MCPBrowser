@@ -2,9 +2,9 @@
  * get-current-html.js - Get current HTML from an already-loaded page
  */
 
-import { getBrowser, domainPages } from '../core/browser.js';
+import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { extractAndProcessHtml } from '../core/page.js';
-import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
 /**
@@ -113,15 +113,36 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
     throw new Error(`Invalid URL: ${url}`);
   }
 
-  const browser = await getBrowser();
-  let page = domainPages.get(hostname);
-  
-  if (!page || page.isClosed()) {
-    logger.error(`get_current_html: No open page found for ${hostname}`);
-    return new ErrorResponse(
-      `No open page found for ${hostname}. Please fetch the page first using fetch_webpage.`,
+  // Ensure browser connection (triggers domain map rebuild on reconnect)
+  try {
+    await getBrowser();
+  } catch (err) {
+    logger.error(`get_current_html: Failed to connect to browser: ${err.message}`);
+    return new InformationalResponse(
+      `Browser connection failed: ${err.message}`,
+      'Could not connect to Chrome or Edge browser. The browser must be running with remote debugging enabled.',
       [
-        "Use fetch_webpage to load the page first"
+        'Ensure Chrome or Edge browser is installed and running',
+        'Check that remote debugging is enabled (--remote-debugging-port)',
+        'Try restarting the MCP server'
+      ]
+    );
+  }
+
+  // Validate page exists and is usable
+  const { page, error: pageError } = await getValidatedPage(hostname);
+  
+  if (!page) {
+    const isConnectionLost = pageError && pageError.includes('connection');
+    logger.info(`get_current_html: ${pageError || 'No page found for ' + hostname}`);
+    return new InformationalResponse(
+      isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
+      isConnectionLost 
+        ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
+        : 'The page must be loaded before you can get its current HTML',
+      [
+        "Use MCPBrowser's fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's get_current_html with the same URL"
       ]
     );
   }
@@ -136,18 +157,20 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
       currentUrl,
       html,
       [
-        "Use click_element to interact with elements",
-        "Use type_text to fill forms",
-        "Use close_tab to free resources when done"
+        "Use MCPBrowser's click_element to interact with elements",
+        "Use MCPBrowser's type_text to fill forms",
+        "Use MCPBrowser's take_screenshot if page layout or visual content is hard to understand from HTML",
+        "Use MCPBrowser's close_tab to free resources when done"
       ]
     );
   } catch (err) {
     logger.error(`get_current_html failed: ${err.message}`);
-    return new ErrorResponse(
+    return new InformationalResponse(
       `Failed to get HTML: ${err.message}`,
+      'Could not extract HTML from the page. The page may have navigated away or the connection was lost.',
       [
-        "Try fetch_webpage to reload the page",
-        "Use close_tab and start fresh if needed"
+        "Try MCPBrowser's fetch_webpage to reload the page",
+        "Use MCPBrowser's close_tab and start fresh if needed"
       ]
     );
   }

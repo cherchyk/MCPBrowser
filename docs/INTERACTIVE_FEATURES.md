@@ -9,6 +9,7 @@ The new interactive features allow you to:
 - ✅ Type text into input fields with human-like delays
 - ✅ Discover all interactive elements on a page
 - ✅ Wait for elements to appear (useful for dynamic content)
+- ✅ Take screenshots for visual analysis when HTML is hard to parse
 
 ## Prerequisites
 
@@ -213,6 +214,38 @@ wait_for_element({
 - Wait for loading indicators to disappear
 - Wait for success/error messages
 - Wait for dynamic content to load after clicking
+
+---
+
+### 5. `take_screenshot` - Capture visual state
+
+Take a screenshot of the current page state. **Useful when HTML parsing is insufficient** — for example, pages with charts, images, complex layouts, popups, or visual content that's hard to understand from HTML alone.
+
+**Parameters:**
+- `url` (required): URL of the page (must match a previously loaded page)
+- `fullPage` (optional): Capture full scrollable page instead of viewport (default: false)
+
+**Examples:**
+
+```javascript
+// Capture viewport screenshot (default)
+take_screenshot({
+  url: "https://example.com"
+})
+
+// Capture full scrollable page
+take_screenshot({
+  url: "https://dashboard.example.com",
+  fullPage: true
+})
+```
+
+**Use Cases:**
+- Visualize page layout when HTML is hard to parse
+- Capture charts, graphs, or data visualizations
+- Debug popups, modals, or overlays that may block interactions
+- Understand visual feedback (highlights, animations, etc.)
+- See what's blocking an element when click fails
 
 ---
 

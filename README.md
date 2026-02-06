@@ -49,6 +49,7 @@ Example workflow for AI assistant to use MCPBrowser
   - [click_element](#click_element)
   - [type_text](#type_text)
   - [get_current_html](#get_current_html)
+  - [take_screenshot](#take_screenshot)
   - [close_tab](#close_tab)
 - [Configuration](#configuration-optional)
 - [Troubleshooting](#troubleshooting)
@@ -468,6 +469,34 @@ Gets the current HTML from an already-loaded page **WITHOUT** navigating or relo
 **Performance comparison:**
 - `fetch_webpage`: 2-5 seconds (full page reload)
 - `get_current_html`: 0.1-0.3 seconds (just extracts HTML) ✅
+
+---
+
+### `take_screenshot`
+
+Takes a screenshot of an already-loaded page for visual analysis. **Useful when HTML parsing is insufficient** — for example, pages with charts, images, complex layouts, popups, or visual content that's hard to understand from HTML alone. Returns a PNG image.
+
+**⚠️ Note:** Page must be already loaded via `fetch_webpage` first.
+
+**Parameters:**
+- `url` (string, required) - The URL of the page (must match a previously fetched page)
+- `fullPage` (boolean, optional, default: `false`) - Capture the full scrollable page instead of just the viewport
+
+**Examples:**
+```javascript
+// Capture viewport screenshot (default)
+{ url: "https://example.com" }
+
+// Capture full scrollable page
+{ url: "https://dashboard.example.com", fullPage: true }
+```
+
+**Use cases:**
+- Visualize page layout when HTML is hard to parse
+- Capture charts, graphs, or data visualizations
+- Debug popups, modals, or overlays
+- Understand visual feedback (highlights, animations)
+- See what's blocking an element click
 
 ---
 

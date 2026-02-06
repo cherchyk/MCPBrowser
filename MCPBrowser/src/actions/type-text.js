@@ -2,9 +2,9 @@
  * type-text.js - Type text into input fields
  */
 
-import { getBrowser, domainPages } from '../core/browser.js';
+import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
-import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import { MCPResponse, ErrorResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
 /**
@@ -144,15 +144,36 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
     throw new Error(`Invalid URL: ${url}`);
   }
 
-  const browser = await getBrowser();
-  let page = domainPages.get(hostname);
-  
-  if (!page || page.isClosed()) {
-    logger.error(`type_text: No open page found for ${hostname}`);
-    return new ErrorResponse(
-      `No open page found for ${hostname}. Please fetch the page first using fetch_webpage_protected.`,
+  // Ensure browser connection (triggers domain map rebuild on reconnect)
+  try {
+    await getBrowser();
+  } catch (err) {
+    logger.error(`type_text: Failed to connect to browser: ${err.message}`);
+    return new InformationalResponse(
+      `Browser connection failed: ${err.message}`,
+      'Could not connect to Chrome or Edge browser. The browser must be running with remote debugging enabled.',
       [
-        "Use fetch_webpage to load the page first"
+        'Ensure Chrome or Edge browser is installed and running',
+        'Check that remote debugging is enabled (--remote-debugging-port)',
+        'Try restarting the MCP server'
+      ]
+    );
+  }
+
+  // Validate page exists and is usable
+  const { page, error: pageError } = await getValidatedPage(hostname);
+  
+  if (!page) {
+    const isConnectionLost = pageError && pageError.includes('connection');
+    logger.info(`type_text: ${pageError || 'No page found for ' + hostname}`);
+    return new InformationalResponse(
+      isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
+      isConnectionLost 
+        ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
+        : 'The page must be loaded before you can type text into elements',
+      [
+        "Use MCPBrowser's fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's type_text with the same URL"
       ]
     );
   }
@@ -188,10 +209,11 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
         `Typed text into: ${selector}`,
         html,
         [
-          "Use type_text to fill additional fields",
-          "Use click_element to submit the form or navigate",
-          "Use get_current_html to check for validation messages",
-          "Use close_tab when finished"
+          "Use MCPBrowser's type_text to fill additional fields",
+          "Use MCPBrowser's click_element to submit the form or navigate",
+          "Use MCPBrowser's get_current_html to check for validation messages",
+          "Use MCPBrowser's take_screenshot if form has visual feedback or validation that's hard to parse from HTML",
+          "Use MCPBrowser's close_tab when finished"
         ]
       );
     } else {
@@ -213,18 +235,21 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
         `Typed text into: ${selector}`,
         null,
         [
-          "Use get_current_html to see updated page state",
-          "Use type_text for additional fields or click_element to submit",
-          "Use close_tab when finished"
+          "Use MCPBrowser's get_current_html to see updated page state",
+          "Use MCPBrowser's take_screenshot if the page has visual feedback that's hard to parse",
+          "Use MCPBrowser's type_text for additional fields or MCPBrowser's click_element to submit",
+          "Use MCPBrowser's close_tab when finished"
         ]
       );
     }
   } catch (err) {
     logger.error(`type_text failed: ${err.message}`);
-    return new ErrorResponse(
+    return new InformationalResponse(
       `Failed to type text: ${err.message}`,
+      'The input field was found but text could not be entered. It may be disabled, read-only, or covered by another element.',
       [
-        "Use get_current_html to verify page state",
+        "Use MCPBrowser's get_current_html to verify page state",
+        "Use MCPBrowser's take_screenshot to see what's on the page visually",
         "Check if the selector is correct",
         "Verify the input field is visible and enabled"
       ]

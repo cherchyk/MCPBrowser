@@ -5,7 +5,7 @@
 
 import assert from 'assert';
 import { getCurrentHtml, fetchPage } from '../../src/mcp-browser.js';
-import { ErrorResponse } from '../../src/core/responses.js';
+import { ErrorResponse, InformationalResponse } from '../../src/core/responses.js';
 import { runWithBrowsers } from '../browsers/browser-runner.js';
 const browserParam = process.argv[2] || '';
 console.log('🧪 Testing getCurrentHtml action\n');
@@ -48,9 +48,9 @@ await runWithBrowsers(async (browserType) => {
     }
   });
   
-  await test(`[${browserType}] Should return error if page not loaded`, async () => {
+  await test(`[${browserType}] Should return informational response if page not loaded`, async () => {
     const result = await getCurrentHtml({ url: 'https://never-loaded-domain-12345.com' });
-    assert.strictEqual(result instanceof ErrorResponse, true);
+    assert.strictEqual(result instanceof InformationalResponse, true, 'Should return InformationalResponse (not red error)');
     assert.match(result.message, /No open page found/);
   });
   

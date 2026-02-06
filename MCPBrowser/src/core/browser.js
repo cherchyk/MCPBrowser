@@ -80,6 +80,54 @@ export async function GetBrowser(type = '') {
 }
 
 /**
+ * Validate that a page is usable (connected and responsive)
+ * @param {Page} page - The puppeteer page instance
+ * @returns {Promise<{valid: boolean, error?: string}>} Validation result
+ */
+export async function isPageUsable(page) {
+  if (!page) {
+    return { valid: false, error: 'Page is null' };
+  }
+  
+  try {
+    if (page.isClosed()) {
+      return { valid: false, error: 'Page has been closed' };
+    }
+    
+    // Try to get the URL - this will fail if the page connection is broken
+    await page.url();
+    return { valid: true };
+  } catch (err) {
+    return { valid: false, error: `Page connection lost: ${err.message}` };
+  }
+}
+
+/**
+ * Get a page for a hostname with validation.
+ * Returns the page if it exists and is usable, otherwise returns null and cleans up.
+ * @param {string} hostname - The hostname to look up
+ * @returns {Promise<{page: Page|null, error?: string}>} The page if valid, null with error message otherwise
+ */
+export async function getValidatedPage(hostname) {
+  const page = domainPages.get(hostname);
+  
+  if (!page) {
+    return { page: null, error: `No page loaded for ${hostname}` };
+  }
+  
+  const validation = await isPageUsable(page);
+  
+  if (!validation.valid) {
+    // Clean up the stale mapping
+    domainPages.delete(hostname);
+    logger.info(`Removed stale page mapping for ${hostname}: ${validation.error}`);
+    return { page: null, error: validation.error };
+  }
+  
+  return { page };
+}
+
+/**
  * Rebuild the domain-to-page mapping from existing browser tabs.
  * This enables tab reuse across reconnections by discovering tabs that are already open.
  * Skips internal pages like about:blank and chrome:// URLs.

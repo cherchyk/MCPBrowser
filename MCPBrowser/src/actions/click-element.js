@@ -24,9 +24,9 @@
  * - Flexible: Can disable waiting for fast form interactions
  */
 
-import { getBrowser, domainPages } from '../core/browser.js';
+import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
-import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
 /**
@@ -171,15 +171,36 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     throw new Error(`Invalid URL: ${url}`);
   }
 
-  const browser = await getBrowser();
-  let page = domainPages.get(hostname);
-  
-  if (!page || page.isClosed()) {
-    logger.error(`No open page found for ${hostname}`);
-    return new ErrorResponse(
-      `No open page found for ${hostname}. Please fetch the page first using fetch_webpage.`,
+  // Ensure browser connection (triggers domain map rebuild on reconnect)
+  try {
+    await getBrowser();
+  } catch (err) {
+    logger.error(`click_element: Failed to connect to browser: ${err.message}`);
+    return new InformationalResponse(
+      `Browser connection failed: ${err.message}`,
+      'Could not connect to Chrome or Edge browser. The browser must be running with remote debugging enabled.',
       [
-        "Use fetch_webpage to load the page first"
+        'Ensure Chrome or Edge browser is installed and running',
+        'Check that remote debugging is enabled (--remote-debugging-port)',
+        'Try restarting the MCP server'
+      ]
+    );
+  }
+
+  // Validate page exists and is usable
+  const { page, error: pageError } = await getValidatedPage(hostname);
+  
+  if (!page) {
+    const isConnectionLost = pageError && pageError.includes('connection');
+    logger.info(`click_element: ${pageError || 'No page found for ' + hostname}`);
+    return new InformationalResponse(
+      isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
+      isConnectionLost 
+        ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
+        : 'The page must be loaded before you can interact with elements on it',
+      [
+        "Use MCPBrowser's fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's click_element with the same URL"
       ]
     );
   }
@@ -218,10 +239,12 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     }
 
     if (!elementHandle || !elementHandle.asElement()) {
-      return new ErrorResponse(
+      return new InformationalResponse(
         selector ? `Element not found: ${selector}` : `Element with text "${text}" not found`,
+        'The element could not be located on the page. It may be hidden, dynamically loaded, or the selector/text may be incorrect.',
         [
-          "Use get_current_html to verify page content",
+          "Use MCPBrowser's get_current_html to verify page content",
+          "Use MCPBrowser's take_screenshot to see the visual layout if HTML is unclear",
           "Try a different selector or text",
           "Check if the element is visible on the page"
         ]
@@ -260,10 +283,11 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
         selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`,
         html,
         [
-          "Use click_element again to navigate further",
-          "Use type_text to fill forms if needed",
-          "Use get_current_html to refresh page state",
-          "Use close_tab when finished"
+          "Use MCPBrowser's click_element again to navigate further",
+          "Use MCPBrowser's type_text to fill forms if needed",
+          "Use MCPBrowser's get_current_html to refresh page state",
+          "Use MCPBrowser's take_screenshot if page has popups or visual content that's hard to parse from HTML",
+          "Use MCPBrowser's close_tab when finished"
         ]
       );
     } else {
@@ -285,20 +309,23 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
         selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`,
         null,
         [
-          "Use get_current_html to see updated page state",
-          "Use click_element or type_text for more interactions",
-          "Use close_tab when finished"
+          "Use MCPBrowser's get_current_html to see updated page state",
+          "Use MCPBrowser's take_screenshot if the page has popups, modals, or visual content",
+          "Use MCPBrowser's click_element or MCPBrowser's type_text for more interactions",
+          "Use MCPBrowser's close_tab when finished"
         ]
       );
     }
   } catch (err) {
     logger.error(`click_element failed: ${err.message}`);
-    return new ErrorResponse(
+    return new InformationalResponse(
       `Failed to click element: ${err.message}`,
+      'The element was found but could not be clicked. It may be covered by another element, not interactable, or the page may have changed.',
       [
-        "Use get_current_html to check current page state",
+        "Use MCPBrowser's get_current_html to check current page state",
+        "Use MCPBrowser's take_screenshot to see what's visually blocking the element",
         "Verify the selector or text is correct",
-        "Try fetch_webpage to reload if page is stale"
+        "Try MCPBrowser's fetch_webpage to reload if page is stale"
       ]
     );
   }

@@ -21,7 +21,8 @@ MCPBrowser/
 │       ├── click-element.js     # Click action + tool definition + response classes
 │       ├── type-text.js         # Type action + tool definition + response classes
 │       ├── close-tab.js         # Close action + tool definition + response classes
-│       └── get-current-html.js  # Get HTML action + tool definition + response classes
+│       ├── get-current-html.js  # Get HTML action + tool definition + response classes
+│       └── take-screenshot.js   # Screenshot action + tool definition + response classes
 ```
 
 ## Architecture Principles
@@ -56,11 +57,13 @@ Each action file contains **everything** related to that tool:
 ```
 MCPResponse (base)
 ├── ErrorResponse (shared by all tools)
+├── InformationalResponse (soft failures)
 ├── FetchPageSuccessResponse
 ├── ClickElementSuccessResponse
 ├── TypeTextSuccessResponse
 ├── CloseTabSuccessResponse
-└── GetCurrentHtmlSuccessResponse
+├── GetCurrentHtmlSuccessResponse
+└── TakeScreenshotSuccessResponse
 ```
 
 **Benefits:**

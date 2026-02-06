@@ -127,58 +127,115 @@ export async function isItSPA(page) {
   try {
     const result = await page.evaluate(() => {
       const indicators = [];
+      let strongIndicatorCount = 0;  // Count definite SPA signals
+      let weakIndicatorCount = 0;    // Count possible SPA signals
       const body = document.body;
-      const html = document.documentElement;
       
-      // Check for React
-      if (document.getElementById('root') || document.getElementById('__next') || 
-          document.querySelector('[data-reactroot]') || window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+      // Check for React (strong indicator - require multiple signals or definitive marker)
+      const hasReactRoot = document.querySelector('[data-reactroot]') || document.querySelector('[data-react-root]');
+      const hasNextJs = document.getElementById('__next') || document.getElementById('__nuxt');
+      const hasReactFiber = document.querySelector('[data-reactid]');
+      // Only count generic #root if combined with React-specific markers
+      const hasGenericRoot = document.getElementById('root');
+      const hasReactInternals = typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined' && 
+                                 window.__REACT_DEVTOOLS_GLOBAL_HOOK__?.renderers?.size > 0;
+      
+      if (hasReactRoot || hasNextJs || hasReactFiber || hasReactInternals) {
         indicators.push('React');
+        strongIndicatorCount++;
+      } else if (hasGenericRoot && body?.children?.length <= 3) {
+        // Generic #root with minimal DOM children suggests SPA mounting point
+        indicators.push('React (probable)');
+        weakIndicatorCount++;
       }
       
-      // Check for Vue
-      if (document.getElementById('app') && (window.__VUE__ || document.querySelector('[data-v-]'))) {
+      // Check for Vue (strong indicator - check for Vue-specific markers)
+      const hasVueDevtools = typeof window.__VUE__ !== 'undefined' || typeof window.__VUE_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined';
+      const hasVueScoped = document.querySelector('[data-v-]') !== null;
+      const hasVue3App = document.querySelector('[data-v-app]') !== null;
+      
+      if (hasVueDevtools || hasVueScoped || hasVue3App) {
         indicators.push('Vue');
+        strongIndicatorCount++;
       }
       
-      // Check for Angular
-      if (document.querySelector('[ng-app]') || document.querySelector('[ng-version]') || 
-          document.querySelector('app-root') || window.ng) {
+      // Check for Angular (strong indicator)
+      const hasAngularMarker = document.querySelector('[ng-version]') || 
+                               document.querySelector('app-root') || 
+                               typeof window.ng !== 'undefined';
+      const hasAngularJS = document.querySelector('[ng-app]');  // AngularJS (legacy)
+      
+      if (hasAngularMarker) {
         indicators.push('Angular');
+        strongIndicatorCount++;
+      } else if (hasAngularJS) {
+        indicators.push('AngularJS');
+        weakIndicatorCount++;
       }
       
-      // Check for generic SPA patterns
-      if (document.querySelector('[data-app]') || document.querySelector('#app-container')) {
-        indicators.push('SPA container');
+      // Check for Svelte
+      const hasSvelte = document.querySelector('[class*="svelte-"]') !== null;
+      if (hasSvelte) {
+        indicators.push('Svelte');
+        strongIndicatorCount++;
       }
       
-      // Check if body has very little text content (SPA shell)
+      // Check for Ember
+      const hasEmber = document.querySelector('[id^="ember"]') !== null || typeof window.Ember !== 'undefined';
+      if (hasEmber) {
+        indicators.push('Ember');
+        strongIndicatorCount++;
+      }
+      
+      // Check if body has very little text content (weak indicator)
       const bodyText = body?.innerText?.trim() || '';
       const textLength = bodyText.length;
-      if (textLength < 500) {
+      const hasMinimalContent = textLength < 200;  // Stricter threshold
+      if (hasMinimalContent) {
         indicators.push(`minimal content (${textLength} chars)`);
+        weakIndicatorCount++;
       }
       
-      // Check for lots of script tags (typical of SPAs)
+      // Check for lots of script tags (weak indicator on its own)
       const scripts = document.querySelectorAll('script[src]');
-      if (scripts.length > 5) {
+      const hasManyScripts = scripts.length > 8;  // Raised threshold
+      if (hasManyScripts) {
         indicators.push(`${scripts.length} external scripts`);
+        weakIndicatorCount++;
       }
       
-      // Check for SPA framework bundles in script srcs
+      // Check for SPA framework bundles in script srcs (use specific patterns only)
       const scriptSrcs = Array.from(scripts).map(s => s.src.toLowerCase());
-      const spaFrameworks = ['react', 'vue', 'angular', 'webpack', 'chunk', 'bundle', 'main.js'];
-      const foundFrameworks = spaFrameworks.filter(fw => 
-        scriptSrcs.some(src => src.includes(fw))
+      // More specific patterns - avoid generic terms
+      const spaPatterns = [
+        /react[.-]dom/,      // react-dom.js, react.dom.min.js
+        /vue[.-]?router/,    // vue-router
+        /@vue\//,            // @vue/ scoped packages
+        /angular[.-]core/,   // angular-core
+        /svelte/,            // svelte runtime
+        /next[.-]?static/,   // Next.js static files
+        /nuxt/,              // Nuxt.js
+        /gatsby/,            // Gatsby
+        /remix/,             // Remix
+        /webpack.*runtime/,  // webpack runtime (not just 'webpack')
+      ];
+      
+      const foundPatterns = spaPatterns.filter(pattern => 
+        scriptSrcs.some(src => pattern.test(src))
       );
-      if (foundFrameworks.length > 0) {
-        indicators.push(`framework scripts: ${foundFrameworks.join(', ')}`);
+      
+      if (foundPatterns.length > 0) {
+        indicators.push(`framework scripts detected`);
+        strongIndicatorCount++;
       }
       
-      // Likely an SPA if we found any indicator (React/Vue/Angular detection is a strong signal)
-      const isSPA = indicators.length >= 1;
+      // Decision logic:
+      // - Any strong indicator = definitely SPA
+      // - Multiple weak indicators (3+) = probably SPA  
+      // - Minimal content alone is NOT enough (could be simple landing page)
+      const isSPA = strongIndicatorCount > 0 || weakIndicatorCount >= 3;
       
-      return { isSPA, indicators, textLength };
+      return { isSPA, indicators };
     });
     
     return result;
@@ -194,7 +251,7 @@ export async function isItSPA(page) {
  * @param {string} url - The URL to navigate to
  * @param {string} waitUntil - Wait condition (networkidle0, load, domcontentloaded)
  * @param {number} timeout - Navigation timeout in ms
- * @returns {Promise<void>}
+ * @returns {Promise<{statusCode: number|null, statusText: string}>} HTTP response info
  */
 export async function navigateToUrl(page, url, waitUntil, timeout) {
   logger.info(`Navigating to: ${url}`);
@@ -202,10 +259,15 @@ export async function navigateToUrl(page, url, waitUntil, timeout) {
   const startTime = Date.now();
   
   try {
-    await page.goto(url, { waitUntil, timeout });
+    const response = await page.goto(url, { waitUntil, timeout });
     
     const loadTime = Date.now() - startTime;
-    logger.info(`Navigation complete: ${page.url()} (${loadTime}ms)`);
+    const statusCode = response?.status() || null;
+    const statusText = response?.statusText() || '';
+    
+    logger.info(`Navigation complete: ${page.url()} (${loadTime}ms, HTTP ${statusCode})`);
+    
+    return { statusCode, statusText };
   } catch (error) {
     const elapsed = Date.now() - startTime;
     logger.error(`Navigation failed: ${error.message} after ${elapsed}ms`);
