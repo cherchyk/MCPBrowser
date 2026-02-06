@@ -4,7 +4,7 @@
 
 import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
-import { MCPResponse, InformationalResponse } from '../core/responses.js';
+import { MCPResponse, ErrorResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
 /**
