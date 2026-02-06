@@ -4,7 +4,7 @@
 
 import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
-import { MCPResponse, ErrorResponse, InformationalResponse } from '../core/responses.js';
+import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
 /**
@@ -149,8 +149,9 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
     await getBrowser();
   } catch (err) {
     logger.error(`type_text: Failed to connect to browser: ${err.message}`);
-    return new ErrorResponse(
+    return new InformationalResponse(
       `Browser connection failed: ${err.message}`,
+      'Could not connect to Chrome or Edge browser. The browser must be running with remote debugging enabled.',
       [
         'Ensure Chrome or Edge browser is installed and running',
         'Check that remote debugging is enabled (--remote-debugging-port)',
@@ -241,8 +242,9 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
     }
   } catch (err) {
     logger.error(`type_text failed: ${err.message}`);
-    return new ErrorResponse(
+    return new InformationalResponse(
       `Failed to type text: ${err.message}`,
+      'The input field was found but text could not be entered. It may be disabled, read-only, or covered by another element.',
       [
         "Use MCPBrowser's get_current_html to verify page state",
         "Check if the selector is correct",

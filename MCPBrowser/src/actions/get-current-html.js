@@ -4,7 +4,7 @@
 
 import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { extractAndProcessHtml } from '../core/page.js';
-import { MCPResponse, ErrorResponse, InformationalResponse } from '../core/responses.js';
+import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
 /**
@@ -118,8 +118,9 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
     await getBrowser();
   } catch (err) {
     logger.error(`get_current_html: Failed to connect to browser: ${err.message}`);
-    return new ErrorResponse(
+    return new InformationalResponse(
       `Browser connection failed: ${err.message}`,
+      'Could not connect to Chrome or Edge browser. The browser must be running with remote debugging enabled.',
       [
         'Ensure Chrome or Edge browser is installed and running',
         'Check that remote debugging is enabled (--remote-debugging-port)',
@@ -163,8 +164,9 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
     );
   } catch (err) {
     logger.error(`get_current_html failed: ${err.message}`);
-    return new ErrorResponse(
+    return new InformationalResponse(
       `Failed to get HTML: ${err.message}`,
+      'Could not extract HTML from the page. The page may have navigated away or the connection was lost.',
       [
         "Try MCPBrowser's fetch_webpage to reload the page",
         "Use MCPBrowser's close_tab and start fresh if needed"

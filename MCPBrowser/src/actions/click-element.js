@@ -26,7 +26,7 @@
 
 import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
-import { MCPResponse, ErrorResponse, InformationalResponse } from '../core/responses.js';
+import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
 /**
@@ -176,8 +176,9 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     await getBrowser();
   } catch (err) {
     logger.error(`click_element: Failed to connect to browser: ${err.message}`);
-    return new ErrorResponse(
+    return new InformationalResponse(
       `Browser connection failed: ${err.message}`,
+      'Could not connect to Chrome or Edge browser. The browser must be running with remote debugging enabled.',
       [
         'Ensure Chrome or Edge browser is installed and running',
         'Check that remote debugging is enabled (--remote-debugging-port)',
@@ -238,8 +239,9 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     }
 
     if (!elementHandle || !elementHandle.asElement()) {
-      return new ErrorResponse(
+      return new InformationalResponse(
         selector ? `Element not found: ${selector}` : `Element with text "${text}" not found`,
+        'The element could not be located on the page. It may be hidden, dynamically loaded, or the selector/text may be incorrect.',
         [
           "Use MCPBrowser's get_current_html to verify page content",
           "Try a different selector or text",
@@ -313,8 +315,9 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     }
   } catch (err) {
     logger.error(`click_element failed: ${err.message}`);
-    return new ErrorResponse(
+    return new InformationalResponse(
       `Failed to click element: ${err.message}`,
+      'The element was found but could not be clicked. It may be covered by another element, not interactable, or the page may have changed.',
       [
         "Use MCPBrowser's get_current_html to check current page state",
         "Verify the selector or text is correct",
