@@ -45,6 +45,39 @@ function test(description, fn) {
 }
 
 // ============================================================================
+// Auto-Detection Test (NO browser parameter)
+// ============================================================================
+
+await test('[AUTO-DETECT] Should auto-detect browser when no browser parameter provided', async () => {
+  const url = 'https://example.com';
+  
+  console.log(`   📄 Fetching ${url} WITHOUT browser parameter`);
+  console.log(`   💡 This should auto-detect Chrome or Edge and work correctly`);
+  
+  // Call fetchPage WITHOUT the browser parameter - this tests auto-detection
+  const result = await fetchPage({ url });
+  
+  const isSuccess = !(result instanceof ErrorResponse);
+  console.log(`   ✅ Result: ${isSuccess ? 'SUCCESS' : 'FAILED'}`);
+  
+  if (isSuccess) {
+    console.log(`   🔗 Final URL: ${result.currentUrl}`);
+    console.log(`   📄 HTML length: ${result.html?.length || 0} chars`);
+  } else {
+    console.log(`   ❌ Error: ${result.message}`);
+    if (result.nextSteps) {
+      console.log(`   💡 Next steps: ${result.nextSteps.join(', ')}`);
+    }
+  }
+  
+  assert.ok(isSuccess, `Should successfully fetch with auto-detected browser. Got error: ${result instanceof ErrorResponse ? result.message : 'unknown'}`);
+  assert.ok(result.currentUrl, 'Should have currentUrl');
+  assert.ok(result.html && result.html.length > 0, 'Should return HTML content');
+  
+  console.log(`   ✅ Auto-detection worked! Browser was detected and page fetched successfully`);
+});
+
+// ============================================================================
 // Integration Tests
 // ============================================================================
 

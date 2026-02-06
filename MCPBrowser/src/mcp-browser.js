@@ -61,29 +61,41 @@ async function main() {
     
     let result;
     
-    switch (name) {
-      case "fetch_webpage":
-        result = await fetchPage(safeArgs);
-        break;
-        
-      case "click_element":
-        result = await clickElement(safeArgs);
-        break;
-        
-      case "type_text":
-        result = await typeText(safeArgs);
-        break;
-        
-      case "close_tab":
-        result = await closeTab(safeArgs);
-        break;
-        
-      case "get_current_html":
-        result = await getCurrentHtml(safeArgs);
-        break;
-        
-      default:
-        throw new Error(`Unknown tool: ${name}`);
+    try {
+      switch (name) {
+        case "fetch_webpage":
+          result = await fetchPage(safeArgs);
+          break;
+          
+        case "click_element":
+          result = await clickElement(safeArgs);
+          break;
+          
+        case "type_text":
+          result = await typeText(safeArgs);
+          break;
+          
+        case "close_tab":
+          result = await closeTab(safeArgs);
+          break;
+          
+        case "get_current_html":
+          result = await getCurrentHtml(safeArgs);
+          break;
+          
+        default:
+          throw new Error(`Unknown tool: ${name}`);
+      }
+    } catch (error) {
+      // Log the actual error for debugging
+      logger.error(`Tool ${name} failed: ${error.message}`);
+      logger.error(`Stack: ${error.stack}`);
+      
+      // Return a proper error response instead of throwing
+      return new ErrorResponse(
+        `${name} failed: ${error.message}`,
+        ['Check browser is installed', 'Try specifying browser parameter explicitly (chrome or edge)', 'Check MCP server logs for details']
+      ).toMcpFormat();
     }
     
     // Transform result into MCP-compliant response using instance method
