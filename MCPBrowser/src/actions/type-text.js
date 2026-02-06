@@ -2,7 +2,7 @@
  * type-text.js - Type text into input fields
  */
 
-import { getBrowser, domainPages } from '../core/browser.js';
+import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
 import { MCPResponse, ErrorResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
@@ -144,14 +144,32 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
     throw new Error(`Invalid URL: ${url}`);
   }
 
-  const browser = await getBrowser();
-  let page = domainPages.get(hostname);
+  // Ensure browser connection (triggers domain map rebuild on reconnect)
+  try {
+    await getBrowser();
+  } catch (err) {
+    logger.error(`type_text: Failed to connect to browser: ${err.message}`);
+    return new ErrorResponse(
+      `Browser connection failed: ${err.message}`,
+      [
+        'Ensure Chrome or Edge browser is installed and running',
+        'Check that remote debugging is enabled (--remote-debugging-port)',
+        'Try restarting the MCP server'
+      ]
+    );
+  }
+
+  // Validate page exists and is usable
+  const { page, error: pageError } = await getValidatedPage(hostname);
   
-  if (!page || page.isClosed()) {
-    logger.info(`type_text: No open page found for ${hostname} - page needs to be fetched first`);
+  if (!page) {
+    const isConnectionLost = pageError && pageError.includes('connection');
+    logger.info(`type_text: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
-      `No open page found for ${hostname}`,
-      'The page must be loaded before you can type text into elements',
+      isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
+      isConnectionLost 
+        ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
+        : 'The page must be loaded before you can type text into elements',
       [
         "Use MCPBrowser's fetch_webpage tool to load the page first",
         "Then retry MCPBrowser's type_text with the same URL"
