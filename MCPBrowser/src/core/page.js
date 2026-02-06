@@ -127,45 +127,52 @@ export async function isItSPA(page) {
   try {
     const result = await page.evaluate(() => {
       const indicators = [];
+      let hasStrongIndicator = false;  // Definite SPA signals
       const body = document.body;
       const html = document.documentElement;
       
-      // Check for React
+      // Check for React (strong indicator)
       if (document.getElementById('root') || document.getElementById('__next') || 
           document.querySelector('[data-reactroot]') || window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
         indicators.push('React');
+        hasStrongIndicator = true;
       }
       
-      // Check for Vue
+      // Check for Vue (strong indicator)
       if (document.getElementById('app') && (window.__VUE__ || document.querySelector('[data-v-]'))) {
         indicators.push('Vue');
+        hasStrongIndicator = true;
       }
       
-      // Check for Angular
+      // Check for Angular (strong indicator)
       if (document.querySelector('[ng-app]') || document.querySelector('[ng-version]') || 
           document.querySelector('app-root') || window.ng) {
         indicators.push('Angular');
+        hasStrongIndicator = true;
       }
       
-      // Check for generic SPA patterns
+      // Check for generic SPA patterns (strong indicator)
       if (document.querySelector('[data-app]') || document.querySelector('#app-container')) {
         indicators.push('SPA container');
+        hasStrongIndicator = true;
       }
       
-      // Check if body has very little text content (SPA shell)
+      // Check if body has very little text content (weak indicator - small pages aren't necessarily SPAs)
       const bodyText = body?.innerText?.trim() || '';
       const textLength = bodyText.length;
-      if (textLength < 500) {
+      const hasMinimalContent = textLength < 500;
+      if (hasMinimalContent) {
         indicators.push(`minimal content (${textLength} chars)`);
       }
       
-      // Check for lots of script tags (typical of SPAs)
+      // Check for lots of script tags (weak indicator on its own)
       const scripts = document.querySelectorAll('script[src]');
-      if (scripts.length > 5) {
+      const hasManyScripts = scripts.length > 5;
+      if (hasManyScripts) {
         indicators.push(`${scripts.length} external scripts`);
       }
       
-      // Check for SPA framework bundles in script srcs
+      // Check for SPA framework bundles in script srcs (strong indicator)
       const scriptSrcs = Array.from(scripts).map(s => s.src.toLowerCase());
       const spaFrameworks = ['react', 'vue', 'angular', 'webpack', 'chunk', 'bundle', 'main.js'];
       const foundFrameworks = spaFrameworks.filter(fw => 
@@ -173,10 +180,14 @@ export async function isItSPA(page) {
       );
       if (foundFrameworks.length > 0) {
         indicators.push(`framework scripts: ${foundFrameworks.join(', ')}`);
+        hasStrongIndicator = true;
       }
       
-      // Likely an SPA if we found any indicator (React/Vue/Angular detection is a strong signal)
-      const isSPA = indicators.length >= 1;
+      // Only treat as SPA if:
+      // 1. We found a strong indicator (React/Vue/Angular/framework), OR
+      // 2. Minimal content + many scripts (likely loading dynamic content)
+      // A small static page (minimal content alone) is NOT an SPA
+      const isSPA = hasStrongIndicator || (hasMinimalContent && hasManyScripts);
       
       return { isSPA, indicators, textLength };
     });

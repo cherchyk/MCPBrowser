@@ -145,7 +145,7 @@ export async function closeTab({ url }) {
           'No open tab found for this hostname',
           hostname,
           [
-            "Use fetch_webpage to open a new page if needed"
+            "Use MCPBrowser's fetch_webpage to open a new page if needed"
           ]
         );
       }
@@ -164,7 +164,7 @@ export async function closeTab({ url }) {
         'Tab was already closed',
         hostname,
         [
-          "Use fetch_webpage to open a new page if needed"
+          "Use MCPBrowser's fetch_webpage to open a new page if needed"
         ]
       );
     }
@@ -181,7 +181,7 @@ export async function closeTab({ url }) {
       `Successfully closed tab for ${hostname}`,
       hostname,
       [
-        "Use fetch_webpage to open a new page if needed"
+        "Use MCPBrowser's fetch_webpage to open a new page if needed"
       ]
     );
     

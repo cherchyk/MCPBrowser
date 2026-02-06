@@ -4,7 +4,7 @@
 
 import { getBrowser, domainPages } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
-import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import { MCPResponse, ErrorResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
 /**
@@ -148,11 +148,13 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
   let page = domainPages.get(hostname);
   
   if (!page || page.isClosed()) {
-    logger.error(`type_text: No open page found for ${hostname}`);
-    return new ErrorResponse(
-      `No open page found for ${hostname}. Please fetch the page first using fetch_webpage_protected.`,
+    logger.info(`type_text: No open page found for ${hostname} - page needs to be fetched first`);
+    return new InformationalResponse(
+      `No open page found for ${hostname}`,
+      'The page must be loaded before you can type text into elements',
       [
-        "Use fetch_webpage to load the page first"
+        "Use MCPBrowser's fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's type_text with the same URL"
       ]
     );
   }
@@ -188,10 +190,10 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
         `Typed text into: ${selector}`,
         html,
         [
-          "Use type_text to fill additional fields",
-          "Use click_element to submit the form or navigate",
-          "Use get_current_html to check for validation messages",
-          "Use close_tab when finished"
+          "Use MCPBrowser's type_text to fill additional fields",
+          "Use MCPBrowser's click_element to submit the form or navigate",
+          "Use MCPBrowser's get_current_html to check for validation messages",
+          "Use MCPBrowser's close_tab when finished"
         ]
       );
     } else {
@@ -213,9 +215,9 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
         `Typed text into: ${selector}`,
         null,
         [
-          "Use get_current_html to see updated page state",
-          "Use type_text for additional fields or click_element to submit",
-          "Use close_tab when finished"
+          "Use MCPBrowser's get_current_html to see updated page state",
+          "Use MCPBrowser's type_text for additional fields or MCPBrowser's click_element to submit",
+          "Use MCPBrowser's close_tab when finished"
         ]
       );
     }
@@ -224,7 +226,7 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
     return new ErrorResponse(
       `Failed to type text: ${err.message}`,
       [
-        "Use get_current_html to verify page state",
+        "Use MCPBrowser's get_current_html to verify page state",
         "Check if the selector is correct",
         "Verify the input field is visible and enabled"
       ]

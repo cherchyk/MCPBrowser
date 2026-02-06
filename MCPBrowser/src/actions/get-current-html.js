@@ -4,7 +4,7 @@
 
 import { getBrowser, domainPages } from '../core/browser.js';
 import { extractAndProcessHtml } from '../core/page.js';
-import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import { MCPResponse, ErrorResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
 /**
@@ -117,11 +117,13 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
   let page = domainPages.get(hostname);
   
   if (!page || page.isClosed()) {
-    logger.error(`get_current_html: No open page found for ${hostname}`);
-    return new ErrorResponse(
-      `No open page found for ${hostname}. Please fetch the page first using fetch_webpage.`,
+    logger.info(`get_current_html: No open page found for ${hostname} - page needs to be fetched first`);
+    return new InformationalResponse(
+      `No open page found for ${hostname}`,
+      'The page must be loaded before you can get its current HTML',
       [
-        "Use fetch_webpage to load the page first"
+        "Use MCPBrowser's fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's get_current_html with the same URL"
       ]
     );
   }
@@ -136,9 +138,9 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
       currentUrl,
       html,
       [
-        "Use click_element to interact with elements",
-        "Use type_text to fill forms",
-        "Use close_tab to free resources when done"
+        "Use MCPBrowser's click_element to interact with elements",
+        "Use MCPBrowser's type_text to fill forms",
+        "Use MCPBrowser's close_tab to free resources when done"
       ]
     );
   } catch (err) {
@@ -146,8 +148,8 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
     return new ErrorResponse(
       `Failed to get HTML: ${err.message}`,
       [
-        "Try fetch_webpage to reload the page",
-        "Use close_tab and start fresh if needed"
+        "Try MCPBrowser's fetch_webpage to reload the page",
+        "Use MCPBrowser's close_tab and start fresh if needed"
       ]
     );
   }

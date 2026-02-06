@@ -227,8 +227,8 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
             manualAuthResult.error,
             [
               "Complete authentication in the browser window",
-              "Call fetch_webpage again with the same URL to retry",
-              "Use close_tab to reset the session if authentication fails"
+              "Call MCPBrowser's fetch_webpage again with the same URL to retry",
+              "Use MCPBrowser's close_tab to reset the session if authentication fails"
             ]
           );
         }
@@ -272,10 +272,10 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
       page.url(),
       processedHtml,
       [
-        "Use click_element to interact with buttons/links on the page",
-        "Use type_text to fill in form fields",
-        "Use get_current_html to re-check page state after interactions",
-        "Use close_tab when finished to free browser resources"
+        "Use MCPBrowser's click_element to interact with buttons/links on the page",
+        "Use MCPBrowser's type_text to fill in form fields",
+        "Use MCPBrowser's get_current_html to re-check page state after interactions",
+        "Use MCPBrowser's close_tab when finished to free browser resources"
       ]
     );
   } catch (err) {
@@ -284,8 +284,8 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
       err.message || String(err),
       [
         "Complete authentication in the browser if prompted",
-        "Call fetch_webpage again with the same URL to retry",
-        "Use close_tab to reset the session if needed"
+        "Call MCPBrowser's fetch_webpage again with the same URL to retry",
+        "Use MCPBrowser's close_tab to reset the session if needed"
       ]
     );
   }

@@ -171,7 +171,7 @@ function getHttpStatusNextSteps(statusCode, url) {
     return [
       'Authentication may be required - try logging in first',
       'Check if you have permission to access this resource',
-      'Use fetch_webpage to navigate to the login page first'
+      "Use MCPBrowser's fetch_webpage to navigate to the login page first"
     ];
   }
   
@@ -187,14 +187,14 @@ function getHttpStatusNextSteps(statusCode, url) {
     return [
       'Rate limit exceeded - wait a few minutes before retrying',
       'Reduce request frequency',
-      'Call fetch_webpage again after waiting'
+      "Call MCPBrowser's fetch_webpage again after waiting"
     ];
   }
   
   if (statusCode >= 500 && statusCode < 600) {
     return [
       'The server is experiencing issues',
-      'Wait a moment and try again with fetch_webpage',
+      "Wait a moment and try again with MCPBrowser's fetch_webpage",
       'Check if the service has a status page for outages'
     ];
   }
@@ -202,7 +202,7 @@ function getHttpStatusNextSteps(statusCode, url) {
   return [
     ...baseSteps,
     'Try again later if this is a temporary issue',
-    'Call fetch_webpage to retry the request'
+    "Call MCPBrowser's fetch_webpage to retry the request"
   ];
 }
 

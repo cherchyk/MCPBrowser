@@ -26,7 +26,7 @@
 
 import { getBrowser, domainPages } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
-import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import { MCPResponse, ErrorResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
 /**
@@ -175,11 +175,13 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
   let page = domainPages.get(hostname);
   
   if (!page || page.isClosed()) {
-    logger.error(`No open page found for ${hostname}`);
-    return new ErrorResponse(
-      `No open page found for ${hostname}. Please fetch the page first using fetch_webpage.`,
+    logger.info(`No open page found for ${hostname} - page needs to be fetched first`);
+    return new InformationalResponse(
+      `No open page found for ${hostname}`,
+      'The page must be loaded before you can interact with elements on it',
       [
-        "Use fetch_webpage to load the page first"
+        "Use MCPBrowser's fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's click_element with the same URL"
       ]
     );
   }
@@ -221,7 +223,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       return new ErrorResponse(
         selector ? `Element not found: ${selector}` : `Element with text "${text}" not found`,
         [
-          "Use get_current_html to verify page content",
+          "Use MCPBrowser's get_current_html to verify page content",
           "Try a different selector or text",
           "Check if the element is visible on the page"
         ]
@@ -260,10 +262,10 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
         selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`,
         html,
         [
-          "Use click_element again to navigate further",
-          "Use type_text to fill forms if needed",
-          "Use get_current_html to refresh page state",
-          "Use close_tab when finished"
+          "Use MCPBrowser's click_element again to navigate further",
+          "Use MCPBrowser's type_text to fill forms if needed",
+          "Use MCPBrowser's get_current_html to refresh page state",
+          "Use MCPBrowser's close_tab when finished"
         ]
       );
     } else {
@@ -285,9 +287,9 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
         selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`,
         null,
         [
-          "Use get_current_html to see updated page state",
-          "Use click_element or type_text for more interactions",
-          "Use close_tab when finished"
+          "Use MCPBrowser's get_current_html to see updated page state",
+          "Use MCPBrowser's click_element or MCPBrowser's type_text for more interactions",
+          "Use MCPBrowser's close_tab when finished"
         ]
       );
     }
@@ -296,9 +298,9 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     return new ErrorResponse(
       `Failed to click element: ${err.message}`,
       [
-        "Use get_current_html to check current page state",
+        "Use MCPBrowser's get_current_html to check current page state",
         "Verify the selector or text is correct",
-        "Try fetch_webpage to reload if page is stale"
+        "Try MCPBrowser's fetch_webpage to reload if page is stale"
       ]
     );
   }
