@@ -212,6 +212,7 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
           "Use MCPBrowser's type_text to fill additional fields",
           "Use MCPBrowser's click_element to submit the form or navigate",
           "Use MCPBrowser's get_current_html to check for validation messages",
+          "Use MCPBrowser's take_screenshot if form has visual feedback or validation that's hard to parse from HTML",
           "Use MCPBrowser's close_tab when finished"
         ]
       );
@@ -235,6 +236,7 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
         null,
         [
           "Use MCPBrowser's get_current_html to see updated page state",
+          "Use MCPBrowser's take_screenshot if the page has visual feedback that's hard to parse",
           "Use MCPBrowser's type_text for additional fields or MCPBrowser's click_element to submit",
           "Use MCPBrowser's close_tab when finished"
         ]
@@ -247,6 +249,7 @@ export async function typeText({ url, selector, text, clear = true, typeDelay = 
       'The input field was found but text could not be entered. It may be disabled, read-only, or covered by another element.',
       [
         "Use MCPBrowser's get_current_html to verify page state",
+        "Use MCPBrowser's take_screenshot to see what's on the page visually",
         "Check if the selector is correct",
         "Verify the input field is visible and enabled"
       ]

@@ -244,6 +244,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
         'The element could not be located on the page. It may be hidden, dynamically loaded, or the selector/text may be incorrect.',
         [
           "Use MCPBrowser's get_current_html to verify page content",
+          "Use MCPBrowser's take_screenshot to see the visual layout if HTML is unclear",
           "Try a different selector or text",
           "Check if the element is visible on the page"
         ]
@@ -285,6 +286,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
           "Use MCPBrowser's click_element again to navigate further",
           "Use MCPBrowser's type_text to fill forms if needed",
           "Use MCPBrowser's get_current_html to refresh page state",
+          "Use MCPBrowser's take_screenshot if page has popups or visual content that's hard to parse from HTML",
           "Use MCPBrowser's close_tab when finished"
         ]
       );
@@ -308,6 +310,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
         null,
         [
           "Use MCPBrowser's get_current_html to see updated page state",
+          "Use MCPBrowser's take_screenshot if the page has popups, modals, or visual content",
           "Use MCPBrowser's click_element or MCPBrowser's type_text for more interactions",
           "Use MCPBrowser's close_tab when finished"
         ]
@@ -320,6 +323,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       'The element was found but could not be clicked. It may be covered by another element, not interactable, or the page may have changed.',
       [
         "Use MCPBrowser's get_current_html to check current page state",
+        "Use MCPBrowser's take_screenshot to see what's visually blocking the element",
         "Verify the selector or text is correct",
         "Try MCPBrowser's fetch_webpage to reload if page is stale"
       ]
