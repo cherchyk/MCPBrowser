@@ -15,7 +15,10 @@ const browserTests = [
   'actions/browser.type-text.test.js',
   'actions/browser.close-tab.test.js',
   'actions/browser.get-current-html.test.js',
-  'actions/browser.fetch-page.test.js'
+  'actions/browser.fetch-page.test.js',
+  'verify-structured-output.test.js',    // Verifies MCP response structure
+  'verify-nextsteps.test.js'             // Verifies nextSteps in responses
+  // Note: tool-selection/ tests have their own runner (run-tool-selection-tests.js)
 ];
 
 const browserDisplay = browserParam ? browserParam.toUpperCase() : 'ALL BROWSERS';

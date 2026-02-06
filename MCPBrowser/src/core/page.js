@@ -194,7 +194,7 @@ export async function isItSPA(page) {
  * @param {string} url - The URL to navigate to
  * @param {string} waitUntil - Wait condition (networkidle0, load, domcontentloaded)
  * @param {number} timeout - Navigation timeout in ms
- * @returns {Promise<void>}
+ * @returns {Promise<{statusCode: number|null, statusText: string}>} HTTP response info
  */
 export async function navigateToUrl(page, url, waitUntil, timeout) {
   logger.info(`Navigating to: ${url}`);
@@ -202,10 +202,15 @@ export async function navigateToUrl(page, url, waitUntil, timeout) {
   const startTime = Date.now();
   
   try {
-    await page.goto(url, { waitUntil, timeout });
+    const response = await page.goto(url, { waitUntil, timeout });
     
     const loadTime = Date.now() - startTime;
-    logger.info(`Navigation complete: ${page.url()} (${loadTime}ms)`);
+    const statusCode = response?.status() || null;
+    const statusText = response?.statusText() || '';
+    
+    logger.info(`Navigation complete: ${page.url()} (${loadTime}ms, HTTP ${statusCode})`);
+    
+    return { statusCode, statusText };
   } catch (error) {
     const elapsed = Date.now() - startTime;
     logger.error(`Navigation failed: ${error.message} after ${elapsed}ms`);

@@ -6,7 +6,7 @@
 import { getBrowser, domainPages } from '../core/browser.js';
 import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml, waitForPageStability } from '../core/page.js';
 import { detectRedirectType, waitForAutoAuth, waitForManualAuth } from '../core/auth.js';
-import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import { MCPResponse, ErrorResponse, HttpStatusResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
 /**
@@ -163,7 +163,7 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
     let page = await getOrCreatePage(browserInstance, hostname, reuseLastKeptPage);
     
     // Navigate to URL (pure navigation)
-    await navigateToUrl(page, url, waitUntil, navigationTimeout);
+    const { statusCode, statusText } = await navigateToUrl(page, url, waitUntil, navigationTimeout);
     
     // Wait for page content to be ready (handles SPAs automatically)
     await waitForPageReady(page);
@@ -256,6 +256,17 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
     const processedHtml = await extractAndProcessHtml(page, removeUnnecessaryHTML);
     
     logger.info(`fetch_webpage completed: ${page.url()}`);
+    
+    // Check for non-2xx HTTP status codes - return informational response (not red error)
+    if (statusCode && (statusCode >= 400 && statusCode < 600)) {
+      logger.info(`HTTP ${statusCode} ${statusText} - returning as informational response`);
+      return new HttpStatusResponse(
+        page.url(),
+        statusCode,
+        statusText,
+        processedHtml
+      );
+    }
     
     return new FetchPageSuccessResponse(
       page.url(),
