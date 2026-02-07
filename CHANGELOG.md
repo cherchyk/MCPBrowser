@@ -4,6 +4,16 @@ All notable changes to the MCPBrowser project (both the MCP server and VS Code e
 
 ## [Unreleased]
 
+### MCP Server
+- ⚠️ **BREAKING CHANGE: `type_text` API redesigned**: Now accepts a `fields` array to fill multiple form fields in a single call
+  - Removed `selector`, `text`, `clear`, `waitForElementTimeout` top-level parameters
+  - New `fields` array parameter with each field containing: `selector`, `text`, `clear` (optional), `waitForElementTimeout` (optional)
+  - Removed `typeDelay` parameter (now hardcoded to 10ms for reliability)
+  - Improved error handling: shows which field failed (X of Y), which fields succeeded, and "Do NOT re-type" guidance for agents
+- 📜 **New `scroll_page` tool**: Scroll within pages by direction/amount, to element, or to absolute position
+  - Use before `take_screenshot` to capture different parts of the page
+  - Returns current scroll position, page dimensions, and viewport size
+
 ## [0.3.4] - 2026-01-02
 
 ### MCP Server
