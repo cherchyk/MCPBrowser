@@ -106,7 +106,7 @@ async function main() {
       // Return a proper error response instead of throwing
       return new ErrorResponse(
         `${name} failed: ${error.message}`,
-        ['Check browser is installed', 'Try specifying browser parameter explicitly (chrome or edge)', 'Check MCP server logs for details']
+        ['Check browser is installed', 'Try specifying browser parameter explicitly (chrome, edge, or brave)', 'Check MCP server logs for details']
       ).toMcpFormat();
     }
     

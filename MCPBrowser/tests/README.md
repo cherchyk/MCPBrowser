@@ -16,6 +16,7 @@ node tests/run-unit.js
 node tests/run-browser.js              # All browsers
 node tests/run-browser.js chrome       # Chrome only
 node tests/run-browser.js edge         # Edge only
+node tests/run-browser.js brave        # Brave only
 
 # Individual test suites
 node tests/core/browser.test.js         # Browser management (64 tests)
@@ -26,6 +27,7 @@ node tests/core/page.test.js            # Page operations (43 tests)
 node tests/actions/browser.click-element.test.js        # All browsers
 node tests/actions/browser.click-element.test.js chrome # Chrome only
 node tests/actions/browser.fetch-page.test.js edge      # Edge only
+node tests/actions/browser.fetch-page.test.js brave     # Brave only
 ```
 
 ## Test Organization
@@ -57,7 +59,7 @@ The test suite is split into two runners for optimal execution:
 
 **Run:** `node tests/run-browser.js [browser]`
 - Without browser param: Runs on all available browsers
-- With browser param: Runs only on specified browser (chrome, edge)
+- With browser param: Runs only on specified browser (chrome, edge, brave)
 
 ### Complete Test Suite - `run-all.js`
 Orchestrates both runners sequentially:
@@ -76,16 +78,19 @@ All browser action tests support running on specific browsers:
 node tests/run-browser.js              # All available browsers
 node tests/run-browser.js chrome       # Chrome only
 node tests/run-browser.js edge         # Edge only
+node tests/run-browser.js brave        # Brave only
 
 # Individual test files (runs single test suite)
 node tests/actions/browser.click-element.test.js        # All browsers
 node tests/actions/browser.click-element.test.js chrome # Chrome only
 node tests/actions/browser.type-text.test.js edge       # Edge only
+node tests/actions/browser.type-text.test.js brave      # Brave only
 ```
 
 **Supported Browsers:**
 - **Chrome** (CDP) - Port 9222, reuses existing browser session
 - **Edge** (CDP) - Port 9223, reuses existing browser session
+- **Brave** (CDP) - Port 9224, reuses existing browser session
 
 Tests gracefully skip unavailable browsers with warnings.
 
@@ -97,7 +102,7 @@ import { runWithBrowsers } from '../browsers/browser-runner.js';
 
 // Runs on all browsers or specific one via process.argv[2]
 await runWithBrowsers(async (browserType) => {
-  // Your tests receive browserType: 'chrome', 'edge', etc.
+  // Your tests receive browserType: 'chrome', 'edge', 'brave', etc.
 }, browserParam);
 ```
 
