@@ -7,7 +7,7 @@
 
 > ⚠️ **Security Notice:** MCPBrowser extracts webpage content and provides it to your AI agent (e.g., GitHub Copilot, Claude), which then sends it to the LLM provider it uses (e.g., Anthropic, OpenAI, GitHub) for processing. Make sure you trust both your agent and the LLM provider — especially when accessing pages with sensitive or private data.
 
-**MCPBrowser is an MCP browser server that gives AI assistants the ability to browse web pages using a real Chrome or Edge browser.** This browser-based MCP server lets AI assistants (Claude, Copilot) access any website — especially those protected by authentication, CAPTCHAs, anti-bot restrictions, or requiring JavaScript rendering. Uses your real Chrome/Edge browser session for web automation, so you log in once, and your AI can navigate, click buttons, fill forms, and extract content from sites that block automated requests.
+**MCPBrowser is an MCP browser server that gives AI assistants the ability to browse web pages using a real Chrome, Edge, or Brave browser.** This browser-based MCP server lets AI assistants (Claude, Copilot) access any website — especially those protected by authentication, CAPTCHAs, anti-bot restrictions, or requiring JavaScript rendering. Uses your real browser session for web automation, so you log in once, and your AI can navigate, click buttons, fill forms, and extract content from sites that block automated requests.
 
 Built on the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), this web browser MCP server works seamlessly with Claude Desktop, Claude Code (CLI), GitHub Copilot, and any MCP-compatible AI assistant. It handles corporate SSO, CAPTCHAs, Cloudflare protection, SPAs, dashboards, and any site that blocks automated requests. Your AI gets the same browser access you have — no special APIs, no headless browser detection, just your authenticated browser session.
 
@@ -15,10 +15,9 @@ Example workflow for AI assistant to use MCPBrowser
 
 ```
 1. fetch_webpage    → Load the login page
-2. type_text        → Enter username
-3. type_text        → Enter password
-4. click_element    → Click "Sign In"
-5. get_current_html → Extract the content after login
+2. type_text        → Enter username & password (multiple fields at once)
+3. click_element    → Click "Sign In"
+4. get_current_html → Extract the content after login
 ```
 
 
@@ -39,6 +38,7 @@ Example workflow for AI assistant to use MCPBrowser
   - [Kiro](#kiro)
   - [LM Studio](#lm-studio)
   - [opencode](#opencode)
+  - [OpenClaw](#openclaw)
   - [Qodo Gen](#qodo-gen)
   - [VS Code (GitHub Copilot)](#vs-code-github-copilot)
   - [VS Code Extension](#vs-code-extension)
@@ -49,6 +49,7 @@ Example workflow for AI assistant to use MCPBrowser
   - [click_element](#click_element)
   - [type_text](#type_text)
   - [get_current_html](#get_current_html)
+  - [scroll_page](#scroll_page)
   - [take_screenshot](#take_screenshot)
   - [close_tab](#close_tab)
 - [Configuration](#configuration-optional)
@@ -59,7 +60,7 @@ Example workflow for AI assistant to use MCPBrowser
 
 ## Requirements
 
-- Chrome or Edge browser
+- Chrome, Edge, or Brave browser
 - [Node.js 18+](https://nodejs.org/) (includes npm)
 
 > **Note:** Node.js must be installed on your system. The VS Code extension and npm package both require Node.js to run the MCP server. Download from [nodejs.org](https://nodejs.org/) if not already installed.
@@ -306,6 +307,23 @@ Follow the MCP Servers [documentation](https://opencode.ai/docs/mcp-servers/). F
 
 ---
 
+### OpenClaw
+
+[OpenClaw](https://openclaw.ai/) is a personal AI assistant that runs on your devices. Add MCPBrowser using the CLI:
+
+```bash
+openclaw mcp add mcpbrowser -- npx -y mcpbrowser@latest
+```
+
+Verify it's working:
+```bash
+openclaw mcp list
+```
+
+For more information, see the [OpenClaw MCP documentation](https://docs.openclaw.ai/).
+
+---
+
 ### Qodo Gen
 
 Open [Qodo Gen](https://docs.qodo.ai/qodo-documentation/qodo-gen) chat panel in VSCode or IntelliJ → Connect more tools → + Add new MCP → Paste the standard config above.
@@ -415,35 +433,54 @@ Clicks on any clickable element (buttons, links, divs with onclick handlers, etc
 
 ### `type_text`
 
-Types text into an input field, textarea, or other editable element. Simulates human-like typing with configurable delay between keystrokes. Automatically clears existing text by default.
+Types text into one or more input fields in a single call. Supports filling entire forms at once for efficient automation. Automatically clears existing text by default.
 
 **⚠️ Note:** Page must be already loaded via `fetch_webpage` first.
 
 **Parameters:**
 - `url` (string, required) - The URL of the page (must match a previously fetched page)
-- `selector` (string, required) - CSS selector for the input element (e.g., `#username`, `input[name="email"]`)
-- `text` (string, required) - Text to type into the field
-- `clear` (boolean, optional, default: `true`) - Whether to clear existing text first
-- `typeDelay` (number, optional, default: `50`) - Delay between keystrokes in milliseconds (simulates human typing)
+- `fields` (array, required) - Array of fields to fill. Each field object contains:
+  - `selector` (string, required) - CSS selector for the input element (e.g., `#username`, `input[name="email"]`)
+  - `text` (string, required) - Text to type into the field
+  - `clear` (boolean, optional, default: `true`) - Whether to clear existing text first
+  - `waitForElementTimeout` (number, optional, default: `5000`) - Maximum time to wait for element in milliseconds
 - `returnHtml` (boolean, optional, default: `true`) - Whether to wait for stability and return HTML after typing
 - `removeUnnecessaryHTML` (boolean, optional, default: `true`) - Remove unnecessary HTML for size reduction. Only used when `returnHtml` is `true`
 - `postTypeWait` (number, optional, default: `1000`) - Milliseconds to wait after typing for SPAs to render dynamic content
-- `waitForElementTimeout` (number, optional, default: `5000`) - Maximum time to wait for element in milliseconds
 
 **Examples:**
 ```javascript
-// Basic text input
-{ url: "https://example.com", selector: "#email", text: "user@example.com" }
+// Fill multiple fields at once (login form)
+{ 
+  url: "https://example.com/login", 
+  fields: [
+    { selector: "#username", text: "john@example.com" },
+    { selector: "#password", text: "secretpass123" }
+  ]
+}
+
+// Single field input
+{ url: "https://example.com", fields: [{ selector: "#search", text: "query" }] }
 
 // Append text without clearing
-{ url: "https://example.com", selector: "#search", text: " advanced", clear: false }
+{ url: "https://example.com", fields: [{ selector: "#notes", text: " additional text", clear: false }] }
 
-// Fast typing without human simulation
-{ url: "https://example.com", selector: "#username", text: "john", typeDelay: 0 }
-
-// Type without waiting for HTML return (faster)
-{ url: "https://example.com", selector: "#field", text: "value", returnHtml: false }
+// Fast form fill without HTML return
+{ 
+  url: "https://example.com/signup", 
+  fields: [
+    { selector: "#firstName", text: "John" },
+    { selector: "#lastName", text: "Doe" },
+    { selector: "#email", text: "john@example.com" }
+  ],
+  returnHtml: false 
+}
 ```
+
+**Error handling:** If a field fails, the response indicates:
+- Which field number failed (e.g., "Failed on field 2 of 3")
+- Which fields were successfully filled
+- Clear guidance to NOT re-type already filled fields
 
 ---
 
@@ -469,6 +506,46 @@ Gets the current HTML from an already-loaded page **WITHOUT** navigating or relo
 **Performance comparison:**
 - `fetch_webpage`: 2-5 seconds (full page reload)
 - `get_current_html`: 0.1-0.3 seconds (just extracts HTML) ✅
+
+---
+
+### `scroll_page`
+
+Scrolls within an already-loaded page. Use before `take_screenshot` to capture different parts of the page, or to bring elements into view before interaction. Supports multiple scroll modes:
+
+- **By direction**: Scroll up/down/left/right by pixel amount
+- **To element**: Scroll until a specific element is visible
+- **To position**: Scroll to absolute coordinates
+
+**⚠️ Note:** Page must be already loaded via `fetch_webpage` first.
+
+**Parameters:**
+- `url` (string, required) - The URL of the page (must match a previously fetched page)
+- `direction` (string, optional) - Direction to scroll: `up`, `down`, `left`, `right`. Use with `amount`.
+- `amount` (number, optional, default: `500`) - Pixels to scroll in the specified direction (~half a viewport)
+- `selector` (string, optional) - CSS selector of element to scroll into view. Ignores direction/amount.
+- `x` (number, optional) - Absolute horizontal scroll position. Use with `y`.
+- `y` (number, optional) - Absolute vertical scroll position. Use with `x`.
+
+**Examples:**
+```javascript
+// Scroll down by 500px (default)
+{ url: "https://example.com", direction: "down" }
+
+// Scroll down by 1000px
+{ url: "https://example.com", direction: "down", amount: 1000 }
+
+// Scroll an element into view
+{ url: "https://example.com", selector: "#footer" }
+
+// Scroll to specific position
+{ url: "https://example.com", x: 0, y: 2000 }
+
+// Scroll to top of page
+{ url: "https://example.com", x: 0, y: 0 }
+```
+
+**Returns:** Current scroll position, page dimensions, and viewport size — useful for understanding where you are on the page.
 
 ---
 
@@ -538,7 +615,7 @@ Environment variables for advanced setup:
 ## Troubleshooting
 
 **Browser doesn't open?**
-- Make sure Chrome or Edge is installed
+- Make sure Chrome, Edge, or Brave is installed
 - Try setting `CHROME_PATH` explicitly
 
 **Can't connect to browser?**

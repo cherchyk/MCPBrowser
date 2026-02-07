@@ -6,7 +6,7 @@
 import { getBrowser, domainPages } from '../core/browser.js';
 import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml, waitForPageStability } from '../core/page.js';
 import { detectRedirectType, waitForAutoAuth, waitForManualAuth } from '../core/auth.js';
-import { MCPResponse, ErrorResponse, HttpStatusResponse } from '../core/responses.js';
+import { MCPResponse, ErrorResponse, HttpStatusResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
 /**
@@ -156,7 +156,22 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
   const authCompletionTimeout = 600000;
   const reuseLastKeptPage = true;
 
-  const browserInstance = await getBrowser(browser);
+  // Ensure browser connection
+  let browserInstance;
+  try {
+    browserInstance = await getBrowser(browser);
+  } catch (err) {
+    logger.error(`fetch_webpage: Failed to connect to browser: ${err.message}`);
+    return new InformationalResponse(
+      `Browser connection failed: ${err.message}`,
+      'The browser must be running with remote debugging enabled.',
+      [
+        'Ensure the browser is installed and running',
+        'Check that remote debugging is enabled (--remote-debugging-port)',
+        'Try restarting the MCP server'
+      ]
+    );
+  }
   
   try {
     // Get or create page for this domain (simple - no locks needed)

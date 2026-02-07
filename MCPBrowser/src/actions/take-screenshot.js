@@ -149,9 +149,9 @@ export async function takeScreenshot({ url, fullPage = false }) {
     logger.error(`take_screenshot: Failed to connect to browser: ${err.message}`);
     return new InformationalResponse(
       `Browser connection failed: ${err.message}`,
-      'Could not connect to Chrome or Edge browser. The browser must be running with remote debugging enabled.',
+      'The browser must be running with remote debugging enabled.',
       [
-        'Ensure Chrome or Edge browser is installed and running',
+        'Ensure the browser is installed and running',
         'Check that remote debugging is enabled (--remote-debugging-port)',
         'Try restarting the MCP server'
       ]

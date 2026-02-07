@@ -5,6 +5,7 @@
 
 import { ChromeBrowser } from '../browsers/chrome.js';
 import { EdgeBrowser } from '../browsers/edge.js';
+import { BraveBrowser } from '../browsers/brave.js';
 import os from 'os';
 import logger from './logger.js';
 
@@ -17,15 +18,16 @@ const browserInstances = new Map();
 
 /**
  * Detect the default browser on the system
- * @returns {Promise<string>} Browser type (chrome, edge)
+ * @returns {Promise<string>} Browser type (chrome, edge, brave)
  */
 async function detectDefaultBrowser() {
   const platform = os.platform();
   
-  // Priority order: Chrome > Edge
+  // Priority order: Chrome > Edge > Brave
   const browsers = [
     new ChromeBrowser(),
-    new EdgeBrowser()
+    new EdgeBrowser(),
+    new BraveBrowser()
   ];
   
   for (const browser of browsers) {
@@ -67,10 +69,13 @@ export async function GetBrowser(type = '') {
     case 'edge':
       browser = new EdgeBrowser();
       break;
+    case 'brave':
+      browser = new BraveBrowser();
+      break;
     default:
       throw new Error(
         `Unsupported browser type: ${type}. ` +
-        `Supported: chrome, edge. ` +
+        `Supported: chrome, edge, brave. ` +
         `Leave empty for auto-detection.`
       );
   }

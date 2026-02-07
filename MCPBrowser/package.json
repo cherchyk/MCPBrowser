@@ -1,9 +1,9 @@
 {
   "name": "mcpbrowser",
-  "version": "0.3.18",
+  "version": "0.3.19",
   "mcpName": "io.github.cherchyk/mcpbrowser",
   "type": "module",
-  "description": "MCP browser server - fetch web pages using real Chrome/Edge browser. Handles authentication, SSO, CAPTCHAs, and anti-bot protection. Browser automation for AI assistants.",
+  "description": "MCP browser server - fetch web pages using real Chrome/Edge/Brave browser. Handles authentication, SSO, CAPTCHAs, and anti-bot protection. Browser automation for AI assistants.",
   "main": "src/mcp-browser.js",
   "bin": {
     "mcpbrowser": "src/mcp-browser.js"

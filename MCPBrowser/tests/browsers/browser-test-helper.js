@@ -5,6 +5,7 @@
 
 import { ChromeBrowser } from '../../src/browsers/chrome.js';
 import { EdgeBrowser } from '../../src/browsers/edge.js';
+import { BraveBrowser } from '../../src/browsers/brave.js';
 
 /**
  * Get all supported browsers and check their availability
@@ -13,7 +14,8 @@ import { EdgeBrowser } from '../../src/browsers/edge.js';
 export async function getAllBrowsers() {
   const browsers = [
     { type: 'chrome', browser: new ChromeBrowser() },
-    { type: 'edge', browser: new EdgeBrowser() }
+    { type: 'edge', browser: new EdgeBrowser() },
+    { type: 'brave', browser: new BraveBrowser() }
   ];
 
   const results = [];
@@ -68,7 +70,7 @@ export async function forEachBrowser(testName, testFn) {
 
 /**
  * Check if a specific browser is available
- * @param {string} browserType - Browser type (chrome, edge)
+ * @param {string} browserType - Browser type (chrome, edge, brave)
  * @returns {Promise<boolean>}
  */
 export async function isBrowserAvailable(browserType) {
