@@ -7,7 +7,7 @@
 
 > ⚠️ **Security Notice:** MCPBrowser extracts webpage content and provides it to your AI agent (e.g., GitHub Copilot, Claude), which then sends it to the LLM provider it uses (e.g., Anthropic, OpenAI, GitHub) for processing. Make sure you trust both your agent and the LLM provider — especially when accessing pages with sensitive or private data.
 
-**MCPBrowser is an MCP browser server that gives AI assistants the ability to browse web pages using a real Chrome or Edge browser.** This browser-based MCP server fetches any web page — especially those protected by authentication, CAPTCHAs, anti-bot protection, or requiring JavaScript rendering. Uses your real Chrome/Edge browser for web automation so you can log in normally, then automatically extracts content. Works with corporate SSO, login forms, Cloudflare, and JavaScript-heavy sites (SPAs, dashboards).
+**MCPBrowser is an MCP browser server that gives AI assistants the ability to browse web pages using a real Chrome, Edge, or Brave browser.** This browser-based MCP server fetches any web page — especially those protected by authentication, CAPTCHAs, anti-bot protection, or requiring JavaScript rendering. Uses your real browser for web automation so you can log in normally, then automatically extracts content. Works with corporate SSO, login forms, Cloudflare, and JavaScript-heavy sites (SPAs, dashboards).
 
 This is an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server using [stdio transport](https://modelcontextprotocol.io/docs/concepts/transports#stdio). Your AI assistant uses this web browser MCP server when standard HTTP requests fail — pages requiring authentication, CAPTCHA protection, or heavy JavaScript (SPAs). Once connected, the browser MCP server can navigate through websites, interact with elements, and send HTML back to the AI assistant. This gives your AI the ability to browse the web just like you do.
 
@@ -43,7 +43,7 @@ Example workflow for AI assistant to use MCPBrowser
 
 ## Requirements
 
-- Chrome or Edge browser
+- Chrome, Edge, or Brave browser
 - [Node.js 18+](https://nodejs.org/) (includes npm)
 
 > **Note:** Node.js must be installed on your system. The VS Code extension and npm package both require Node.js to run the MCP server. Download from [nodejs.org](https://nodejs.org/) if not already installed.
@@ -54,8 +54,9 @@ Example workflow for AI assistant to use MCPBrowser
 |---|----------|------------|
 | 1 | [VS Code Extension](#option-1-vs-code-extension) | One Click |
 | 2 | [Claude Code](#option-2-claude-code) | One Command |
-| 3 | [Claude Desktop](#option-3-claude-desktop) | Manual |
-| 4 | [npm Package](#option-4-npm-package) | Manual |
+| 3 | [OpenClaw](#option-3-openclaw) | One Command |
+| 4 | [Claude Desktop](#option-4-claude-desktop) | Manual |
+| 5 | [npm Package](#option-5-npm-package) | Manual |
 
 ### Option 1: VS Code Extension
 
@@ -85,7 +86,22 @@ mcpbrowser: npx -y mcpbrowser@latest - ✓ Connected
 That's it! Ask Claude to fetch any protected page:
 > "Fetch https://portal.azure.com using mcpbrowser"
 
-### Option 3: Claude Desktop
+### Option 3: OpenClaw
+
+[OpenClaw](https://openclaw.ai/) is a personal AI assistant that runs on your devices. Add MCPBrowser to give it browser automation capabilities:
+
+```bash
+openclaw mcp add mcpbrowser -- npx -y mcpbrowser@latest
+```
+
+Verify it's working:
+```bash
+openclaw mcp list
+```
+
+Now OpenClaw can browse authenticated pages, fill forms, and interact with web apps using your existing browser sessions.
+
+### Option 4: Claude Desktop
 
 Add to your config file:
 
@@ -105,7 +121,7 @@ Add to your config file:
 
 Restart Claude Desktop after saving.
 
-### Option 4: npm Package
+### Option 5: npm Package
 
 For VS Code (GitHub Copilot) manual setup, add to your `mcp.json`:
 
@@ -387,7 +403,7 @@ Logs go to `stderr` so they don't interfere with MCP protocol on `stdout`.
 ## Troubleshooting
 
 **Browser doesn't open?**
-- Make sure Chrome or Edge is installed
+- Make sure Chrome, Edge, or Brave is installed
 - Try setting `CHROME_PATH` explicitly
 
 **Can't connect to browser?**
