@@ -192,7 +192,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
   
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
-    logger.info(`click_element: ${pageError || 'No page found for ' + hostname}`);
+    logger.debug(`click_element: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
       isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
       isConnectionLost 
@@ -259,13 +259,13 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     // await page.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), elementHandle);
     // await new Promise(r => setTimeout(r, 300)); // Brief delay after scroll
     
-    logger.info(`Clicking: ${selector || `text="${text}"`}`);
+    logger.debug(`Clicking: ${selector || `text="${text}"`}`);
     await elementHandle.click();
     
     if (returnHtml) {
       // Wait for page to stabilize (handles both navigation and SPA content updates)
       // This ensures content is fully loaded before returning, just like fetch_webpage does
-      logger.info('Waiting for page stability...');
+      logger.debug('Waiting for page stability...');
       await waitForPageStability(page);
       
       // Wait for SPAs to render dynamic content after click
@@ -292,7 +292,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       );
     } else {
       // Wait for page to stabilize even for fast clicks (ensures JS has finished)
-      logger.info('Waiting for page stability (fast mode)...');
+      logger.debug('Waiting for page stability (fast mode)...');
       await waitForPageStability(page);
       
       // Wait for SPAs to render dynamic content after click
