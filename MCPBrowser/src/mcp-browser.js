@@ -16,6 +16,9 @@ import { dirname, join } from 'path';
 import { ErrorResponse } from './core/responses.js';
 import logger from './core/logger.js';
 
+// Import EULA functionality
+import { handleAcceptEula, ACCEPT_EULA_TOOL, requireEulaAcceptance } from './actions/accept-eula.js';
+
 // Import core functionality
 import { fetchPage, FETCH_WEBPAGE_TOOL } from './actions/fetch-page.js';
 import { clickElement, CLICK_ELEMENT_TOOL } from './actions/click-element.js';
@@ -47,7 +50,9 @@ async function main() {
   const server = new Server({ name: "MCP Browser", version: packageJson.version }, { capabilities: { tools: {} } });
 
   // Assemble tools from action imports
+  // ACCEPT_EULA_TOOL must be first - it's required before using other tools
   const tools = [
+    ACCEPT_EULA_TOOL,
     FETCH_WEBPAGE_TOOL,
     CLICK_ELEMENT_TOOL,
     TYPE_TEXT_TOOL,
@@ -66,7 +71,17 @@ async function main() {
     let result;
     
     try {
+      // EULA check - accept_eula is always allowed, other tools require EULA acceptance
+      if (name !== "accept_eula") {
+        const eulaResponse = requireEulaAcceptance(name);
+        if (eulaResponse) return eulaResponse;
+      }
+      
       switch (name) {
+        case "accept_eula":
+          result = await handleAcceptEula(safeArgs);
+          break;
+          
         case "fetch_webpage":
           result = await fetchPage(safeArgs);
           break;
@@ -144,7 +159,8 @@ export {
   closeTab,
   getCurrentHtml,
   takeScreenshot,
-  scrollPage
+  scrollPage,
+  handleAcceptEula
 };
 
 // Run the MCP server only if this is the main module (not imported for testing)

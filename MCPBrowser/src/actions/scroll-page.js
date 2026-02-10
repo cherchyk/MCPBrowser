@@ -200,7 +200,7 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
   
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
-    logger.info(`scroll_page: ${pageError || 'No page found for ' + hostname}`);
+    logger.debug(`scroll_page: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
       isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
       isConnectionLost 
@@ -219,7 +219,7 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
     // Determine scroll mode and execute
     if (selector) {
       // Scroll to element mode
-      logger.info(`scroll_page: Scrolling to element: ${selector}`);
+      logger.debug(`scroll_page: Scrolling to element: ${selector}`);
       
       const elementExists = await page.$(selector);
       if (!elementExists) {
@@ -243,7 +243,7 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
       
     } else if (typeof x === 'number' && typeof y === 'number') {
       // Absolute position mode
-      logger.info(`scroll_page: Scrolling to absolute position: (${x}, ${y})`);
+      logger.debug(`scroll_page: Scrolling to absolute position: (${x}, ${y})`);
       
       await page.evaluate(({ scrollX, scrollY }) => {
         window.scrollTo(scrollX, scrollY);
@@ -251,7 +251,7 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
       
     } else if (direction) {
       // Directional scroll mode
-      logger.info(`scroll_page: Scrolling ${direction} by ${amount}px`);
+      logger.debug(`scroll_page: Scrolling ${direction} by ${amount}px`);
       
       const scrollDeltas = {
         up: { x: 0, y: -amount },
@@ -271,7 +271,7 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
       
     } else {
       // No scroll parameters provided - just return current position
-      logger.info(`scroll_page: No scroll action specified, returning current position`);
+      logger.debug(`scroll_page: No scroll action specified, returning current position`);
     }
     
     // Small delay to let scroll complete

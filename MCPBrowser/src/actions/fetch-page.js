@@ -190,7 +190,7 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
     const redirectInfo = detectRedirectType(url, hostname, currentUrl, currentHostname);
     
     if (redirectInfo.type === 'requested_auth') {
-      logger.info('User requested auth page directly, returning content');
+      logger.debug('User requested auth page directly, returning content');
       // Update domain mapping if needed
       if (redirectInfo.currentHostname !== hostname) {
         domainPages.delete(hostname);
@@ -198,13 +198,13 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
         hostname = redirectInfo.currentHostname;
       }
     } else if (redirectInfo.type === 'permanent') {
-      logger.info(`Redirect: ${hostname} → ${redirectInfo.currentHostname}`);
+      logger.debug(`Redirect: ${hostname} → ${redirectInfo.currentHostname}`);
       
       // Check if we already have a tab for the redirected hostname
       // (can happen after reconnect - we mapped mail.google.com but not gmail.com)
       const existingPage = domainPages.get(redirectInfo.currentHostname);
       if (existingPage && existingPage !== page && !existingPage.isClosed()) {
-        logger.info(`Found existing tab for ${redirectInfo.currentHostname}, reusing it`);
+        logger.debug(`Found existing tab for ${redirectInfo.currentHostname}, reusing it`);
         // Close the new tab we just opened, use the existing one
         await page.close().catch(() => {});
         domainPages.delete(hostname);
@@ -263,7 +263,7 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
     
     // Additional wait if requested (for pages that need extra time)
     if (postLoadWait > 0) {
-      logger.info(`Waiting ${postLoadWait}ms (postLoadWait)...`);
+      logger.debug(`Waiting ${postLoadWait}ms (postLoadWait)...`);
       await new Promise(resolve => setTimeout(resolve, postLoadWait));
     }
     
@@ -274,7 +274,7 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
     
     // Check for non-2xx HTTP status codes - return informational response (not red error)
     if (statusCode && (statusCode >= 400 && statusCode < 600)) {
-      logger.info(`HTTP ${statusCode} ${statusText} - returning as informational response`);
+      logger.debug(`HTTP ${statusCode} ${statusText} - returning as informational response`);
       return new HttpStatusResponse(
         page.url(),
         statusCode,

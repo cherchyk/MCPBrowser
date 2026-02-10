@@ -43,7 +43,7 @@ async function processQueue() {
     const queueLength = requestQueue.length;
     
     if (queueLength > 0) {
-      logger.info(`Queue: ${queueLength} requests waiting`);
+      logger.debug(`Queue: ${queueLength} requests waiting`);
     }
     
     try {
@@ -285,7 +285,7 @@ export async function waitForPageReady(page) {
   const spaCheck = await isItSPA(page);
   
   if (spaCheck.isSPA) {
-    logger.info(`SPA detected: ${spaCheck.indicators.join(', ')}`);
+    logger.debug(`SPA detected: ${spaCheck.indicators.join(', ')}`);
     
     // Wait for SPA to render
     await new Promise(resolve => setTimeout(resolve, 3000));
@@ -296,7 +296,7 @@ export async function waitForPageReady(page) {
     } catch {
       // OK if timeout - SPA might have websockets or long-polling
     }
-    logger.info('SPA content ready');
+    logger.debug('SPA content ready');
   } else {
     // For non-SPAs, just wait briefly for any pending network requests
     try {
@@ -314,17 +314,17 @@ export async function waitForPageReady(page) {
  * @returns {Promise<void>}
  */
 export async function waitForPageStability(page) {
-  logger.info('Waiting for page stability (network idle)...');
+  logger.debug('Waiting for page stability (network idle)...');
   
   // Give time for any triggered actions to complete
   await new Promise(resolve => setTimeout(resolve, 2000));
   
   try {
     await page.waitForNetworkIdle({ timeout: 5000 });
-    logger.info('Page stabilized');
+    logger.debug('Page stabilized');
   } catch {
     // Ignore timeout - page may have long-polling or websockets
-    logger.info('Network still active, continuing anyway');
+    logger.debug('Network still active, continuing anyway');
   }
 }
 

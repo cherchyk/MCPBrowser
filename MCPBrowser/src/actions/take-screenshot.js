@@ -163,7 +163,7 @@ export async function takeScreenshot({ url, fullPage = false }) {
   
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
-    logger.info(`take_screenshot: ${pageError || 'No page found for ' + hostname}`);
+    logger.debug(`take_screenshot: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
       isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
       isConnectionLost 

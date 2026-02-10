@@ -186,7 +186,7 @@ export async function typeText({ url, fields, returnHtml = true, removeUnnecessa
   
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
-    logger.info(`type_text: ${pageError || 'No page found for ' + hostname}`);
+    logger.debug(`type_text: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
       isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
       isConnectionLost 
@@ -216,7 +216,7 @@ export async function typeText({ url, fields, returnHtml = true, removeUnnecessa
         await page.keyboard.press('Backspace');
       }
       
-      logger.info(`Typing into: ${selector}`);
+      logger.debug(`Typing into: ${selector}`);
       await page.type(selector, String(text), { delay: TYPE_DELAY_MS });
       filledSelectors.push(selector);
       currentFieldIndex++;
@@ -228,7 +228,7 @@ export async function typeText({ url, fields, returnHtml = true, removeUnnecessa
     
     if (returnHtml) {
       // Wait for page to stabilize (handles form validation, autocomplete, etc.)
-      logger.info('Waiting for page stability after typing...');
+      logger.debug('Waiting for page stability after typing...');
       await waitForPageStability(page);
       
       // Wait for SPAs to render dynamic content after typing
@@ -255,7 +255,7 @@ export async function typeText({ url, fields, returnHtml = true, removeUnnecessa
       );
     } else {
       // Wait for page to stabilize even without returning HTML
-      logger.info('Waiting for page stability after typing (fast mode)...');
+      logger.debug('Waiting for page stability after typing (fast mode)...');
       await waitForPageStability(page);
       
       // Wait for SPAs to render dynamic content after typing

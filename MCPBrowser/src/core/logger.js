@@ -15,6 +15,14 @@ function info(message) {
 }
 
 /**
+ * Log a warning message
+ * @param {string} message - The message to log
+ */
+function warn(message) {
+  console.error(`${PREFIX} ⚠️ ${message}`);
+}
+
+/**
  * Log an error message
  * @param {string} message - The message to log
  */
@@ -22,5 +30,13 @@ function error(message) {
   console.error(`${PREFIX} ❌ ${message}`);
 }
 
-export const logger = { info, error };
+/**
+ * Log a debug message
+ * @param {string} message - The message to log
+ */
+function debug(message) {
+  console.error(`${PREFIX} 🔍 ${message}`);
+}
+
+export const logger = { info, warn, error, debug };
 export default logger;

@@ -134,7 +134,7 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
   
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
-    logger.info(`get_current_html: ${pageError || 'No page found for ' + hostname}`);
+    logger.debug(`get_current_html: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
       isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
       isConnectionLost 
