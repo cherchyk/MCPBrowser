@@ -132,9 +132,9 @@ mcpbrowser: npx -y mcpbrowser@latest - ✓ Connected
 
 ### Claude Desktop
 
-Add to your config file:
+Add to your config file (create it if it doesn't exist):
 
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`  
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json` (e.g., `C:\Users\<username>\AppData\Roaming\Claude\claude_desktop_config.json`)  
 **Mac:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
