@@ -202,6 +202,16 @@ Use the Copilot CLI to interactively add the MCPBrowser MCP server:
 /mcp add
 ```
 
+When prompted, enter the following values:
+
+| Field | Value |
+|-------|-------|
+| **Server Name** | `mcpbrowser` |
+| **Server Type** | `1` (Local) |
+| **Command** | `npx -y mcpbrowser@latest` |
+| **Environment Variables** | *(leave empty)* |
+| **Tools** | `*` |
+
 Alternatively, create or edit the configuration file `~/.copilot/mcp-config.json` and add:
 
 ```json
