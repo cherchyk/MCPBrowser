@@ -38,7 +38,8 @@ describe('Extension Tests', () => {
                 executeCommand: sinon.stub()
             },
             env: {
-                openExternal: sinon.stub()
+                openExternal: sinon.stub(),
+                appName: 'Visual Studio Code'
             },
             Uri: {
                 parse: sinon.stub().callsFake(url => ({ url }))
@@ -79,36 +80,131 @@ describe('Extension Tests', () => {
         sinon.restore();
     });
 
-    describe('getMcpConfigPath', () => {
-        it('should return Windows path when platform is win32', () => {
-            // Test that getMcpConfigPath works correctly on Windows
-            // Since getMcpConfigPath is internally used and we can't easily test it directly,
-            // this test verifies the module loads correctly on Windows-like environments
-            
-            // Modify process stub to simulate Windows
-            processStub.platform = 'win32';
-            processStub.env.APPDATA = 'C:\\Users\\TestUser\\AppData\\Roaming';
-            
-            // Reload extension with Windows platform
-            const winExtension = proxyquire.noCallThru()('../src/extension', {
-                'vscode': vscodeStub,
-                'fs': fsStub,
-                'os': osStub,
-                'util': {
-                    promisify: () => execPromiseStub
-                },
-                'child_process': {
-                    exec: sinon.stub()
-                }
+    describe('detectEditor', () => {
+        it('should detect VS Code by default', () => {
+            vscodeStub.env.appName = 'Visual Studio Code';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
             });
-            
-            // Verify module loaded successfully (getMcpConfigPath is called during module init)
-            assert.ok(winExtension);
+            const editor = ext.detectEditor();
+            assert.strictEqual(editor.name, 'VS Code');
+            assert.strictEqual(editor.serversKey, 'servers');
         });
 
-        it('should return Linux/macOS path when platform is not win32', () => {
-            Object.defineProperty(process, 'platform', { value: 'linux' });
-            // Test implementation
+        it('should detect Kiro', () => {
+            vscodeStub.env.appName = 'Kiro';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            const editor = ext.detectEditor();
+            assert.strictEqual(editor.name, 'Kiro');
+            assert.strictEqual(editor.serversKey, 'mcpServers');
+        });
+
+        it('should detect Antigravity', () => {
+            vscodeStub.env.appName = 'Antigravity';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            const editor = ext.detectEditor();
+            assert.strictEqual(editor.name, 'Antigravity');
+            assert.strictEqual(editor.serversKey, 'mcpServers');
+        });
+
+        it('should fall back to VS Code for unknown editors', () => {
+            vscodeStub.env.appName = 'Unknown Editor';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            const editor = ext.detectEditor();
+            assert.strictEqual(editor.name, 'VS Code');
+        });
+    });
+
+    describe('getMcpConfigPath', () => {
+        it('should return VS Code Windows path when platform is win32', () => {
+            vscodeStub.env.appName = 'Visual Studio Code';
+            processStub.platform = 'win32';
+            processStub.env.APPDATA = 'C:\\Users\\TestUser\\AppData\\Roaming';
+            global.process = Object.assign({}, process, processStub);
+
+            const winExtension = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            const configPath = winExtension.getMcpConfigPath();
+            assert.ok(configPath.includes('Code'));
+            assert.ok(configPath.endsWith('mcp.json'));
+        });
+
+        it('should return Kiro path when running in Kiro', () => {
+            vscodeStub.env.appName = 'Kiro';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            const configPath = ext.getMcpConfigPath();
+            assert.ok(configPath.includes('.kiro'));
+            assert.ok(configPath.includes('settings'));
+            assert.ok(configPath.endsWith('mcp.json'));
+        });
+
+        it('should return Antigravity path when running in Antigravity', () => {
+            vscodeStub.env.appName = 'Antigravity';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            const configPath = ext.getMcpConfigPath();
+            assert.ok(configPath.includes('.gemini'));
+            assert.ok(configPath.includes('antigravity'));
+            assert.ok(configPath.endsWith('mcp_config.json'));
+        });
+    });
+
+    describe('getServersKey', () => {
+        it('should return "servers" for VS Code', () => {
+            vscodeStub.env.appName = 'Visual Studio Code';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            assert.strictEqual(ext.getServersKey(), 'servers');
+        });
+
+        it('should return "mcpServers" for Kiro', () => {
+            vscodeStub.env.appName = 'Kiro';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            assert.strictEqual(ext.getServersKey(), 'mcpServers');
+        });
+
+        it('should return "mcpServers" for Antigravity', () => {
+            vscodeStub.env.appName = 'Antigravity';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            assert.strictEqual(ext.getServersKey(), 'mcpServers');
         });
     });
 
