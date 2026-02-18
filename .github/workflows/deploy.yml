@@ -1,4 +1,4 @@
-name: Deploy to npm and VS Code Marketplace
+name: Deploy to npm, VS Code Marketplace, and Open VSX
 
 on:
   push:
@@ -49,8 +49,8 @@ jobs:
         cd MCPBrowser && npm install
         cd ../VSCodeExtension && npm install
     
-    - name: Install vsce
-      run: npm install -g @vscode/vsce
+    - name: Install vsce and ovsx
+      run: npm install -g @vscode/vsce ovsx
     
     - name: Verify version synchronization
       id: version
@@ -76,10 +76,15 @@ jobs:
     
     - name: Verify VS Code token
       run: |
-        npm install -g @vscode/vsce
         vsce --version
       env:
         VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+    - name: Verify Open VSX token
+      run: |
+        ovsx --version
+      env:
+        OVSX_PAT: ${{ secrets.OVSX_PAT }}
     
     - name: Publish to npm
       if: github.ref == 'refs/heads/main'
@@ -130,6 +135,18 @@ jobs:
       run: |
         echo "⏭️ Skipping VS Code publish - not on main branch"
         echo "Branch: ${{ github.ref }}"
+
+    - name: Publish to Open VSX Registry
+      if: github.ref == 'refs/heads/main'
+      run: |
+        cd VSCodeExtension
+        ovsx publish mcpbrowser-${{ steps.version.outputs.version }}.vsix -p ${{ secrets.OVSX_PAT }}
+
+    - name: Skip Open VSX publish (not on main branch)
+      if: github.ref != 'refs/heads/main'
+      run: |
+        echo "⏭️ Skipping Open VSX publish - not on main branch"
+        echo "Branch: ${{ github.ref }}"
     
     - name: Extract changelog for version
       id: changelog
@@ -175,6 +192,7 @@ jobs:
           echo "  ✅ npm registry"
           echo "  ✅ MCP Registry (Visual Studio & other MCP clients)"
           echo "  ✅ VS Code Marketplace"
+          echo "  ✅ Open VSX Registry"
           echo "  ✅ GitHub Releases"
         else
           echo "✅ Pipeline test successful on branch: ${{ github.ref }}"
@@ -182,5 +200,6 @@ jobs:
           echo "  ✅ Tests passed"
           echo "  ✅ npm token verified"
           echo "  ✅ VS Code token verified"
+          echo "  ✅ Open VSX token verified"
           echo "  ⏭️ Publishing skipped (not on main branch)"
         fi
