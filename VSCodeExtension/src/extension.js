@@ -7,14 +7,56 @@ const util = require('util');
 const execPromise = util.promisify(exec);
 
 /**
- * Get the path to VS Code's mcp.json configuration file
+ * Editor configuration map for supported editors.
+ * Each entry defines the MCP config file path and the JSON key used for servers.
+ */
+const EDITOR_CONFIGS = {
+    kiro: {
+        name: 'Kiro',
+        getConfigPath: () => path.join(os.homedir(), '.kiro', 'settings', 'mcp.json'),
+        serversKey: 'mcpServers'
+    },
+    antigravity: {
+        name: 'Antigravity',
+        getConfigPath: () => path.join(os.homedir(), '.gemini', 'antigravity', 'mcp_config.json'),
+        serversKey: 'mcpServers'
+    },
+    vscode: {
+        name: 'VS Code',
+        getConfigPath: () => {
+            if (process.platform === 'win32') {
+                return path.join(process.env.APPDATA, 'Code', 'User', 'mcp.json');
+            }
+            return path.join(os.homedir(), '.config', 'Code', 'User', 'mcp.json');
+        },
+        serversKey: 'servers'
+    }
+};
+
+/**
+ * Detect the current editor based on vscode.env.appName
+ * @returns {Object} Editor configuration with name, getConfigPath(), and serversKey
+ */
+function detectEditor() {
+    const appName = (vscode.env.appName || '').toLowerCase();
+    if (appName.includes('kiro')) return EDITOR_CONFIGS.kiro;
+    if (appName.includes('antigravity')) return EDITOR_CONFIGS.antigravity;
+    return EDITOR_CONFIGS.vscode;
+}
+
+/**
+ * Get the path to the MCP configuration file for the current editor
  */
 function getMcpConfigPath() {
-    if (process.platform === 'win32') {
-        return path.join(process.env.APPDATA, 'Code', 'User', 'mcp.json');
-    }
-    // macOS and Linux
-    return path.join(os.homedir(), '.config', 'Code', 'User', 'mcp.json');
+    return detectEditor().getConfigPath();
+}
+
+/**
+ * Get the JSON key used for the servers object in the current editor's MCP config.
+ * VS Code uses "servers", Kiro and Antigravity use "mcpServers".
+ */
+function getServersKey() {
+    return detectEditor().serversKey;
 }
 
 /**
@@ -25,7 +67,9 @@ async function isMcpBrowserConfigured() {
         const mcpPath = getMcpConfigPath();
         const content = await fs.readFile(mcpPath, 'utf-8');
         const config = JSON.parse(content);
-        return config.servers && config.servers.MCPBrowser !== undefined;
+        const key = getServersKey();
+        const servers = config[key] || config.servers || config.mcpServers;
+        return servers && servers.MCPBrowser !== undefined;
     } catch (error) {
         // File doesn't exist or can't be read
         return false;
@@ -82,6 +126,7 @@ async function installMcpBrowser() {
 async function configureMcpBrowser() {
     try {
         const mcpPath = getMcpConfigPath();
+        const key = getServersKey();
         let config;
 
         try {
@@ -89,18 +134,22 @@ async function configureMcpBrowser() {
             config = JSON.parse(content);
         } catch (error) {
             // File doesn't exist, create new config
-            config = { servers: {} };
+            config = { [key]: {} };
             // Ensure directory exists
             await fs.mkdir(path.dirname(mcpPath), { recursive: true });
         }
 
-        // Ensure servers object exists
-        if (!config.servers) {
-            config.servers = {};
+        // Ensure servers object exists under the correct key
+        if (!config[key]) {
+            config[key] = {};
         }
 
-        // Add MCPBrowser configuration
-        config.servers.MCPBrowser = {
+        // Preserve any existing user-set properties (e.g. autoApprove)
+        const existing = config[key].MCPBrowser || {};
+
+        // Add MCPBrowser configuration, merging with existing user properties
+        config[key].MCPBrowser = {
+            ...existing,
             type: "stdio",
             command: "npx",
             args: ["-y", "mcpbrowser@latest"],
@@ -125,9 +174,13 @@ async function removeMcpBrowser() {
         const mcpPath = getMcpConfigPath();
         const content = await fs.readFile(mcpPath, 'utf-8');
         const config = JSON.parse(content);
+        const key = getServersKey();
+        // Check editor's expected key first, then fall back
+        const servers = config[key] || config.servers || config.mcpServers;
+        const actualKey = config[key] ? key : (config.servers ? 'servers' : 'mcpServers');
 
-        if (config.servers && config.servers.MCPBrowser) {
-            delete config.servers.MCPBrowser;
+        if (servers && servers.MCPBrowser) {
+            delete config[actualKey].MCPBrowser;
             await fs.writeFile(mcpPath, JSON.stringify(config, null, 2), 'utf-8');
             return true;
         }
@@ -295,7 +348,10 @@ module.exports = {
     activate,
     deactivate,
     // Exported for testing
+    EDITOR_CONFIGS,
+    detectEditor,
     getMcpConfigPath,
+    getServersKey,
     checkNodeInstalled,
     isMcpBrowserConfigured,
     configureMcpBrowser,
