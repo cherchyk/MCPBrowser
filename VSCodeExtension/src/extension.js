@@ -164,7 +164,7 @@ async function showConfigurationPrompt(context) {
     
     if (!configured) {
         const action = await vscode.window.showInformationMessage(
-            'MCPBrowser is available! Would you like to configure it for GitHub Copilot?',
+            'MCPBrowser is available! Would you like to configure it?',
             'Configure Now',
             'Not Now',
             "Don't Ask Again"
@@ -227,7 +227,7 @@ async function activate(context) {
             await configureMcpBrowser();
             
             const restart = await vscode.window.showInformationMessage(
-                '✓ MCPBrowser configured successfully! Restart VS Code to use it with GitHub Copilot.',
+                '✓ MCPBrowser configured successfully! Restart your editor to use it with your AI agent.',
                 'Restart Now',
                 'Later'
             );

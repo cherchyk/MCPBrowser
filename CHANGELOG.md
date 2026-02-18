@@ -5,7 +5,11 @@ All notable changes to the MCPBrowser project (both the MCP server and VS Code e
 ## [Unreleased]
 
 ### Deployment
-- 🌐 **Open VSX Registry support**: Extension is now published to [Open VSX](https://open-vsx.org/) alongside the VS Code Marketplace, enabling users of VSCodium, Eclipse Theia, Gitpod, and other VS Code alternatives
+- 🌐 **Open VSX Registry support**: Extension is now published to [Open VSX](https://open-vsx.org/) alongside the VS Code Marketplace, enabling users of Kiro, Antigravity, VSCodium, Eclipse Theia, Gitpod, and other VS Code alternatives
+
+### Extension
+- 🌍 **Broadened editor and agent support**: Extension descriptions, commands, and documentation updated to reflect compatibility with Kiro, Antigravity, and their agents — no longer VS Code/GitHub Copilot-specific
+- 🏷️ **Updated metadata**: Extension displayName, description, and keywords now mention Kiro, Antigravity, and Open VSX
 
 ### MCP Server
 - ⚠️ **BREAKING CHANGE: `type_text` API redesigned**: Now accepts a `fields` array to fill multiple form fields in a single call

@@ -5,7 +5,7 @@
 [![Claude Desktop](https://img.shields.io/badge/Claude-Desktop-5865F2?logo=anthropic)](https://modelcontextprotocol.io/quickstart/user)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> ⚠️ **Security Notice:** MCPBrowser extracts webpage content and provides it to your AI agent (e.g., GitHub Copilot, Claude), which then sends it to the LLM provider it uses (e.g., Anthropic, OpenAI, GitHub) for processing. Make sure you trust both your agent and the LLM provider — especially when accessing pages with sensitive or private data.
+> ⚠️ **Security Notice:** MCPBrowser extracts webpage content and provides it to your AI agent (e.g., GitHub Copilot, Claude, Kiro, Antigravity), which then sends it to the LLM provider it uses (e.g., Anthropic, OpenAI, GitHub) for processing. Make sure you trust both your agent and the LLM provider — especially when accessing pages with sensitive or private data.
 
 **MCPBrowser is an MCP browser server that gives AI assistants the ability to browse web pages using a real Chrome, Edge, or Brave browser.** This browser-based MCP server fetches any web page — especially those protected by authentication, CAPTCHAs, anti-bot protection, or requiring JavaScript rendering. Uses your real browser for web automation so you can log in normally, then automatically extracts content. Works with corporate SSO, login forms, Cloudflare, and JavaScript-heavy sites (SPAs, dashboards).
 
@@ -60,12 +60,12 @@ Example workflow for AI assistant to use MCPBrowser
 
 ### Option 1: VS Code Extension
 
-Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) or run:
+Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) or [Open VSX Registry](https://open-vsx.org/extension/cherchyk/mcpbrowser), or run:
 ```bash
 code --install-extension cherchyk.mcpbrowser
 ```
 
-The extension automatically installs and configures everything for GitHub Copilot.
+The extension automatically installs and configures everything for your AI agent (GitHub Copilot, Kiro Agent, Antigravity Agent). Also works with VSCodium and other Open VSX-compatible editors.
 
 ### Option 2: Claude Code
 
@@ -123,7 +123,7 @@ Restart Claude Desktop after saving.
 
 ### Option 5: npm Package
 
-For VS Code (GitHub Copilot) manual setup, add to your `mcp.json`:
+For VS Code, Kiro, Antigravity, or other editors — manual MCP setup. Add to your `mcp.json`:
 
 **Windows:** `%APPDATA%\Code\User\mcp.json`
 **Mac/Linux:** `~/.config/Code/User/mcp.json`
@@ -418,6 +418,7 @@ Logs go to `stderr` so they don't interfere with MCP protocol on `stdout`.
 
 - [GitHub](https://github.com/cherchyk/MCPBrowser)
 - [npm](https://www.npmjs.com/package/mcpbrowser)
+- [Open VSX Registry](https://open-vsx.org/extension/cherchyk/mcpbrowser)
 - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 - [Issues](https://github.com/cherchyk/MCPBrowser/issues)
 

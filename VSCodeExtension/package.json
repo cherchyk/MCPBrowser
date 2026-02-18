@@ -1,8 +1,8 @@
 {
   "name": "mcpbrowser",
-  "displayName": "MCP Browser - Web Page Fetcher for GitHub Copilot",
-  "description": "Lightweight MCP browser server extension for GitHub Copilot. Fetch web pages using real browser - handles login, SSO, CAPTCHA, and anti-crawler protection.",
-  "version": "0.3.24",
+  "displayName": "MCPBrowser - Web Page Fetcher for AI Agents",
+  "description": "MCP browser server extension for AI agents. Fetch web pages using real browser - handles login, SSO, CAPTCHA, and anti-crawler protection. Works with GitHub Copilot, Kiro, Antigravity, and any MCP-compatible agent.",
+  "version": "0.3.25",
   "publisher": "cherchyk",
   "icon": "icon.png",
   "engines": {
@@ -17,6 +17,8 @@
     "mcp",
     "model-context-protocol",
     "github-copilot",
+    "kiro",
+    "antigravity",
     "browser",
     "web-browser",
     "automation",
@@ -29,7 +31,8 @@
     "chrome",
     "web-automation",
     "ai-tools",
-    "copilot-extension"
+    "copilot-extension",
+    "open-vsx"
   ],
   "activationEvents": [
     "onStartupFinished"
@@ -39,11 +42,11 @@
     "commands": [
       {
         "command": "mcpbrowser.configure",
-        "title": "Configure MCPBrowser for GitHub Copilot"
+        "title": "Configure MCPBrowser"
       },
       {
         "command": "mcpbrowser.remove",
-        "title": "Remove MCPBrowser from GitHub Copilot"
+        "title": "Remove MCPBrowser"
       }
     ]
   },

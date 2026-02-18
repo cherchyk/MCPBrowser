@@ -5,11 +5,11 @@
 [![Claude Desktop](https://img.shields.io/badge/Claude-Desktop-5865F2?logo=anthropic)](https://modelcontextprotocol.io/quickstart/user)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> ⚠️ **Security Notice:** MCPBrowser extracts webpage content and provides it to your AI agent (e.g., GitHub Copilot, Claude), which then sends it to the LLM provider it uses (e.g., Anthropic, OpenAI, GitHub) for processing. Make sure you trust both your agent and the LLM provider — especially when accessing pages with sensitive or private data.
+> ⚠️ **Security Notice:** MCPBrowser extracts webpage content and provides it to your AI agent (e.g., GitHub Copilot, Claude, Kiro, Antigravity), which then sends it to the LLM provider it uses (e.g., Anthropic, OpenAI, GitHub) for processing. Make sure you trust both your agent and the LLM provider — especially when accessing pages with sensitive or private data.
 
-**MCPBrowser is an MCP browser server that gives AI assistants the ability to browse web pages using a real Chrome, Edge, or Brave browser.** This browser-based MCP server lets AI assistants (Claude, Copilot) access any website — especially those protected by authentication, CAPTCHAs, anti-bot restrictions, or requiring JavaScript rendering. Uses your real browser session for web automation, so you log in once, and your AI can navigate, click buttons, fill forms, and extract content from sites that block automated requests.
+**MCPBrowser is an MCP browser server that gives AI assistants the ability to browse web pages using a real Chrome, Edge, or Brave browser.** This browser-based MCP server lets AI assistants (Claude, Copilot, Kiro, Antigravity) access any website — especially those protected by authentication, CAPTCHAs, anti-bot restrictions, or requiring JavaScript rendering. Uses your real browser session for web automation, so you log in once, and your AI can navigate, click buttons, fill forms, and extract content from sites that block automated requests.
 
-Built on the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), this web browser MCP server works seamlessly with Claude Desktop, Claude Code (CLI), GitHub Copilot, and any MCP-compatible AI assistant. It handles corporate SSO, CAPTCHAs, Cloudflare protection, SPAs, dashboards, and any site that blocks automated requests. Your AI gets the same browser access you have — no special APIs, no headless browser detection, just your authenticated browser session.
+Built on the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), this web browser MCP server works seamlessly with Claude Desktop, Claude Code (CLI), GitHub Copilot, Kiro, Antigravity, and any MCP-compatible AI assistant. It handles corporate SSO, CAPTCHAs, Cloudflare protection, SPAs, dashboards, and any site that blocks automated requests. Your AI gets the same browser access you have — no special APIs, no headless browser detection, just your authenticated browser session.
 
 Example workflow for AI assistant to use MCPBrowser
 
@@ -356,19 +356,19 @@ Follow the MCP install [guide](https://code.visualstudio.com/docs/copilot/chat/m
 code --add-mcp '{"name":"mcpbrowser","command":"npx","args":["-y","mcpbrowser@latest"]}'
 ```
 
-After installation, the MCPBrowser MCP server will be available for use with your GitHub Copilot agent in VS Code.
+After installation, the MCPBrowser MCP server will be available for use with your AI agent in VS Code.
 
 ---
 
 ### VS Code Extension
 
-Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) or run:
+Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) or [Open VSX Registry](https://open-vsx.org/extension/cherchyk/mcpbrowser), or run:
 
 ```bash
 code --install-extension cherchyk.mcpbrowser
 ```
 
-The extension automatically installs and configures everything for GitHub Copilot.
+The extension automatically installs and configures everything for your AI agent (GitHub Copilot, Kiro Agent, Antigravity Agent). Also works with VSCodium and other Open VSX-compatible editors.
 
 ---
 
@@ -663,6 +663,7 @@ npm run test:extension
 
 - [GitHub](https://github.com/cherchyk/MCPBrowser)
 - [npm](https://www.npmjs.com/package/mcpbrowser)
+- [Open VSX Registry](https://open-vsx.org/extension/cherchyk/mcpbrowser)
 - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser)
 - [Issues](https://github.com/cherchyk/MCPBrowser/issues)
 
