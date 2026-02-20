@@ -5,9 +5,11 @@
 
 import { ChromiumBrowser } from './ChromiumBrowser.js';
 import os from "os";
+import { isWSL } from '../utils.js';
 
 /**
  * Get platform-specific default paths where Chrome is typically installed.
+ * When running under WSL, Windows-side paths (via /mnt/c/) are also included.
  * @returns {string[]} Array of possible Chrome executable paths for the current platform
  */
 function getDefaultChromePaths() {
@@ -24,11 +26,19 @@ function getDefaultChromePaths() {
       "/Applications/Chromium.app/Contents/MacOS/Chromium",
     ];
   } else {
-    return [
+    const paths = [
       "/usr/bin/google-chrome",
       "/usr/bin/chromium-browser",
       "/usr/bin/chromium",
     ];
+    // In WSL, also look for Windows-side Chrome via /mnt/c/
+    if (isWSL()) {
+      paths.push(
+        "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe",
+        "/mnt/c/Program Files (x86)/Google/Chrome/Application/chrome.exe",
+      );
+    }
+    return paths;
   }
 }
 
