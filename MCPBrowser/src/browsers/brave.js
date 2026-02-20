@@ -5,9 +5,11 @@
 
 import { ChromiumBrowser } from './ChromiumBrowser.js';
 import os from "os";
+import { isWSL } from '../utils.js';
 
 /**
  * Get platform-specific default paths where Brave browser is typically installed.
+ * When running under WSL, Windows-side paths (via /mnt/c/) are also included.
  * @returns {string[]} Array of possible Brave executable paths for the current platform
  */
 function getDefaultBravePaths() {
@@ -24,13 +26,21 @@ function getDefaultBravePaths() {
       "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
     ];
   } else {
-    return [
+    const paths = [
       "/usr/bin/brave",
       "/usr/bin/brave-browser",
       "/usr/bin/brave-browser-stable",
       "/opt/brave.com/brave/brave-browser",
       "/snap/bin/brave",
     ];
+    // In WSL, also look for Windows-side Brave via /mnt/c/
+    if (isWSL()) {
+      paths.push(
+        "/mnt/c/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe",
+        "/mnt/c/Program Files (x86)/BraveSoftware/Brave-Browser/Application/brave.exe",
+      );
+    }
+    return paths;
   }
 }
 

@@ -5,9 +5,11 @@
 
 import { ChromiumBrowser } from './ChromiumBrowser.js';
 import os from "os";
+import { isWSL } from '../utils.js';
 
 /**
  * Get platform-specific default paths where Edge browser is typically installed.
+ * When running under WSL, Windows-side paths (via /mnt/c/) are also included.
  * @returns {string[]} Array of possible Edge executable paths for the current platform
  */
 function getDefaultEdgePaths() {
@@ -23,13 +25,21 @@ function getDefaultEdgePaths() {
       "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
     ];
   } else {
-    return [
+    const paths = [
       "/usr/bin/microsoft-edge",
       "/usr/bin/microsoft-edge-stable",
       "/usr/bin/microsoft-edge-beta",
       "/usr/bin/microsoft-edge-dev",
       "/opt/microsoft/msedge/msedge",
     ];
+    // In WSL, also look for Windows-side Edge via /mnt/c/
+    if (isWSL()) {
+      paths.push(
+        "/mnt/c/Program Files/Microsoft/Edge/Application/msedge.exe",
+        "/mnt/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+      );
+    }
+    return paths;
   }
 }
 

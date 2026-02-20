@@ -9,8 +9,9 @@ import puppeteer from 'puppeteer-core';
 import { existsSync } from "fs";
 import os from "os";
 import path from "path";
-import { spawn } from "child_process";
+import { spawn, execSync } from "child_process";
 import logger from '../core/logger.js';
+import { isWSL, wslToWindowsPath, windowsPathToWSL } from '../utils.js';
 
 /**
  * Base class for all Chromium-based browsers
@@ -49,6 +50,18 @@ export class ChromiumBrowser extends BaseBrowser {
     const platform = os.platform();
     const home = os.homedir();
     
+    // In WSL the browser is a Windows process, so the user-data-dir
+    // must reside on a Windows-accessible filesystem (e.g. /mnt/c/…).
+    if (isWSL()) {
+      const windowsLocalAppData = this._getWindowsLocalAppData();
+      if (windowsLocalAppData) {
+        // windowsLocalAppData is already a WSL path like /mnt/c/Users/.../AppData/Local
+        return path.join(windowsLocalAppData, `MCPBrowser/${this.config.userDataDirName}`);
+      }
+      // Fallback: predictable location on C: drive
+      return `/mnt/c/MCPBrowserData/${this.config.userDataDirName}`;
+    }
+    
     if (platform === "win32") {
       return path.join(home, `AppData/Local/MCPBrowser/${this.config.userDataDirName}`);
     } else if (platform === "darwin") {
@@ -72,6 +85,37 @@ export class ChromiumBrowser extends BaseBrowser {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Resolve the Windows %LOCALAPPDATA% directory as a WSL path.
+   * Cached per-process. Returns null on failure.
+   * @returns {string|null} WSL-style path (e.g. /mnt/c/Users/.../AppData/Local)
+   * @private
+   */
+  _getWindowsLocalAppData() {
+    // Use a class-level cache so we only shell out once
+    if (ChromiumBrowser._wslLocalAppData !== undefined) {
+      return ChromiumBrowser._wslLocalAppData;
+    }
+
+    try {
+      const raw = execSync('cmd.exe /c echo %LOCALAPPDATA%', {
+        encoding: 'utf8',
+        timeout: 5000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }).trim();
+
+      if (raw && !raw.includes('%LOCALAPPDATA%')) {
+        ChromiumBrowser._wslLocalAppData = windowsPathToWSL(raw);
+        return ChromiumBrowser._wslLocalAppData;
+      }
+    } catch {
+      // cmd.exe not available or timed out
+    }
+
+    ChromiumBrowser._wslLocalAppData = null;
+    return null;
   }
 
   /**
@@ -109,14 +153,24 @@ export class ChromiumBrowser extends BaseBrowser {
       }
 
       const userDataDir = this.getDefaultUserDataDir();
+
+      // When running inside WSL the browser executable is a Windows process.
+      // It does not understand WSL paths (/mnt/c/…), so convert to a native
+      // Windows path for the --user-data-dir argument.
+      const userDataDirArg = isWSL() ? wslToWindowsPath(userDataDir) : userDataDir;
+
       const args = [
         `--remote-debugging-port=${this.config.port}`,
-        `--user-data-dir=${userDataDir}`,
+        `--user-data-dir=${userDataDirArg}`,
         '--no-first-run',
         '--no-default-browser-check'
       ];
 
       logger.info(`Launching ${this.config.name} with remote debugging on port ${this.config.port}...`);
+      if (isWSL()) {
+        logger.info(`WSL detected – launching Windows browser at ${execPath}`);
+        logger.info(`  user-data-dir (Windows): ${userDataDirArg}`);
+      }
       
       const child = spawn(execPath, args, {
         detached: true,
@@ -181,3 +235,6 @@ export class ChromiumBrowser extends BaseBrowser {
     this.browser = null;
   }
 }
+
+// Static cache for WSL %LOCALAPPDATA% lookup (undefined = not yet resolved)
+ChromiumBrowser._wslLocalAppData = undefined;
