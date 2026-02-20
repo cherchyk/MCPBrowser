@@ -2,7 +2,7 @@
   "name": "mcpbrowser",
   "displayName": "MCPBrowser - Web Page Fetcher for AI Agents",
   "description": "MCP browser server extension for AI agents. Fetch web pages using real browser - handles login, SSO, CAPTCHA, and anti-crawler protection. Works with GitHub Copilot, Kiro, Antigravity, and any MCP-compatible agent.",
-  "version": "0.3.27",
+  "version": "0.3.28",
   "publisher": "cherchyk",
   "icon": "icon.png",
   "engines": {
@@ -37,6 +37,7 @@
   "activationEvents": [
     "onStartupFinished"
   ],
+  "extensionKind": ["ui", "workspace"],
   "main": "./src/extension.js",
   "contributes": {
     "commands": [

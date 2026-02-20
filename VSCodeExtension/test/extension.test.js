@@ -208,6 +208,120 @@ describe('Extension Tests', () => {
         });
     });
 
+    describe('isWSL', () => {
+        it('should return true when WSL_DISTRO_NAME is set', () => {
+            processStub.env = { WSL_DISTRO_NAME: 'Ubuntu' };
+            global.process = Object.assign({}, process, processStub);
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            assert.strictEqual(ext.isWSL(), true);
+        });
+
+        it('should return false when WSL_DISTRO_NAME is not set', () => {
+            processStub.env = {};
+            global.process = Object.assign({}, process, processStub);
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            assert.strictEqual(ext.isWSL(), false);
+        });
+    });
+
+    describe('resolveWSLPaths', () => {
+        it('should resolve Windows APPDATA path in WSL', async () => {
+            processStub.env = { WSL_DISTRO_NAME: 'Ubuntu' };
+            global.process = Object.assign({}, process, processStub);
+
+            execPromiseStub.onFirstCall().resolves({ stdout: 'C:\\Users\\TestUser\\AppData\\Roaming\r\n' });
+            execPromiseStub.onSecondCall().resolves({ stdout: '/mnt/c/Users/TestUser/AppData/Roaming\n' });
+
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            await ext.resolveWSLPaths();
+            assert.strictEqual(ext._getCachedWSLAppData(), '/mnt/c/Users/TestUser/AppData/Roaming');
+        });
+
+        it('should not resolve when not in WSL', async () => {
+            processStub.env = {};
+            global.process = Object.assign({}, process, processStub);
+
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            await ext.resolveWSLPaths();
+            assert.strictEqual(ext._getCachedWSLAppData(), null);
+            assert(execPromiseStub.notCalled);
+        });
+
+        it('should fall back gracefully when cmd.exe fails', async () => {
+            processStub.env = { WSL_DISTRO_NAME: 'Ubuntu' };
+            global.process = Object.assign({}, process, processStub);
+
+            execPromiseStub.rejects(new Error('cmd.exe not found'));
+
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            await ext.resolveWSLPaths();
+            assert.strictEqual(ext._getCachedWSLAppData(), null);
+        });
+    });
+
+    describe('getMcpConfigPath (WSL)', () => {
+        it('should use Windows APPDATA path when WSL path is cached', () => {
+            vscodeStub.env.appName = 'Visual Studio Code';
+            processStub.platform = 'linux';
+            global.process = Object.assign({}, process, processStub);
+
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            ext._setCachedWSLAppData('/mnt/c/Users/TestUser/AppData/Roaming');
+            const configPath = ext.getMcpConfigPath();
+            // path.join normalizes separators per platform, so check key components
+            assert.ok(configPath.includes('TestUser'), 'should contain Windows user path');
+            assert.ok(configPath.includes('Code'), 'should contain Code directory');
+            assert.ok(configPath.endsWith('mcp.json'), 'should end with mcp.json');
+            // Should NOT use the Linux ~/.config path
+            assert.ok(!configPath.includes('.config'), 'should not use Linux .config path');
+        });
+
+        it('should fall back to Linux path when WSL path not cached', () => {
+            vscodeStub.env.appName = 'Visual Studio Code';
+            processStub.platform = 'linux';
+            global.process = Object.assign({}, process, processStub);
+
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            ext._setCachedWSLAppData(null);
+            const configPath = ext.getMcpConfigPath();
+            assert.ok(configPath.includes('.config'));
+            assert.ok(configPath.endsWith('mcp.json'));
+        });
+    });
+
     describe('checkNodeInstalled', () => {
         it('should return true when npm is available', async () => {
             execPromiseStub.resolves({ stdout: '10.2.0' });

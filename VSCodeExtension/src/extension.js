@@ -7,6 +7,39 @@ const util = require('util');
 const execPromise = util.promisify(exec);
 
 /**
+ * Cached Windows APPDATA path when running in WSL.
+ * Resolved once at activation time via resolveWSLPaths().
+ */
+let cachedWSLAppData = null;
+
+/**
+ * Check if running inside Windows Subsystem for Linux (WSL).
+ */
+function isWSL() {
+    return !!process.env.WSL_DISTRO_NAME;
+}
+
+/**
+ * Resolve Windows APPDATA path from WSL for correct mcp.json location.
+ * VS Code reads user-level mcp.json from the Windows side even when
+ * the extension host runs in WSL via Remote-WSL.
+ */
+async function resolveWSLPaths() {
+    if (!isWSL()) return;
+    try {
+        const { stdout } = await execPromise('cmd.exe /C "echo %APPDATA%"');
+        const windowsPath = stdout.trim().replace(/\r?\n|\r/g, '');
+        if (windowsPath && windowsPath !== '%APPDATA%') {
+            const { stdout: wslPath } = await execPromise(`wslpath -u "${windowsPath}"`);
+            cachedWSLAppData = wslPath.trim();
+        }
+    } catch (error) {
+        // Could not resolve Windows path — fall back to Linux default
+        console.log('MCPBrowser: Could not resolve Windows APPDATA from WSL:', error.message);
+    }
+}
+
+/**
  * Editor configuration map for supported editors.
  * Each entry defines the MCP config file path and the JSON key used for servers.
  */
@@ -26,6 +59,10 @@ const EDITOR_CONFIGS = {
         getConfigPath: () => {
             if (process.platform === 'win32') {
                 return path.join(process.env.APPDATA, 'Code', 'User', 'mcp.json');
+            }
+            // In WSL, VS Code reads mcp.json from the Windows side
+            if (cachedWSLAppData) {
+                return path.join(cachedWSLAppData, 'Code', 'User', 'mcp.json');
             }
             return path.join(os.homedir(), '.config', 'Code', 'User', 'mcp.json');
         },
@@ -238,6 +275,9 @@ async function showConfigurationPrompt(context) {
 async function activate(context) {
     console.log('MCPBrowser extension is now active');
 
+    // Resolve WSL paths before any config checks
+    await resolveWSLPaths();
+
     // Register configure command
     let configureCommand = vscode.commands.registerCommand('mcpbrowser.configure', async () => {
         try {
@@ -358,5 +398,10 @@ module.exports = {
     removeMcpBrowser,
     installMcpBrowser,
     checkMcpBrowserInstalled,
-    showConfigurationPrompt
+    showConfigurationPrompt,
+    isWSL,
+    resolveWSLPaths,
+    // Allow tests to set/reset the cached WSL path
+    _setCachedWSLAppData: (val) => { cachedWSLAppData = val; },
+    _getCachedWSLAppData: () => cachedWSLAppData
 };
