@@ -15,6 +15,9 @@ export function cleanHtml(html) {
   if (!html) return "";
   
   let cleaned = html;
+
+  // Remove spaces between tags
+  cleaned = cleaned.replace(/>\s+</g, '><');
   
   // Remove HTML comments
   cleaned = cleaned.replace(/<!--[\s\S]*?-->/g, '');
@@ -75,9 +78,6 @@ export function cleanHtml(html) {
   
   // Collapse multiple whitespace/newlines into single space
   cleaned = cleaned.replace(/\s+/g, ' ');
-  
-  // Remove spaces between tags
-  cleaned = cleaned.replace(/>\s+</g, '><');
   
   return cleaned;
 }

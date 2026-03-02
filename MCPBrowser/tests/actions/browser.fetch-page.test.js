@@ -83,7 +83,7 @@ await test('[AUTO-DETECT] Should auto-detect browser when no browser parameter p
 
 await runWithBrowsers(async (browserType) => {
 
-await test(`[${browserType}] Should handle gmail.com → mail.google.com permanent redirect`, async () => {
+await test(`[${browserType}] Should handle gmail.com permanent redirect`, async () => {
   const url = 'https://gmail.com';
   
   console.log(`   📄 Fetching ${url}`);
@@ -101,11 +101,13 @@ await test(`[${browserType}] Should handle gmail.com → mail.google.com permane
   }
   
   assert.ok(isSuccess, 'Should successfully fetch gmail.com');
-  assert.ok(result.currentUrl.includes('mail.google.com'), `Should redirect to mail.google.com, got: ${result.currentUrl}`);
+  // gmail.com may redirect to mail.google.com or workspace.google.com depending on account state
+  const validRedirect = result.currentUrl.includes('google.com');
+  assert.ok(validRedirect, `Should redirect to a Google domain, got: ${result.currentUrl}`);
   assert.ok(result.html && result.html.length > 0, 'Should return HTML content');
   assert.ok(result.html.includes('Gmail') || result.html.includes('Google'), 'HTML should contain Gmail or Google content');
   
-  console.log(`   ✅ Permanent redirect handled correctly (gmail.com → mail.google.com)`);
+  console.log(`   ✅ Permanent redirect handled correctly (gmail.com → ${new URL(result.currentUrl).hostname})`);
 });
 
 await test(`[${browserType}] Should fetch eng.ms page, extract links, and load them (full Copilot workflow)`, async () => {

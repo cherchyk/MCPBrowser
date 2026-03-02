@@ -25,7 +25,7 @@
  */
 
 import { getBrowser, getValidatedPage } from '../core/browser.js';
-import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
+import { extractAndProcessHtml, waitForPageReady } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
@@ -262,60 +262,36 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     logger.debug(`Clicking: ${selector || `text="${text}"`}`);
     await elementHandle.click();
     
-    if (returnHtml) {
-      // Wait for page to stabilize (handles both navigation and SPA content updates)
-      // This ensures content is fully loaded before returning, just like fetch_webpage does
-      logger.debug('Waiting for page stability...');
-      await waitForPageStability(page);
-      
-      // Wait for SPAs to render dynamic content after click
-      if (postClickWait > 0) {
-        await new Promise(resolve => setTimeout(resolve, postClickWait));
-      }
-      
-      const currentUrl = page.url();
-      const html = await extractAndProcessHtml(page, removeUnnecessaryHTML);
-      
-      logger.info(`click_element completed: ${selector || `text="${text}"`}`);
-      
-      return new ClickElementSuccessResponse(
-        currentUrl,
-        selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`,
-        html,
-        [
+    // Wait for page to stabilize (handles both navigation and SPA content updates)
+    logger.debug(`Waiting for page to be ready${returnHtml ? '' : ' (fast mode)'}...`);
+    await waitForPageReady(page, { afterInteraction: true });
+    
+    // Wait for SPAs to render dynamic content after click
+    if (postClickWait > 0) {
+      await new Promise(resolve => setTimeout(resolve, postClickWait));
+    }
+    
+    const currentUrl = page.url();
+    const clickMessage = selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`;
+    const html = returnHtml ? await extractAndProcessHtml(page, removeUnnecessaryHTML) : null;
+    const nextSteps = returnHtml
+      ? [
           "Use MCPBrowser's click_element again to navigate further",
           "Use MCPBrowser's type_text to fill forms if needed",
           "Use MCPBrowser's get_current_html to refresh page state",
           "Use MCPBrowser's take_screenshot if page has popups or visual content that's hard to parse from HTML",
           "Use MCPBrowser's close_tab when finished"
         ]
-      );
-    } else {
-      // Wait for page to stabilize even for fast clicks (ensures JS has finished)
-      logger.debug('Waiting for page stability (fast mode)...');
-      await waitForPageStability(page);
-      
-      // Wait for SPAs to render dynamic content after click
-      if (postClickWait > 0) {
-        await new Promise(resolve => setTimeout(resolve, postClickWait));
-      }
-      
-      const currentUrl = page.url();
-      
-      logger.info(`click_element completed: ${selector || `text="${text}"`}`);
-      
-      return new ClickElementSuccessResponse(
-        currentUrl,
-        selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`,
-        null,
-        [
+      : [
           "Use MCPBrowser's get_current_html to see updated page state",
           "Use MCPBrowser's take_screenshot if the page has popups, modals, or visual content",
           "Use MCPBrowser's click_element or MCPBrowser's type_text for more interactions",
           "Use MCPBrowser's close_tab when finished"
-        ]
-      );
-    }
+        ];
+    
+    logger.info(`click_element completed: ${selector || `text="${text}"`}`);
+    
+    return new ClickElementSuccessResponse(currentUrl, clickMessage, html, nextSteps);
   } catch (err) {
     logger.error(`click_element failed: ${err.message}`);
     return new InformationalResponse(
