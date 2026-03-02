@@ -14,7 +14,7 @@ import { dirname, join } from 'path';
 
 // Import response classes
 import { ErrorResponse } from './core/responses.js';
-import logger from './core/logger.js';
+import logger, { attachServer as attachLoggerServer } from './core/logger.js';
 
 // Import EULA functionality
 import { handleAcceptEula, ACCEPT_EULA_TOOL, requireEulaAcceptance } from './actions/accept-eula.js';
@@ -30,8 +30,8 @@ import { scrollPage, SCROLL_PAGE_TOOL } from './actions/scroll-page.js';
 
 // Import functions for testing exports
 import { getBrowser, closeBrowser } from './core/browser.js';
-import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml, waitForPageStability } from './core/page.js';
-import { detectRedirectType, waitForAutoAuth, waitForManualAuth, detectLoginPage, isLikelyAuthUrl } from './core/auth.js';
+import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml } from './core/page.js';
+import { isLikelyAuthUrl, waitForAuth, pollUntilAuthDone, detectLoginPage } from './core/auth.js';
 import { cleanHtml, enrichHtml, prepareHtml } from './core/html.js';
 import { getBaseDomain } from './utils.js';
 
@@ -47,7 +47,13 @@ async function main() {
   const __dirname = dirname(__filename);
   const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8'));
   
-  const server = new Server({ name: "MCP Browser", version: packageJson.version }, { capabilities: { tools: {} } });
+  const server = new Server(
+    { name: "MCP Browser", version: packageJson.version },
+    { capabilities: { tools: {}, logging: {} } }
+  );
+
+  // Wire server to logger so logs flow to agent via notifications/message.
+  attachLoggerServer(server);
 
   // Assemble tools from action imports
   // ACCEPT_EULA_TOOL must be first - it's required before using other tools
@@ -146,11 +152,9 @@ export {
   queueRequest,
   navigateToUrl,
   waitForPageReady,
-  detectRedirectType,
-  waitForAutoAuth,
-  waitForManualAuth,
+  waitForAuth,
+  pollUntilAuthDone,
   detectLoginPage,
-  waitForPageStability,
   extractAndProcessHtml,
   getBaseDomain,
   isLikelyAuthUrl,

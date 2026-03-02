@@ -3,7 +3,7 @@
  */
 
 import { getBrowser, getValidatedPage } from '../core/browser.js';
-import { extractAndProcessHtml, waitForPageStability } from '../core/page.js';
+import { extractAndProcessHtml, waitForPageReady } from '../core/page.js';
 import { MCPResponse, ErrorResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
@@ -226,59 +226,35 @@ export async function typeText({ url, fields, returnHtml = true, removeUnnecessa
       ? filledSelectors[0] 
       : `${filledSelectors.length} fields (${filledSelectors.join(', ')})`;
     
-    if (returnHtml) {
-      // Wait for page to stabilize (handles form validation, autocomplete, etc.)
-      logger.debug('Waiting for page stability after typing...');
-      await waitForPageStability(page);
-      
-      // Wait for SPAs to render dynamic content after typing
-      if (postTypeWait > 0) {
-        await new Promise(resolve => setTimeout(resolve, postTypeWait));
-      }
-      
-      const currentUrl = page.url();
-      const html = await extractAndProcessHtml(page, removeUnnecessaryHTML);
-      
-      logger.info(`type_text completed: typed into ${fieldsSummary}`);
-      
-      return new TypeTextSuccessResponse(
-        currentUrl,
-        `Typed text into: ${fieldsSummary}`,
-        html,
-        [
+    // Wait for page to stabilize (handles form validation, autocomplete, etc.)
+    logger.debug(`Waiting for page to be ready after typing${returnHtml ? '' : ' (fast mode)'}...`);
+    await waitForPageReady(page, { afterInteraction: true });
+    
+    // Wait for SPAs to render dynamic content after typing
+    if (postTypeWait > 0) {
+      await new Promise(resolve => setTimeout(resolve, postTypeWait));
+    }
+    
+    const currentUrl = page.url();
+    const html = returnHtml ? await extractAndProcessHtml(page, removeUnnecessaryHTML) : null;
+    const nextSteps = returnHtml
+      ? [
           "Use MCPBrowser's type_text to fill additional fields",
           "Use MCPBrowser's click_element to submit the form or navigate",
           "Use MCPBrowser's get_current_html to check for validation messages",
           "Use MCPBrowser's take_screenshot if form has visual feedback or validation that's hard to parse from HTML",
           "Use MCPBrowser's close_tab when finished"
         ]
-      );
-    } else {
-      // Wait for page to stabilize even without returning HTML
-      logger.debug('Waiting for page stability after typing (fast mode)...');
-      await waitForPageStability(page);
-      
-      // Wait for SPAs to render dynamic content after typing
-      if (postTypeWait > 0) {
-        await new Promise(resolve => setTimeout(resolve, postTypeWait));
-      }
-      
-      const currentUrl = page.url();
-      
-      logger.info(`type_text completed: typed into ${fieldsSummary} (no HTML)`);
-      
-      return new TypeTextSuccessResponse(
-        currentUrl,
-        `Typed text into: ${fieldsSummary}`,
-        null,
-        [
+      : [
           "Use MCPBrowser's get_current_html to see updated page state",
           "Use MCPBrowser's take_screenshot if the page has visual feedback that's hard to parse",
           "Use MCPBrowser's type_text for additional fields or MCPBrowser's click_element to submit",
           "Use MCPBrowser's close_tab when finished"
-        ]
-      );
-    }
+        ];
+    
+    logger.info(`type_text completed: typed into ${fieldsSummary}${returnHtml ? '' : ' (no HTML)'}`);
+    
+    return new TypeTextSuccessResponse(currentUrl, `Typed text into: ${fieldsSummary}`, html, nextSteps);
   } catch (err) {
     // Build informative error message for agent
     const totalFields = fields.length;

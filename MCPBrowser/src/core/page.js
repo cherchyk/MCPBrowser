@@ -9,6 +9,9 @@ import { domainPages } from './browser.js';
 import { cleanHtml, enrichHtml } from './html.js';
 import logger from './logger.js';
 
+// Minimum body text length that suggests meaningful content is present
+const MIN_BODY_TEXT_LENGTH = 500;
+
 // ============================================================================
 // SIMPLE REQUEST QUEUE (No Locks)
 // ============================================================================
@@ -66,54 +69,44 @@ async function processQueue() {
  * Also checks domain redirect mapping (e.g., gmail.com -> mail.google.com).
  * @param {Browser} browser - The Puppeteer browser instance
  * @param {string} hostname - The hostname to get/create a page for
- * @param {boolean} reuseLastKeptPage - Whether to reuse existing tabs
  * @returns {Promise<Page>} The page for this domain
  */
-export async function getOrCreatePage(browser, hostname, reuseLastKeptPage = true) {
-  let page = null;
-  
-  // Check if we have an existing page for this domain
-  // (domainPages may have multiple hostnames pointing to the same page after redirects)
-  if (reuseLastKeptPage && domainPages.has(hostname)) {
-    const existingPage = domainPages.get(hostname);
+export async function getOrCreatePage(browser, hostname) {
+  const existingPage = domainPages.get(hostname);
+  if (existingPage) {
     if (!existingPage.isClosed()) {
-      page = existingPage;
-      await page.bringToFront().catch(() => {});
+      await existingPage.bringToFront().catch(() => {});
       logger.info(`Tab reused: ${hostname}`);
-    } else {
-      // Page was closed externally, remove from map
-      domainPages.delete(hostname);
+      return existingPage;
     }
+    // Page was closed externally — clean up stale mapping
+    domainPages.delete(hostname);
   }
-  
-  // Create new tab if no existing page for this domain
-  if (!page) {
-    try {
-      page = await browser.newPage();
-    } catch (error) {
-      // If newPage() fails (can happen with some profiles), try to reuse existing page
-      const pages = await browser.pages();
-      for (const p of pages) {
-        try {
-          const pageUrl = p.url();
-          // Skip chrome:// pages and other internal pages
-          if (!pageUrl.startsWith('chrome://') && !pageUrl.startsWith('chrome-extension://')) {
-            page = p;
-            break;
-          }
-        } catch {
-          // Skip pages we can't access
+
+  // Create new tab (with fallback reuse if creation fails)
+  let page = null;
+  try {
+    page = await browser.newPage();
+  } catch (error) {
+    // Some profiles may block new tabs; fallback to any existing controllable page
+    const pages = await browser.pages();
+    for (const p of pages) {
+      try {
+        const pageUrl = p.url();
+        if (!pageUrl.startsWith('chrome://') && !pageUrl.startsWith('chrome-extension://')) {
+          page = p;
+          logger.info('Reusing existing page after newPage() failure');
+          break;
         }
-      }
-      if (!page) {
-        throw new Error('Unable to create or find a controllable page');
+      } catch {
+        // Ignore pages we cannot access
       }
     }
-    // Add new page to domain map
-    domainPages.set(hostname, page);
-    logger.info(`Tab created: ${hostname}`);
+    if (!page) throw new Error('Unable to create or find a controllable page');
   }
-  
+
+  domainPages.set(hostname, page);
+  logger.info(`Tab created: ${hostname}`);
   return page;
 }
 
@@ -133,28 +126,39 @@ export async function isItSPA(page) {
       
       // Check for React (strong indicator - require multiple signals or definitive marker)
       const hasReactRoot = document.querySelector('[data-reactroot]') || document.querySelector('[data-react-root]');
-      const hasNextJs = document.getElementById('__next') || document.getElementById('__nuxt');
+      const hasNextJs = document.getElementById('__next');
       const hasReactFiber = document.querySelector('[data-reactid]');
       // Only count generic #root if combined with React-specific markers
       const hasGenericRoot = document.getElementById('root');
       const hasReactInternals = typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined' && 
                                  window.__REACT_DEVTOOLS_GLOBAL_HOOK__?.renderers?.size > 0;
+      const hasRootSpinner = hasGenericRoot && !!document.querySelector('.request-status-spinner, .ms-Spinner, [role="progressbar"], .spinner, .loading');
       
       if (hasReactRoot || hasNextJs || hasReactFiber || hasReactInternals) {
         indicators.push('React');
         strongIndicatorCount++;
-      } else if (hasGenericRoot && body?.children?.length <= 3) {
+      } else if (hasGenericRoot && (body?.children?.length <= 3 || hasRootSpinner)) {
         // Generic #root with minimal DOM children suggests SPA mounting point
         indicators.push('React (probable)');
-        weakIndicatorCount++;
+        // If spinner exists under root, treat as stronger signal
+        if (hasRootSpinner) {
+          strongIndicatorCount++;
+        } else {
+          weakIndicatorCount++;
+        }
       }
       
-      // Check for Vue (strong indicator - check for Vue-specific markers)
+      // Check for Vue / Nuxt (strong indicator - check for Vue-specific markers)
+      const hasNuxt = document.getElementById('__nuxt');
       const hasVueDevtools = typeof window.__VUE__ !== 'undefined' || typeof window.__VUE_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined';
-      const hasVueScoped = document.querySelector('[data-v-]') !== null;
+      // Vue scoped styles add data-v-xxxx attributes; querySelector('[data-v-]') only
+      // matches a literal "data-v-" attribute, so scan a sample of elements instead
+      const hasVueScoped = Array.from(document.body?.querySelectorAll('*') || [])
+        .slice(0, 50)
+        .some(el => Array.from(el.attributes).some(attr => /^data-v-./.test(attr.name)));
       const hasVue3App = document.querySelector('[data-v-app]') !== null;
       
-      if (hasVueDevtools || hasVueScoped || hasVue3App) {
+      if (hasNuxt || hasVueDevtools || hasVueScoped || hasVue3App) {
         indicators.push('Vue');
         strongIndicatorCount++;
       }
@@ -191,8 +195,12 @@ export async function isItSPA(page) {
       const bodyText = body?.innerText?.trim() || '';
       const textLength = bodyText.length;
       const hasMinimalContent = textLength < 200;  // Stricter threshold
+      const hasShellOnlyContent = hasGenericRoot && textLength < 800; // shell + spinner, main not rendered yet
       if (hasMinimalContent) {
         indicators.push(`minimal content (${textLength} chars)`);
+        weakIndicatorCount++;
+      } else if (hasShellOnlyContent) {
+        indicators.push(`root shell with limited content (${textLength} chars)`);
         weakIndicatorCount++;
       }
       
@@ -241,7 +249,7 @@ export async function isItSPA(page) {
     return result;
   } catch (error) {
     // If evaluation fails, assume not SPA
-    return { isSPA: false, indicators: ['evaluation failed'], textLength: 0 };
+    return { isSPA: false, indicators: ['evaluation failed'] };
   }
 }
 
@@ -276,66 +284,211 @@ export async function navigateToUrl(page, url, waitUntil, timeout) {
 }
 
 /**
- * Wait for page content to be ready (handles SPAs and regular pages).
- * Detects SPAs and waits appropriately for JavaScript to render content.
+ * Wait for page to be ready after navigation or user interaction.
+ * Handles SPAs by polling DOM content until it renders and stabilizes.
+ * Unified wait function — replaces separate "stability" and "ready" calls.
+ * 
  * @param {Page} page - The Puppeteer page instance
+ * @param {Object} [options] - Wait options
+ * @param {boolean} [options.afterInteraction=false] - Add initial delay for JS to
+ *   process a user interaction (click, type, auth). Skipped for plain navigation.
  * @returns {Promise<void>}
  */
-export async function waitForPageReady(page) {
+export async function waitForPageReady(page, { afterInteraction = false } = {}) {
+  // After interactions (click, type, auth redirect), give JS time to react
+  if (afterInteraction) {
+    logger.debug('Post-interaction settle (2s)...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
+
+  // Ensure any JS-driven redirect chain has settled before evaluating content.
+  // Common case (no redirect): one fast evaluate() succeeds → ~0ms overhead.
+  // Redirect case: polls until URL + context stabilize (max 10s).
+  await waitForNavigationToSettle(page);
+
+  const initialContentLength = await getPageContentLength(page);
+
+  // Check for SPA indicators (always — SPAs can render a shell/navbar
+  // with substantial text while main content is still loading)
   const spaCheck = await isItSPA(page);
-  
-  if (spaCheck.isSPA) {
-    logger.debug(`SPA detected: ${spaCheck.indicators.join(', ')}`);
-    
-    // Wait for SPA to render
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // Then wait for network to settle
-    try {
-      await page.waitForNetworkIdle({ idleTime: 500, timeout: 3000 });
-    } catch {
-      // OK if timeout - SPA might have websockets or long-polling
-    }
-    logger.debug('SPA content ready');
-  } else {
-    // For non-SPAs, just wait briefly for any pending network requests
+
+  const shouldWaitForRender = spaCheck.isSPA || initialContentLength < MIN_BODY_TEXT_LENGTH;
+
+  if (!shouldWaitForRender) {
+    logger.debug(`Page has some content (${initialContentLength} chars), not SPA`);
     try {
       await page.waitForNetworkIdle({ idleTime: 500, timeout: 2000 });
     } catch {
       // OK if timeout
     }
+    return;
   }
+
+  const reasons = [];
+  if (spaCheck.isSPA) reasons.push(`SPA detected (${spaCheck.indicators.join(', ')})`);
+  if (initialContentLength < MIN_BODY_TEXT_LENGTH) reasons.push(`minimal body text (${initialContentLength} chars)`);
+  logger.debug(`Waiting for JS-rendered content: ${reasons.join('; ')}`);
+
+  // Delegate to content renderer — polls DOM until content appears and stabilizes
+  await waitForContentToRender(page, initialContentLength);
 }
 
 /**
- * Wait for page to stabilize after user interaction or authentication.
- * Used after clicks, form submissions, or when user completes login.
+ * Poll DOM until content appears and stabilizes.
+ * Used after SPA or JS-rendered page is detected with minimal content.
+ * @param {Page} page - The Puppeteer page instance
+ * @param {number} initialContentLength - Content length at start of wait
+ * @returns {Promise<void>}
+ */
+async function waitForContentToRender(page, initialContentLength) {
+  const maxWait = 10000;       // 10 seconds max
+  const pollInterval = 500;    // Check every 500ms
+  const stableTime = 1000;     // Content must be stable for 1 second
+
+  const startTime = Date.now();
+  let lastLength = initialContentLength;
+  let lastChangeTime = startTime;
+
+  while (Date.now() - startTime < maxWait) {
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+
+    const currentLength = await getPageContentLength(page);
+
+    if (currentLength !== lastLength) {
+      lastLength = currentLength;
+      lastChangeTime = Date.now();
+    }
+
+    const contentIsSubstantial = currentLength >= MIN_BODY_TEXT_LENGTH;
+    const isStable = (Date.now() - lastChangeTime) >= stableTime;
+
+    // Content is substantial and stable
+    if (contentIsSubstantial && isStable) {
+      logger.debug(`Content rendered: body ${currentLength} chars in ${Date.now() - startTime}ms`);
+      break;
+    }
+  }
+
+  if (Date.now() - startTime >= maxWait) {
+    logger.debug(`Content wait timed out after ${maxWait}ms (${lastLength} chars)`);
+  }
+
+  // Final network settle
+  try {
+    await page.waitForNetworkIdle({ idleTime: 500, timeout: 3000 });
+  } catch {
+    // OK if timeout - SPA might have websockets or long-polling
+  }
+
+  logger.debug(`Page ready: ${lastLength} chars total, ${Date.now() - startTime}ms elapsed`);
+}
+
+/**
+ * Get the length of visible text content on the page.
+ * @param {Page} page - The Puppeteer page instance
+ * @returns {Promise<number>} Text content length
+ */
+async function getPageContentLength(page) {
+  try {
+    return await page.evaluate(() => (document.body?.innerText?.trim() || '').length);
+  } catch {
+    return 0;
+  }
+}
+
+// ============================================================================
+// NAVIGATION SETTLE & RETRY HELPERS
+// ============================================================================
+
+/**
+ * Check if an error indicates the page navigated away (context destroyed).
+ * @param {Error} err - The error to check
+ * @returns {boolean}
+ */
+function isNavigationError(err) {
+  const msg = err?.message || '';
+  return msg.includes('Execution context was destroyed') ||
+         msg.includes('Cannot find context') ||
+         msg.includes('frame was detached') ||
+         msg.includes('Target closed') ||
+         msg.includes('Session closed');
+}
+
+/**
+ * Wait for any in-progress JS-driven redirect to finish.
+ *
+ * Strategy: try a lightweight evaluate(). If it succeeds the page is stable
+ * (common case — zero overhead). If it throws a navigation error, a redirect
+ * is in progress — poll URL + retry evaluate every 300ms until both the URL and
+ * context are stable for 1 second (max 10s).
+ *
  * @param {Page} page - The Puppeteer page instance
  * @returns {Promise<void>}
  */
-export async function waitForPageStability(page) {
-  logger.debug('Waiting for page stability (network idle)...');
-  
-  // Give time for any triggered actions to complete
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
+async function waitForNavigationToSettle(page) {
+  // Fast path: context is alive → no redirect in progress
   try {
-    await page.waitForNetworkIdle({ timeout: 5000 });
-    logger.debug('Page stabilized');
-  } catch {
-    // Ignore timeout - page may have long-polling or websockets
-    logger.debug('Network still active, continuing anyway');
+    await page.evaluate(() => document.readyState);
+    return;
+  } catch (err) {
+    if (!isNavigationError(err)) throw err;
+    logger.debug('Navigation detected, waiting for redirect chain...');
   }
+
+  // Slow path: poll until URL + context stable for 1s (max 10s)
+  const startTime = Date.now();
+  let lastUrl = '';
+  let stableSince = startTime;
+
+  while (Date.now() - startTime < 10_000) {
+    await new Promise(r => setTimeout(r, 300));
+
+    try {
+      const currentUrl = page.url();
+      if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl;
+        stableSince = Date.now();
+        continue;
+      }
+      await page.evaluate(() => document.readyState);
+    } catch (err) {
+      if (!isNavigationError(err)) throw err;
+      stableSince = Date.now();
+      continue;
+    }
+
+    if (Date.now() - stableSince >= 1000) {
+      logger.debug(`Navigation settled on ${lastUrl} (${Date.now() - startTime}ms)`);
+      return;
+    }
+  }
+
+  logger.debug(`Navigation settle timed out after 10s (last URL: ${lastUrl})`);
 }
 
 /**
  * Extract and process HTML from the page.
+ * If a late redirect destroys the execution context, waits for navigation to
+ * settle and retries once.
  * @param {Page} page - The Puppeteer page instance
  * @param {boolean} removeUnnecessaryHTML - Whether to clean the HTML
  * @returns {Promise<string>} The processed HTML
  */
 export async function extractAndProcessHtml(page, removeUnnecessaryHTML) {
-  const html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+  let html;
+  try {
+    html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+  } catch (err) {
+    if (isNavigationError(err)) {
+      logger.debug('Late navigation during HTML extraction, waiting for settle...');
+      await waitForNavigationToSettle(page);
+      // Re-run page readiness — the new page may be a SPA that needs rendering time
+      await waitForPageReady(page);
+      html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+    } else {
+      throw err;
+    }
+  }
   
   let processedHtml;
   if (removeUnnecessaryHTML) {

@@ -2,8 +2,12 @@
  * Authentication flow handling for MCPBrowser
  */
 
-import { getBaseDomain } from '../utils.js';
 import logger from './logger.js';
+
+// Consider user active on the login page if they interacted within this window (ms)
+const INTERACTION_RECENT_MS = 15000;
+// Emit a periodic log while we keep waiting due to user activity (ms)
+const INTERACTION_LOG_INTERVAL_MS = 60000;
 
 // ============================================================================
 // AUTH URL DETECTION
@@ -61,92 +65,89 @@ export function isLikelyAuthUrl(url) {
 }
 
 // ============================================================================
-// TIMEOUTS
-// ============================================================================
-
-const DEFAULT_AUTO_AUTH_TIMEOUT = 5000;     // 5 seconds for auto-auth check
-const DEFAULT_MANUAL_AUTH_TIMEOUT = 600000; // 10 minutes for manual auth
-
-// ============================================================================
-// REDIRECT DETECTION
+// AUTH WAITING
 // ============================================================================
 
 /**
- * Detect redirect type: permanent redirect, auth flow, or same-domain auth path change.
- * @param {string} url - Original requested URL
- * @param {string} hostname - Original hostname
- * @param {string} currentUrl - Current page URL
- * @param {string} currentHostname - Current page hostname
- * @returns {Object} Object with redirect type and related info
+ * Wait for authentication to complete. Two-phase approach:
+ * 1. Quick SSO/cookie check (5s, fast poll) — handles auto-auth
+ * 2. Manual auth with login page detection (10-20 min, slow poll)
+ *
+ * @param {Page} page - The Puppeteer page instance
+ * @returns {Promise<{success: boolean, hostname?: string, error?: string, hint?: string}>}
  */
-export function detectRedirectType(url, hostname, currentUrl, currentHostname) {
-  const isDifferentDomain = currentHostname !== hostname;
-  const requestedAuthPage = isLikelyAuthUrl(url);
-  const currentIsAuthPage = isLikelyAuthUrl(currentUrl);
-  const isSameDomainAuthPath = !isDifferentDomain && currentIsAuthPage && !requestedAuthPage;
-  
-  // If user requested auth page directly and landed on it (same domain), return content
-  if (requestedAuthPage && currentHostname === hostname && !isDifferentDomain) {
-    return { type: 'requested_auth', currentHostname };
+export async function waitForAuth(page) {
+  await ensureInteractionTracker(page);
+
+  // Phase 1: Quick SSO/cookie check (5s)
+  logger.info('Checking for auto-authentication (5s)...');
+  const auto = await pollUntilAuthDone(page, 5000, 500);
+  if (auto.success) {
+    logger.info(`Auto-authentication successful: ${page.url()}`);
+    return auto;
   }
-  
-  // No redirect scenario
-  if (!isDifferentDomain && !isSameDomainAuthPath) {
-    return { type: 'none' };
+
+  // Phase 2: Manual auth — detect login page to pick timeout
+  const { isLoginPage } = await detectLoginPage(page);
+  const timeout = isLoginPage ? 1200000 : 600000; // 20 min for login pages, 10 min otherwise
+  const timeoutMinutes = Math.round(timeout / 60000);
+
+  if (isLoginPage) {
+    logger.info(`Login page detected: ${page.url()}`);
   }
-  
-  const originalBase = getBaseDomain(hostname);
-  const currentBase = getBaseDomain(currentHostname);
-  
-  // Permanent redirect: Different domain without auth patterns
-  if (!currentIsAuthPage) {
-    return { type: 'permanent', currentHostname };
+  logger.info(`Waiting for manual authentication (${timeoutMinutes} min timeout)...`);
+
+  const result = await pollUntilAuthDone(page, timeout, 2000);
+  if (result.success) {
+    logger.info(`Manual authentication successful: ${page.url()}`);
   }
-  
-  // Authentication flow
-  const flowType = isSameDomainAuthPath ? 'same-domain path change' : 'cross-domain redirect';
-  return { 
-    type: 'auth', 
-    flowType, 
-    originalBase, 
-    currentBase, 
-    currentUrl,
-    hostname,
-    currentHostname
-  };
+  return result;
 }
 
 /**
- * Check if authentication auto-completes quickly (valid session/cookies).
- * Waits to see if the browser automatically completes auth (e.g., SSO with existing session).
+ * Poll page.url() until it leaves an auth URL, or timeout.
  * @param {Page} page - The Puppeteer page instance
- * @param {number} timeoutMs - How long to wait for auto-auth
- * @returns {Promise<Object>} Object with success status and final hostname
+ * @param {number} timeout - Max wait in ms
+ * @param {number} interval - Poll interval in ms
+ * @returns {Promise<{success: boolean, hostname?: string, error?: string, hint?: string}>}
  */
-export async function waitForAutoAuth(page, timeoutMs = DEFAULT_AUTO_AUTH_TIMEOUT) {
-  logger.info(`Checking for auto-authentication (${timeoutMs}ms timeout)...`);
-  
-  const deadline = Date.now() + timeoutMs;
-  
+export async function pollUntilAuthDone(page, timeout, interval) {
+  const deadline = Date.now() + timeout;
+  let lastInteractionLog = 0;
+
   while (Date.now() < deadline) {
     try {
-      const checkUrl = page.url();
-      
-      // Auth complete when we leave the auth page
-      // Browser handles redirects - we just need to detect when auth flow ends
-      if (!isLikelyAuthUrl(checkUrl)) {
-        const checkHostname = new URL(checkUrl).hostname;
-        logger.info(`Auto-authentication successful: ${checkUrl}`);
-        return { success: true, hostname: checkHostname };
+      const url = page.url();
+      if (!isLikelyAuthUrl(url)) {
+        return { success: true, hostname: new URL(url).hostname };
       }
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-    } catch (error) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // If user is actively interacting (typing/clicking), keep waiting without logging noise
+      const recentInteraction = await hasRecentInteraction(page);
+      if (recentInteraction) {
+        const now = Date.now();
+        if (now - lastInteractionLog >= INTERACTION_LOG_INTERVAL_MS) {
+          const waitedMs = now + interval - (deadline - timeout); // elapsed since start of this poll
+          const waitedSeconds = Math.round(waitedMs / 1000);
+          logger.info(`User activity detected on auth page; waiting for user to finish... (waited ~${waitedSeconds}s)`);
+          lastInteractionLog = now;
+        }
+        await new Promise(r => setTimeout(r, interval));
+        continue;
+      }
+    } catch {
+      // Page not accessible — keep waiting
     }
+    await new Promise(r => setTimeout(r, interval));
   }
-  
-  return { success: false };
+
+  const currentUrl = (() => { try { return page.url(); } catch { return 'unknown'; } })();
+  const minutes = Math.round(timeout / 60000);
+  return {
+    success: false,
+    error: `Authentication timeout after ${minutes} minutes`,
+    hint: `Tab is left open at ${currentUrl}. Complete authentication and retry.`
+  };
 }
 
 // ============================================================================
@@ -160,162 +161,68 @@ export async function waitForAutoAuth(page, timeoutMs = DEFAULT_AUTO_AUTH_TIMEOU
  */
 export async function detectLoginPage(page) {
   try {
-    const result = await page.evaluate(() => {
+    return await page.evaluate(() => {
       const indicators = [];
-      
-      // Check for password input fields
-      const passwordFields = document.querySelectorAll('input[type="password"]');
-      if (passwordFields.length > 0) {
+
+      if (document.querySelectorAll('input[type="password"]').length > 0)
         indicators.push('password field');
-      }
-      
-      // Check for username/email fields near password fields
-      const usernameFields = document.querySelectorAll(
+
+      if (document.querySelectorAll(
         'input[type="email"], input[name*="user"], input[name*="email"], input[name*="login"], input[id*="user"], input[id*="email"]'
-      );
-      if (usernameFields.length > 0) {
+      ).length > 0)
         indicators.push('username/email field');
-      }
-      
-      // Check for login-related buttons
-      const buttons = Array.from(document.querySelectorAll('button, input[type="submit"]'));
-      const loginButtons = buttons.filter(btn => {
-        const text = (btn.textContent || btn.value || '').toLowerCase();
-        return text.includes('sign in') || text.includes('log in') || text.includes('login') || 
-               text.includes('submit') || text.includes('continue');
-      });
-      if (loginButtons.length > 0) {
-        indicators.push('login button');
-      }
-      
-      // Check for common login form identifiers
-      const forms = document.querySelectorAll('form[id*="login"], form[id*="signin"], form[class*="login"], form[class*="signin"]');
-      if (forms.length > 0) {
+
+      const loginBtn = Array.from(document.querySelectorAll('button, input[type="submit"]'))
+        .some(btn => /sign in|log in|login|submit|continue/i.test(btn.textContent || btn.value || ''));
+      if (loginBtn) indicators.push('login button');
+
+      if (document.querySelectorAll('form[id*="login"], form[id*="signin"], form[class*="login"], form[class*="signin"]').length > 0)
         indicators.push('login form');
-      }
-      
-      // Check page title
+
       const title = document.title.toLowerCase();
-      if (title.includes('sign in') || title.includes('log in') || title.includes('login')) {
+      if (title.includes('sign in') || title.includes('log in') || title.includes('login'))
         indicators.push('login page title');
-      }
-      
-      return {
-        isLoginPage: indicators.length >= 2, // Require at least 2 indicators
-        indicators
-      };
+
+      return { isLoginPage: indicators.length >= 2, indicators };
     });
-    
-    return result;
-  } catch (error) {
-    // If page.evaluate fails (e.g., mock in tests), return safe default
+  } catch {
     return { isLoginPage: false, indicators: [] };
   }
 }
 
 // ============================================================================
-// MANUAL AUTH WITH STATUS CALLBACKS
+// USER INTERACTION TRACKING
 // ============================================================================
 
-const EXTENDED_LOGIN_TIMEOUT = 1200000; // 20 minutes when login page detected
+/**
+ * Inject lightweight listeners to record recent user interaction on the page.
+ * Stored on window.__mcpAuthLastInteraction.
+ */
+async function ensureInteractionTracker(page) {
+  try {
+    await page.evaluate(() => {
+      if (window.__mcpAuthTrackerInstalled) return;
+      const updateInteraction = () => { window.__mcpAuthLastInteraction = Date.now(); };
+      ['pointerdown', 'keydown', 'input', 'paste'].forEach(evt => {
+        window.addEventListener(evt, updateInteraction, { capture: true, passive: true });
+      });
+      window.__mcpAuthTrackerInstalled = true;
+    });
+  } catch {
+    // best effort
+  }
+}
 
 /**
- * Wait for user to complete manual authentication.
- * Detects login pages and extends timeout, sends status updates via callback.
- * @param {Page} page - The Puppeteer page instance
- * @param {number} timeoutMs - Base timeout for manual auth
- * @param {Object} options - Optional settings
- * @param {Function} options.onStatusChange - Callback for status updates
- * @returns {Promise<Object>} Object with success status, final hostname, and optional error
+ * Check if user interacted with the page recently.
+ * @param {Page} page
+ * @returns {Promise<boolean>}
  */
-export async function waitForManualAuth(page, timeoutMs = DEFAULT_MANUAL_AUTH_TIMEOUT, options = {}) {
-  const { onStatusChange } = options;
-  
-  // Detect if this is a login page requiring user input
-  const loginDetection = await detectLoginPage(page);
-  const isLoginPage = loginDetection.isLoginPage;
-  
-  // Extend timeout for login pages (user needs time to type credentials)
-  const shouldExtendTimeout = isLoginPage && timeoutMs < EXTENDED_LOGIN_TIMEOUT;
-  const effectiveTimeout = shouldExtendTimeout ? EXTENDED_LOGIN_TIMEOUT : timeoutMs;
-  const effectiveTimeoutMinutes = Math.round(effectiveTimeout / 60000);
-  
-  // Log login page detection
-  if (isLoginPage && shouldExtendTimeout) {
-    logger.info(`Login page detected: ${page.url()} (${loginDetection.indicators.join(', ')})`);
-    logger.info(`Extended wait time to ${effectiveTimeoutMinutes} minutes for user authentication`);
+async function hasRecentInteraction(page) {
+  try {
+    const last = await page.evaluate(() => window.__mcpAuthLastInteraction || 0);
+    return last > 0 && (Date.now() - last) < INTERACTION_RECENT_MS;
+  } catch {
+    return false;
   }
-  
-  logger.info(`Waiting for manual authentication (${effectiveTimeoutMinutes} min timeout, loginPage=${isLoginPage})...`);
-  
-  // Send initial waiting notification
-  if (onStatusChange) {
-    onStatusChange({
-      status: 'waiting',
-      message: isLoginPage
-        ? `⏳ Waiting for you to complete authentication. Login page detected - take your time (${effectiveTimeoutMinutes} min timeout).`
-        : `⏳ Waiting for authentication to complete (${effectiveTimeoutMinutes} min timeout)...`,
-      isLoginPage,
-      indicators: loginDetection.indicators,
-      remainingSeconds: Math.round(effectiveTimeout / 1000),
-      currentUrl: page.url()
-    });
-  }
-  
-  const deadline = Date.now() + effectiveTimeout;
-  let lastStatusUpdate = Date.now();
-  
-  while (Date.now() < deadline) {
-    try {
-      const checkUrl = page.url();
-      
-      // Auth complete when we leave the auth page
-      if (!isLikelyAuthUrl(checkUrl)) {
-        const checkHostname = new URL(checkUrl).hostname;
-        logger.info(`Manual authentication successful: ${checkUrl}`);
-        
-        if (onStatusChange) {
-          onStatusChange({
-            status: 'completed',
-            message: `✅ Authentication completed!`,
-            currentUrl: checkUrl
-          });
-        }
-        
-        return { success: true, hostname: checkHostname };
-      }
-      
-      // Send periodic status updates (every 30 seconds)
-      if (onStatusChange && Date.now() - lastStatusUpdate > 30000) {
-        const remainingSeconds = Math.round((deadline - Date.now()) / 1000);
-        onStatusChange({
-          status: 'waiting',
-          message: `⏳ Still waiting for authentication... (${Math.round(remainingSeconds / 60)} min remaining)`,
-          remainingSeconds,
-          currentUrl: checkUrl
-        });
-        lastStatusUpdate = Date.now();
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    } catch (error) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-  }
-  
-  const currentUrl = page.url();
-  
-  if (onStatusChange) {
-    onStatusChange({
-      status: 'timeout',
-      message: `⚠️ Authentication timeout after ${effectiveTimeoutMinutes} minutes`,
-      currentUrl
-    });
-  }
-  
-  return { 
-    success: false, 
-    error: `Authentication timeout after ${effectiveTimeoutMinutes} minutes`,
-    hint: `Tab is left open at ${currentUrl}. Complete authentication and retry.`
-  };
 }
