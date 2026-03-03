@@ -54,7 +54,7 @@ await test('click_element error should include nextSteps', async () => {
 });
 
 await test('type_text error should include nextSteps', async () => {
-  const result = await typeText({ url: 'https://never-loaded-domain-12345.com', selector: '#test', text: 'hello' });
+  const result = await typeText({ url: 'https://never-loaded-domain-12345.com', fields: [{ selector: '#test', text: 'hello' }] });
   assert.ok(result instanceof InformationalResponse, 'Should return InformationalResponse for non-loaded page (not red error)');
   assert.ok(result.nextSteps, 'Response should have nextSteps field');
   assert.ok(Array.isArray(result.nextSteps), 'nextSteps should be an array');

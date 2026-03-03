@@ -4,8 +4,8 @@
  */
 
 import { getBrowser, domainPages } from '../core/browser.js';
-import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml, waitForPageStability } from '../core/page.js';
-import { detectRedirectType, waitForAutoAuth, waitForManualAuth } from '../core/auth.js';
+import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml } from '../core/page.js';
+import { isLikelyAuthUrl, waitForAuth } from '../core/auth.js';
 import { MCPResponse, ErrorResponse, HttpStatusResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 
@@ -141,7 +141,7 @@ export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = tru
 
   // Queue this request - processed sequentially, one at a time
   return queueRequest(async () => {
-    return await doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, postLoadWait });
+    return await doFetchPage({ url, browser, removeUnnecessaryHTML, postLoadWait });
   });
 }
 
@@ -149,12 +149,8 @@ export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = tru
  * Internal function that does the actual page fetching.
  * Called by the queue processor - only one runs at a time.
  */
-async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, postLoadWait }) {
-  // Hardcoded smart defaults
-  const waitUntil = "domcontentloaded";
-  const navigationTimeout = 30000;
-  const authCompletionTimeout = 600000;
-  const reuseLastKeptPage = true;
+async function doFetchPage({ url, browser, removeUnnecessaryHTML, postLoadWait }) {
+  const originalHostname = new URL(url).hostname;
 
   // Ensure browser connection
   let browserInstance;
@@ -174,94 +170,36 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
   }
   
   try {
-    // Get or create page for this domain (simple - no locks needed)
-    let page = await getOrCreatePage(browserInstance, hostname, reuseLastKeptPage);
-    
-    // Navigate to URL (pure navigation)
-    const { statusCode, statusText } = await navigateToUrl(page, url, waitUntil, navigationTimeout);
-    
-    // Wait for page content to be ready (handles SPAs automatically)
+    let page = await getOrCreatePage(browserInstance, originalHostname);
+    let { statusCode, statusText } = await navigateToUrl(page, url, 'domcontentloaded', 30000);
     await waitForPageReady(page);
-    
-    const currentUrl = page.url();
-    const currentHostname = new URL(currentUrl).hostname;
-    
-    // Detect redirect type and handle accordingly
-    const redirectInfo = detectRedirectType(url, hostname, currentUrl, currentHostname);
-    
-    if (redirectInfo.type === 'requested_auth') {
-      logger.debug('User requested auth page directly, returning content');
-      // Update domain mapping if needed
-      if (redirectInfo.currentHostname !== hostname) {
-        domainPages.delete(hostname);
-        domainPages.set(redirectInfo.currentHostname, page);
-        hostname = redirectInfo.currentHostname;
+
+    // Auth: handle multi-step auth flows (e.g., server OIDC → client MSAL)
+    // Loop because some sites bounce through auth multiple times before landing.
+    let authAttempts = 0;
+    while (isLikelyAuthUrl(page.url()) && !isLikelyAuthUrl(url) && authAttempts < 3) {
+      authAttempts++;
+      logger.info(`Authentication required (attempt ${authAttempts}): ${page.url()}`);
+      const authResult = await waitForAuth(page);
+      if (!authResult.success) {
+        return new ErrorResponse(
+          authResult.error,
+          [
+            "Complete authentication in the browser window",
+            "Call MCPBrowser's fetch_webpage again with the same URL to retry",
+            "Use MCPBrowser's close_tab to reset the session if authentication fails"
+          ]
+        );
       }
-    } else if (redirectInfo.type === 'permanent') {
-      logger.debug(`Redirect: ${hostname} → ${redirectInfo.currentHostname}`);
-      
-      // Check if we already have a tab for the redirected hostname
-      // (can happen after reconnect - we mapped mail.google.com but not gmail.com)
-      const existingPage = domainPages.get(redirectInfo.currentHostname);
-      if (existingPage && existingPage !== page && !existingPage.isClosed()) {
-        logger.debug(`Found existing tab for ${redirectInfo.currentHostname}, reusing it`);
-        // Close the new tab we just opened, use the existing one
-        await page.close().catch(() => {});
-        domainPages.delete(hostname);
-        page = existingPage;
-        // Map original hostname to existing page
-        domainPages.set(hostname, existingPage);
-      } else {
-        // Map both original and final hostname to the same page
-        domainPages.set(hostname, page);
-        domainPages.set(redirectInfo.currentHostname, page);
-      }
-      hostname = redirectInfo.currentHostname;
-    } else if (redirectInfo.type === 'auth') {
-      logger.info(`Authentication required: ${redirectInfo.flowType}`);
-      logger.info(`Auth URL: ${redirectInfo.currentUrl}`);
-      
-      // Try auto-auth first (check if existing session works)
-      const autoAuthResult = await waitForAutoAuth(page);
-      
-      if (autoAuthResult.success) {
-        logger.info(`Auto-auth successful, now at: ${page.url()}`);
-        // Update hostname to where we landed
-        if (autoAuthResult.hostname !== hostname) {
-          domainPages.delete(hostname);
-          domainPages.set(autoAuthResult.hostname, page);
-          hostname = autoAuthResult.hostname;
-        }
-      } else {
-        // Wait for manual auth
-        const manualAuthResult = await waitForManualAuth(page, authCompletionTimeout);
-        
-        if (!manualAuthResult.success) {
-          logger.error(`Authentication failed: ${manualAuthResult.error}`);
-          return new ErrorResponse(
-            manualAuthResult.error,
-            [
-              "Complete authentication in the browser window",
-              "Call MCPBrowser's fetch_webpage again with the same URL to retry",
-              "Use MCPBrowser's close_tab to reset the session if authentication fails"
-            ]
-          );
-        }
-        
-        // Update hostname to where we landed
-        if (manualAuthResult.hostname !== hostname) {
-          domainPages.delete(hostname);
-          domainPages.set(manualAuthResult.hostname, page);
-          hostname = manualAuthResult.hostname;
-        }
-        logger.info(`Authentication successful, now at: ${page.url()}`);
-      }
-      
-      // Wait for page stability after auth
-      await waitForPageStability(page);
+      await waitForPageReady(page, { afterInteraction: true });
+      statusCode = null;
+      statusText = '';
     }
-    
-    // Additional wait if requested (for pages that need extra time)
+
+    // Reconcile domain mappings after any redirect (permanent, auth, or none)
+    page = reconcileDomainMapping(page, originalHostname);
+
+    // Additional wait if requested
     if (postLoadWait > 0) {
       logger.debug(`Waiting ${postLoadWait}ms (postLoadWait)...`);
       await new Promise(resolve => setTimeout(resolve, postLoadWait));
@@ -272,15 +210,10 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
     
     logger.info(`fetch_webpage completed: ${page.url()}`);
     
-    // Check for non-2xx HTTP status codes - return informational response (not red error)
+    // Check for non-2xx HTTP status codes
     if (statusCode && (statusCode >= 400 && statusCode < 600)) {
       logger.debug(`HTTP ${statusCode} ${statusText} - returning as informational response`);
-      return new HttpStatusResponse(
-        page.url(),
-        statusCode,
-        statusText,
-        processedHtml
-      );
+      return new HttpStatusResponse(page.url(), statusCode, statusText, processedHtml);
     }
     
     return new FetchPageSuccessResponse(
@@ -305,4 +238,33 @@ async function doFetchPage({ url, hostname, browser, removeUnnecessaryHTML, post
       ]
     );
   }
+}
+
+/**
+ * Reconcile domain mappings after navigation/redirect.
+ * If the page ended up on a different hostname, map both to the same tab.
+ * If another tab already exists for the new hostname, reuse it.
+ * @param {Page} page - The current Puppeteer page
+ * @param {string} originalHostname - The hostname from the original URL
+ * @returns {Page} The page to use (may differ if an existing tab was found)
+ */
+function reconcileDomainMapping(page, originalHostname) {
+  const currentHostname = new URL(page.url()).hostname;
+  if (currentHostname === originalHostname) return page;
+
+  logger.debug(`Redirect: ${originalHostname} → ${currentHostname}`);
+
+  const existing = domainPages.get(currentHostname);
+  if (existing && existing !== page && !existing.isClosed()) {
+    // Another tab already owns this hostname — close ours, reuse existing
+    logger.debug(`Found existing tab for ${currentHostname}, reusing it`);
+    page.close().catch(() => {});
+    domainPages.set(originalHostname, existing);
+    return existing;
+  }
+
+  // Map both hostnames to same page
+  domainPages.set(originalHostname, page);
+  domainPages.set(currentHostname, page);
+  return page;
 }
