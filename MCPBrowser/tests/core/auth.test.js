@@ -146,9 +146,8 @@ await test('Should return error with timeout duration', async () => {
     'https://login.example.com/auth'
   ]);
 
-  const result = await pollUntilAuthDone(mockPage, 60000 * 5, 50);
-  // We use a very short-lived mock that never leaves auth, but we want to test
-  // the error message format. Override timeout to be tiny:
+  // Keep the timeout tiny so the test suite stays fast while still exercising
+  // the timeout branch of pollUntilAuthDone.
   const fastResult = await pollUntilAuthDone(mockPage, 500, 100);
   assert.ok(fastResult.error);
   assert.ok(fastResult.hint);
