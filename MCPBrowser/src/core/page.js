@@ -329,8 +329,11 @@ export async function waitForPageReady(page, { afterInteraction = false } = {}) 
   if (initialContentLength < MIN_BODY_TEXT_LENGTH) reasons.push(`minimal body text (${initialContentLength} chars)`);
   logger.debug(`Waiting for JS-rendered content: ${reasons.join('; ')}`);
 
+  // For non-SPA minimal pages (e.g., example.com), use a short settle to avoid long waits.
+  const maxWait = spaCheck.isSPA ? 10_000 : 2_000;
+
   // Delegate to content renderer — polls DOM until content appears and stabilizes
-  await waitForContentToRender(page, initialContentLength);
+  await waitForContentToRender(page, initialContentLength, { maxWait });
 }
 
 /**
@@ -340,8 +343,8 @@ export async function waitForPageReady(page, { afterInteraction = false } = {}) 
  * @param {number} initialContentLength - Content length at start of wait
  * @returns {Promise<void>}
  */
-async function waitForContentToRender(page, initialContentLength) {
-  const maxWait = 10000;       // 10 seconds max
+async function waitForContentToRender(page, initialContentLength, { maxWait = 10_000 } = {}) {
+  // maxWait is overridable to allow short-settle paths for non-SPA minimal pages.
   const pollInterval = 500;    // Check every 500ms
   const stableTime = 1000;     // Content must be stable for 1 second
 
