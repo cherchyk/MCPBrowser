@@ -1,52 +1,3 @@
-# Implementation Plan: [FEATURE]
-
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
-
-## Summary
-
-[Extract from feature spec: primary requirement + technical approach from research]
-
-## Technical Context
-
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
-
-## Constitution Check
-
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
-
-[Gates determined based on constitution file]
-
-## Project Structure
-
-### Documentation (this feature)
-
-```text
-specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
-```
-
 # Implementation Plan: P0 JavaScript execution and click fallback
 
 **Branch**: `001-js-action-fallback` | **Date**: 2026-03-03 | **Spec**: [specs/001-js-action-fallback/spec.md](specs/001-js-action-fallback/spec.md)
@@ -112,6 +63,15 @@ MCPBrowser/
 ```
 
 **Structure Decision**: Single MCP server package; no frontend/backend split. Changes live in `MCPBrowser/src/actions`, `MCPBrowser/src/core/responses` (if schema touches), with matching tests under `MCPBrowser/tests/actions` and `MCPBrowser/tests/tool-selection` as needed.
+
+**Repository Guardrails**: Do not modify `VSCodeExtension/` or root-level app logic; limit code/test changes to `MCPBrowser/` except for version-lock files if a contract version bump is required.
+
+## Testing Plan
+
+- Unit: add cases in `MCPBrowser/tests/actions/` for `execute_javascript` (success, timeout, truncation, DOM return, thrown error, navigation flag) and `click-element` fallback paths (native timeout -> JS success, dual failure, native success no fallback).
+- Integration: extend or add harness flows in `MCPBrowser/tests/actions` or shared helpers to exercise real page interactions with mocked pages ensuring deterministic timing.
+- Tool selection: update `MCPBrowser/tests/tool-selection/` fixtures to cover new action and fallback flag surfaces, ensuring deterministic contract outputs.
+- Runners: ensure `node tests/run-unit.js`, `node tests/run-all.js`, and `node tests/tool-selection/run-tool-selection-tests.js` include new coverage.
 
 ## Complexity Tracking
 
