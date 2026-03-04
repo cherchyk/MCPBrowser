@@ -41,21 +41,26 @@ The test suite is split into two runners for optimal execution:
 - `core/html.test.js` - HTML cleaning and enrichment (pure functions)
 - `core/page.test.js` - Page navigation and stability (uses mocks)
 - `core/responses.test.js` - Response class validation
+- `core/informational-response.test.js` - InformationalResponse (soft failures)
+- `core/http-status-response.test.js` - HttpStatusResponse (HTTP 4xx/5xx)
 - `core/auth.test.js` - Authentication flows (uses mock pages)
 - `mcp-browser.test.js` - MCP server initialization (uses mocks)
-- `verify-structured-output.test.js` - MCP output format compliance
-- `verify-nextsteps.test.js` - NextSteps field validation
 
-**Run:** `node tests/run-unit.js` (~8 seconds, parallel execution)
+**Run:** `node tests/run-unit.js` (~35 seconds, parallel execution)
 
-### Browser Tests - `run-browser.js` (5 suites)
+### Browser Tests - `run-browser.js` (10 suites)
 **Sequential execution, BROWSER required** - Real browser integration
 
-- `actions/browser.click-element.test.js` - Click action across browsers
+- `actions/browser.click-element.test.js` - Click action with JS fallback testing
+- `actions/browser.execute-javascript.test.js` - JavaScript execution, timeout, truncation
 - `actions/browser.type-text.test.js` - Text input action across browsers
 - `actions/browser.close-tab.test.js` - Tab management across browsers
 - `actions/browser.get-current-html.test.js` - HTML retrieval across browsers
 - `actions/browser.fetch-page.test.js` - Page fetching across browsers
+- `actions/browser.take-screenshot.test.js` - Screenshot capture across browsers
+- `actions/browser.scroll-page.test.js` - Page scrolling across browsers
+- `verify-structured-output.test.js` - MCP response structure compliance
+- `verify-nextsteps.test.js` - NextSteps field validation
 
 **Run:** `node tests/run-browser.js [browser]`
 - Without browser param: Runs on all available browsers
@@ -117,6 +122,8 @@ await runWithBrowsers(async (browserType) => {
 ✅ Authentication flows (auto/manual, SSO)  
 ✅ HTML cleaning and URL enrichment  
 ✅ Element interaction (click, type)  
+✅ Click JS fallback on native timeout  
+✅ JavaScript execution with timeout and truncation  
 ✅ Page stability and navigation  
 ✅ Permanent redirects (gmail.com → mail.google.com)  
 ✅ Multi-browser compatibility
@@ -129,7 +136,7 @@ npm run test:descriptions
 node tests/tool-selection/run-tool-selection-tests.js
 ```
 
-Validates tool descriptions against 12 scenarios covering auth-required sites, SPAs, and form interactions. See [tool-selection/TOOL_SELECTION_README.md](tool-selection/TOOL_SELECTION_README.md).
+Validates tool descriptions against 14 scenarios covering auth-required sites, SPAs, JavaScript execution, click fallback, and form interactions. See [tool-selection/TOOL_SELECTION_README.md](tool-selection/TOOL_SELECTION_README.md).
 
 ## CI/CD
 
