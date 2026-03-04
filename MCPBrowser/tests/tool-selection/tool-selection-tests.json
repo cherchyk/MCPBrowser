@@ -49,6 +49,14 @@
       "priority": "critical"
     },
     {
+      "id": "execute-js-extract",
+      "userRequest": "On the already loaded inbox page, run a JavaScript snippet to return the first 5 rows with sender and subject.",
+      "expectedTool": "execute_javascript",
+      "expectedReason": "Page-scoped JavaScript extraction on already loaded page",
+      "contextDependent": true,
+      "priority": "high"
+    },
+    {
       "id": "button-click-navigation",
       "userRequest": "Load https://example.com and click the 'Next' button",
       "expectedToolSequence": ["fetch_webpage", "click_element"],
@@ -61,6 +69,14 @@
       "expectedToolSequence": ["fetch_webpage", "type_text", "type_text", "click_element"],
       "expectedReason": "Full login workflow: fetch, fill username, fill password, click submit",
       "priority": "critical"
+    },
+    {
+      "id": "click-fallback",
+      "userRequest": "If a click on an element times out, retry with a JavaScript click and report whether fallback was used.",
+      "expectedTool": "click_element",
+      "expectedReason": "click_element handles native timeout with automatic JS fallback and metadata",
+      "contextDependent": true,
+      "priority": "high"
     },
     {
       "id": "check-page-state",

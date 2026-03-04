@@ -8,7 +8,7 @@ description: "Task list template for feature implementation"
 **Input**: Design documents from `/specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+**Tests**: Tests are mandatory. Add explicit test tasks (unit, integration, tool-selection) for each user story. Implementation steps must run these tests; completion is defined only when they pass.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
@@ -79,23 +79,19 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 1 (MANDATORY)
 
-> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+> **Write these tests FIRST and ensure they fail before implementation.**
 
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T010 [P] [US1] Unit/integration/tool-selection test(s) for [user journey] in tests/[path].
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
-- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
-- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
-- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T016 [US1] Add validation and error handling
-- [ ] T017 [US1] Add logging for user story 1 operations
+- [ ] T012 [US1] Implement [endpoint/feature] in src/[location]/[file].
+- [ ] T013 [US1] Add logging/validation and structured responses per contracts.
+- [ ] T014 [US1] Run US1 planned tests (T010) and capture results; story is complete only if they pass.
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
+**Checkpoint**: User Story 1 should be fully functional and independently testable.
 
 ---
 
@@ -105,19 +101,17 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 2 (MANDATORY)
 
-- [ ] T018 [P] [US2] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T019 [P] [US2] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T018 [P] [US2] Unit/integration/tool-selection test(s) for [user journey] in tests/[path].
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Create [Entity] model in src/models/[entity].py
-- [ ] T021 [US2] Implement [Service] in src/services/[service].py
-- [ ] T022 [US2] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T023 [US2] Integrate with User Story 1 components (if needed)
+- [ ] T020 [US2] Implement [endpoint/feature] in src/[location]/[file].
+- [ ] T021 [US2] Add logging/validation and structured responses per contracts.
+- [ ] T022 [US2] Run US2 planned tests (T018) and capture results; story is complete only if they pass.
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
+**Checkpoint**: User Stories 1 and 2 are independently functional and tested.
 
 ---
 
@@ -127,18 +121,17 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 3 (MANDATORY)
 
-- [ ] T024 [P] [US3] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T025 [P] [US3] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T024 [P] [US3] Unit/integration/tool-selection test(s) for [user journey] in tests/[path].
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Create [Entity] model in src/models/[entity].py
-- [ ] T027 [US3] Implement [Service] in src/services/[service].py
-- [ ] T028 [US3] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T026 [US3] Implement [endpoint/feature] in src/[location]/[file].
+- [ ] T027 [US3] Add logging/validation and structured responses per contracts.
+- [ ] T028 [US3] Run US3 planned tests (T024) and capture results; story is complete only if they pass.
 
-**Checkpoint**: All user stories should now be independently functional
+**Checkpoint**: All targeted user stories are functional and tested independently.
 
 ---
 
@@ -153,7 +146,7 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] TXXX [P] Documentation updates in docs/
 - [ ] TXXX Code cleanup and refactoring
 - [ ] TXXX Performance optimization across all stories
-- [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
+- [ ] TXXX [P] Additional unit/integration/tool-selection tests in tests/
 - [ ] TXXX Security hardening
 - [ ] TXXX Run quickstart.md validation
 
@@ -166,7 +159,7 @@ Examples of foundational tasks (adjust based on your project):
 - **Setup (Phase 1)**: No dependencies - can start immediately
 - **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
 - **User Stories (Phase 3+)**: All depend on Foundational phase completion
-  - User stories can then proceed in parallel (if staffed)
+  - User stories can proceed in parallel (if staffed)
   - Or sequentially in priority order (P1 → P2 → P3)
 - **Polish (Final Phase)**: Depends on all desired user stories being complete
 
@@ -178,11 +171,11 @@ Examples of foundational tasks (adjust based on your project):
 
 ### Within Each User Story
 
-- Tests (if included) MUST be written and FAIL before implementation
+- Tests MUST be written and fail before implementation
 - Models before services
 - Services before endpoints
 - Core implementation before integration
-- Story complete before moving to next priority
+- Story complete only when planned tests pass
 
 ### Parallel Opportunities
 
@@ -195,57 +188,18 @@ Examples of foundational tasks (adjust based on your project):
 
 ---
 
-## Parallel Example: User Story 1
-
-```bash
-# Launch all tests for User Story 1 together (if tests requested):
-Task: "Contract test for [endpoint] in tests/contract/test_[name].py"
-Task: "Integration test for [user journey] in tests/integration/test_[name].py"
-
-# Launch all models for User Story 1 together:
-Task: "Create [Entity1] model in src/models/[entity1].py"
-Task: "Create [Entity2] model in src/models/[entity2].py"
-```
-
----
-
 ## Implementation Strategy
 
-### MVP First (User Story 1 Only)
-
-1. Complete Phase 1: Setup
-2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
-3. Complete Phase 3: User Story 1
-4. **STOP and VALIDATE**: Test User Story 1 independently
-5. Deploy/demo if ready
-
-### Incremental Delivery
-
-1. Complete Setup + Foundational → Foundation ready
-2. Add User Story 1 → Test independently → Deploy/Demo (MVP!)
-3. Add User Story 2 → Test independently → Deploy/Demo
-4. Add User Story 3 → Test independently → Deploy/Demo
-5. Each story adds value without breaking previous stories
-
-### Parallel Team Strategy
-
-With multiple developers:
-
-1. Team completes Setup + Foundational together
-2. Once Foundational is done:
-   - Developer A: User Story 1
-   - Developer B: User Story 2
-   - Developer C: User Story 3
-3. Stories complete and integrate independently
+- MVP First: finish P1 (tests written first, then implementation, then run planned tests). Stop if tests fail.
+- Incremental Delivery: add each story with its tests → run planned tests → proceed only on green.
+- Parallel Team Strategy: divide user stories after Foundational; each owner must deliver tests + passing runs.
 
 ---
 
 ## Notes
 
 - [P] tasks = different files, no dependencies
-- [Story] label maps task to specific user story for traceability
-- Each user story should be independently completable and testable
-- Verify tests fail before implementing
-- Commit after each task or logical group
-- Stop at any checkpoint to validate story independently
-- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
+- Each user story must have dedicated test tasks and a "run planned tests" implementation step
+- Verify tests fail before implementing; consider contract fixtures for determinism
+- Commit after each task or logical group; stop at checkpoints to validate stories independently
+- Avoid vague tasks, same-file conflicts, cross-story dependencies that break independence

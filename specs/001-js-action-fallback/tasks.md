@@ -10,16 +10,16 @@
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 Install workspace dependencies per root/package.json to ensure MCPBrowser tooling is available.
-- [ ] T002 [P] Smoke-run baseline MCPBrowser unit suite via MCPBrowser/tests/run-unit.js to confirm starting state.
+- [X] T001 Install workspace dependencies per root/package.json to ensure MCPBrowser tooling is available.
+- [X] T002 [P] Smoke-run baseline MCPBrowser unit suite via MCPBrowser/tests/run-unit.js to confirm starting state.
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-- [ ] T003 Define execution timeout and size-cap defaults shared by actions in MCPBrowser/src/core/page.js.
-- [ ] T004 Add JSON-safe serialization and truncation helper for action results in MCPBrowser/src/utils.js.
-- [ ] T005 Extend structured response helpers for execution/fallback metadata in MCPBrowser/src/core/responses.js.
+- [X] T003 Define execution timeout and size-cap defaults shared by actions in MCPBrowser/src/core/page.js.
+- [X] T004 Add JSON-safe serialization and truncation helper for action results in MCPBrowser/src/utils.js.
+- [X] T005 Extend structured response helpers for execution/fallback metadata in MCPBrowser/src/core/responses.js.
 
 **Checkpoint**: Foundation ready for user stories.
 
@@ -31,13 +31,14 @@
 **Independent Test**: Run script on inbox page to return first 10 rows and open a row; verify JSON payload, metadata, timeout/cap handling.
 
 ### Tests for User Story 1 (write first)
-- [ ] T006 [P] [US1] Add success/DOM/metadata coverage for execute_javascript in MCPBrowser/tests/actions/browser.execute-javascript.test.js.
-- [ ] T007 [P] [US1] Add timeout/error/truncation coverage for execute_javascript in MCPBrowser/tests/actions/browser.execute-javascript.test.js.
-- [ ] T008 [P] [US1] Add tool-selection expectations for execute_javascript outputs in MCPBrowser/tests/tool-selection/tool-selection-tests.json.
+- [X] T006 [P] [US1] Add success/DOM/metadata coverage for execute_javascript in MCPBrowser/tests/actions/browser.execute-javascript.test.js.
+- [X] T007 [P] [US1] Add timeout/error/truncation coverage for execute_javascript in MCPBrowser/tests/actions/browser.execute-javascript.test.js.
+- [X] T008 [P] [US1] Add tool-selection expectations for execute_javascript outputs in MCPBrowser/tests/tool-selection/tool-selection-tests.json.
 
 ### Implementation for User Story 1
-- [ ] T009 [US1] Implement execute_javascript action with timeout, serialization, truncation, and urlChanged detection in MCPBrowser/src/actions/execute-javascript.js.
-- [ ] T010 [US1] Register execute_javascript command and response wiring (EULA gate, structured output) in MCPBrowser/src/mcp-browser.js using core helpers.
+- [X] T009 [US1] Implement execute_javascript action with timeout, serialization, truncation, and urlChanged detection in MCPBrowser/src/actions/execute-javascript.js.
+- [X] T010 [US1] Register execute_javascript command and response wiring (EULA gate, structured output) in MCPBrowser/src/mcp-browser.js using core helpers.
+- [X] T017 [US1] Run planned execute_javascript tests: node tests/actions/browser.execute-javascript.test.js and node tests/run-unit.js chrome; proceed only if green.
 
 **Checkpoint**: User Story 1 independently testable.
 
@@ -49,12 +50,13 @@
 **Independent Test**: Simulate timeout-prone click; confirm fallback used, response metadata present; dual failure reported.
 
 ### Tests for User Story 2 (write first)
-- [ ] T011 [P] [US2] Expand click-element coverage for native-timeout→JS-success and dual-failure cases in MCPBrowser/tests/actions/browser.click-element.test.js.
-- [ ] T012 [P] [US2] Update tool-selection expectations for fallbackUsed/nativeAttempt/fallbackAttempt metadata in MCPBrowser/tests/tool-selection/tool-selection-tests.json.
+- [X] T011 [P] [US2] Expand click-element coverage for native-timeout→JS-success and dual-failure cases in MCPBrowser/tests/actions/browser.click-element.test.js.
+- [X] T012 [P] [US2] Update tool-selection expectations for fallbackUsed/nativeAttempt/fallbackAttempt metadata in MCPBrowser/tests/tool-selection/tool-selection-tests.json.
 
 ### Implementation for User Story 2
-- [ ] T013 [US2] Implement JS fallback path on native click timeout with logging and readiness waits in MCPBrowser/src/actions/click-element.js.
-- [ ] T014 [US2] Ensure click-element response includes fallbackUsed and attempt metadata via MCPBrowser/src/core/responses.js integration.
+- [X] T013 [US2] Implement JS fallback path on native click timeout with logging and readiness waits in MCPBrowser/src/actions/click-element.js.
+- [X] T014 [US2] Ensure click-element response includes fallbackUsed and attempt metadata via MCPBrowser/src/core/responses.js integration.
+- [X] T018 [US2] Run planned click fallback tests: node tests/actions/browser.click-element.test.js chrome and node tests/run-unit.js chrome; proceed only if green.
 
 **Checkpoint**: User Story 2 independently testable.
 
@@ -62,8 +64,8 @@
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T015 [P] Update docs for new action/fallback in MCPBrowser/README.md and specs/001-js-action-fallback/quickstart.md.
-- [ ] T016 Run full MCPBrowser suite (tests/run-all.js and tests/tool-selection/run-tool-selection-tests.js) to verify coverage.
+- [X] T015 [P] Update docs for new action/fallback in MCPBrowser/README.md and specs/001-js-action-fallback/quickstart.md.
+- [X] T016 Run full MCPBrowser suite (tests/run-all.js) and tool-selection regression (tests/tool-selection/run-tool-selection-tests.js); completion requires green.
 
 ---
 

@@ -1,3 +1,4 @@
+````markdown
 # Implementation Plan: [FEATURE]
 
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
@@ -86,7 +87,6 @@ frontend/
 # [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
 api/
 └── [same as backend above]
-
 ios/ or android/
 └── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
@@ -102,3 +102,9 @@ directories captured above]
 |-----------|------------|-------------------------------------|
 | [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
 | [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+
+## Test Plan & Execution
+
+List the unit, integration, and tool-selection tests you will add. Implementation steps MUST run these planned tests; completion is defined only when they pass.
+
+````

@@ -7,11 +7,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Get browser parameter from command line (e.g., "chrome", "edge")
-const browserParam = process.argv[2] || '';
+const browserParam = process.argv[2] || 'chrome';
 
 // Browser-based integration tests - REQUIRE BROWSER
 const browserTests = [
   'actions/browser.click-element.test.js',
+  'actions/browser.execute-javascript.test.js',
   'actions/browser.type-text.test.js',
   'actions/browser.close-tab.test.js',
   'actions/browser.get-current-html.test.js',
@@ -42,17 +43,20 @@ function runTest(testFile) {
     }
     
     const child = spawn('node', args, {
-      stdio: 'inherit',
-      shell: true
+      stdio: 'pipe'
     });
 
+    let output = '';
+    child.stdout?.on('data', (data) => output += data.toString());
+    child.stderr?.on('data', (data) => output += data.toString());
+
     child.on('close', (code) => {
-      resolve({ testFile, code });
+      resolve({ testFile, code, output });
     });
 
     child.on('error', (err) => {
       console.error(`Error running ${testFile}:`, err.message);
-      resolve({ testFile, code: 1 });
+      resolve({ testFile, code: 1, output: err.message });
     });
   });
 }
@@ -63,16 +67,30 @@ async function runBrowserTests() {
   console.log(`\n🚀 Running ${browserTests.length} browser tests sequentially...\n`);
   
   for (const test of browserTests) {
-    console.log(`▶️  Running ${test}...`);
-    console.log('-'.repeat(60));
+    console.log(`▶️  ${test}`);
     
-    const { code } = await runTest(test);
+    const { code, output } = await runTest(test);
+
+    if (output) {
+      const passMatch = output.match(/Tests Passed: (\d+)|pass (\d+)/i);
+      const failMatch = output.match(/Tests Failed: (\d+)|fail (\d+)/i);
+      const passCount = passMatch ? (passMatch[1] || passMatch[2]) : '?';
+      const failCount = failMatch ? (failMatch[1] || failMatch[2]) : '?';
+
+      console.log(`   Tests: ${passCount} passed, ${failCount} failed`);
+
+      if (code !== 0) {
+        const lines = output.trim().split('\n');
+        const errorLines = lines.slice(-10);
+        console.log(errorLines.join('\n'));
+      }
+    }
     
     if (code === 0) {
-      console.log(`✅ ${test} passed\n`);
+      console.log(`   ✅ PASSED\n`);
       totalPassed++;
     } else {
-      console.log(`❌ ${test} failed (exit code: ${code})\n`);
+      console.log(`   ❌ FAILED (exit code: ${code})\n`);
       totalFailed++;
     }
   }

@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Get browser parameter from command line (e.g., "chrome", "edge")
-const browserParam = process.argv[2] || '';
+const browserParam = process.argv[2] || 'chrome';
 
 console.log('🧪 Running All MCPBrowser Tests');
 if (browserParam) {
@@ -25,8 +25,7 @@ function runRunner(runnerFile, description, args = []) {
     console.log('='.repeat(60));
     
     const child = spawn('node', [join(__dirname, runnerFile), ...args], {
-      stdio: 'inherit',
-      shell: true
+      stdio: 'inherit'
     });
 
     child.on('close', (code) => {

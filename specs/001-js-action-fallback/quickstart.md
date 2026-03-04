@@ -25,6 +25,8 @@ Example: list first 5 inbox rows with sender and subject.
 ```
 **What to expect**: Structured array result, `executionTimeMs`, `urlChanged`, and `truncated` flags. Large payloads are capped.
 
+**Failure signals**: Structured `error` for thrown exceptions or timeouts (default 30s, max 60s); truncation flagged when payload exceeds ~100KB.
+
 ## Click with automatic JS fallback
 No payload changes required; fallback is automatic when native click times out.
 ```json

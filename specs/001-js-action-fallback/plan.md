@@ -1,80 +1,110 @@
-# Implementation Plan: P0 JavaScript execution and click fallback
+````markdown
+# Implementation Plan: [FEATURE]
 
-**Branch**: `001-js-action-fallback` | **Date**: 2026-03-03 | **Spec**: [specs/001-js-action-fallback/spec.md](specs/001-js-action-fallback/spec.md)
-**Input**: Feature specification from `/specs/001-js-action-fallback/spec.md`
+**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
+**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+
+**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
 
 ## Summary
 
-Deliver two P0 capabilities: (1) an `execute_javascript` action that runs user-supplied scripts in the active page with enforced timeout, size caps, metadata, and structured errors; (2) a `click_element` fallback that retries timed-out native clicks via JavaScript and reports the fallback path. Both aim to cut inbox-style flows from 10+ calls to 1–2, while improving reliability on SPA-heavy pages (e.g., Gmail).
+[Extract from feature spec: primary requirement + technical approach from research]
 
 ## Technical Context
 
-**Language/Version**: Node.js 18+ (ESM)  
-**Primary Dependencies**: `puppeteer-core@^23.4.1`, `@modelcontextprotocol/sdk@^1.25.1`  
-**Storage**: N/A (in-memory process state only)  
-**Testing**: Node-based runners in `MCPBrowser/tests` (`run-unit.js`, tool-selection tests, integration flows)  
-**Target Platform**: MCP server running headful Chrome/Edge/Brave via DevTools protocol  
-**Project Type**: MCP server/CLI package (no extension changes)  
-**Performance Goals**: JS execution response <5s typical; fallback clicks succeed in ≥90% of prior timeout cases; responses remain within 100KB cap  
-**Constraints**: Execution timeout default 30s (max 60s); structured responses; deterministic contracts; redact PII; maintain dual-project isolation  
-**Scale/Scope**: Single MCP server package; no multi-service coordination; tests confined to MCPBrowser project
+<!--
+  ACTION REQUIRED: Replace the content in this section with the technical details
+  for the project. The structure here is presented in advisory capacity to guide
+  the iteration process.
+-->
+
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
+**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
+**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
+**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- I. User-Safe Browser Mediation: enforce truncation/timeout, avoid logging secrets, keep tab scoping and EULA gate unchanged. ✅
-- II. Deterministic MCP Tool Contracts: define structured inputs/outputs for `execute_javascript` and fallback result flags; add contract tests. ✅
-- III. Test-First Coverage: add unit/integration + tool-selection cases covering success, timeout, truncation, fallback hit/miss. ✅
-- IV. Observability & Diagnostics: include execution timing, URL-change flag, fallback-used flag; structured error payloads. ✅
-- V. Intent-Explicit Documentation: update spec/quickstart/contracts; add rationale comments only where behavior is non-obvious. ✅
-- VI. Dual-Project Independence: scope changes to MCPBrowser only; no VSCodeExtension impacts. ✅
-- Runtime & Workflow Gates: stay on Node 18+, keep version-lock files aligned, avoid breaking contracts without version bump. ✅
+[Gates determined based on constitution file]
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-specs/001-js-action-fallback/
-├── plan.md          # this plan
-├── research.md      # Phase 0
-├── data-model.md    # Phase 1
-├── quickstart.md    # Phase 1
-├── contracts/       # Phase 1
-└── tasks.md         # Phase 2 (via /speckit.tasks)
+specs/[###-feature]/
+├── plan.md              # This file (/speckit.plan command output)
+├── research.md          # Phase 0 output (/speckit.plan command)
+├── data-model.md        # Phase 1 output (/speckit.plan command)
+├── quickstart.md        # Phase 1 output (/speckit.plan command)
+├── contracts/           # Phase 1 output (/speckit.plan command)
+└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
 ### Source Code (repository root)
+<!--
+  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
+  for this feature. Delete unused options and expand the chosen structure with
+  real paths (e.g., apps/admin, packages/something). The delivered plan must
+  not include Option labels.
+-->
 
 ```text
-MCPBrowser/
+# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
+src/
+├── models/
+├── services/
+├── cli/
+└── lib/
+
+tests/
+├── contract/
+├── integration/
+└── unit/
+
+# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
+backend/
 ├── src/
-│   ├── actions/               # click-element, fetch-page, etc.
-│   ├── browsers/              # browser drivers (Chrome/Edge/Brave)
-│   ├── core/                  # auth, page, responses, logger, html helpers
-│   └── mcp-browser.js         # entrypoint/command wiring
+│   ├── models/
+│   ├── services/
+│   └── api/
 └── tests/
-    ├── actions/               # action-specific tests
-    ├── browsers/              # browser harness helpers
-    ├── core/                  # core unit tests
-    ├── tool-selection/        # deterministic tool selection tests
-    └── run-*.js               # runners (unit, all, tool-selection)
+
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
+
+# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
+ios/ or android/
+└── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
 
-**Structure Decision**: Single MCP server package; no frontend/backend split. Changes live in `MCPBrowser/src/actions`, `MCPBrowser/src/core/responses` (if schema touches), with matching tests under `MCPBrowser/tests/actions` and `MCPBrowser/tests/tool-selection` as needed.
-
-**Repository Guardrails**: Do not modify `VSCodeExtension/` or root-level app logic; limit code/test changes to `MCPBrowser/` except for version-lock files if a contract version bump is required.
-
-## Testing Plan
-
-- Unit: add cases in `MCPBrowser/tests/actions/` for `execute_javascript` (success, timeout, truncation, DOM return, thrown error, navigation flag) and `click-element` fallback paths (native timeout -> JS success, dual failure, native success no fallback).
-- Integration: extend or add harness flows in `MCPBrowser/tests/actions` or shared helpers to exercise real page interactions with mocked pages ensuring deterministic timing.
-- Tool selection: update `MCPBrowser/tests/tool-selection/` fixtures to cover new action and fallback flag surfaces, ensuring deterministic contract outputs.
-- Runners: ensure `node tests/run-unit.js`, `node tests/run-all.js`, and `node tests/tool-selection/run-tool-selection-tests.js` include new coverage.
+**Structure Decision**: [Document the selected structure and reference the real
+directories captured above]
 
 ## Complexity Tracking
 
+> **Fill ONLY if Constitution Check has violations that must be justified**
+
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| None | N/A | N/A |
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+
+## Test Plan & Execution
+
+List the unit, integration, and tool-selection tests you will add. Implementation steps MUST run these planned tests; completion is defined only when they pass.
+
+````
