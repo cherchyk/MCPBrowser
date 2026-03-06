@@ -5,8 +5,12 @@ VSCodeExtension/node_modules/
 
 # Environment files
 .env
+.env.*
 
 # Build artifacts
+dist/
+build/
+coverage/
 *.vsix
 VSCodeExtension/*.vsix
 

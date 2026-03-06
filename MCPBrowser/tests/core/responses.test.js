@@ -7,7 +7,7 @@
 import assert from 'assert';
 import { MCPResponse, ErrorResponse } from '../../src/core/responses.js';
 import { FetchPageSuccessResponse } from '../../src/actions/fetch-page.js';
-import { ClickElementSuccessResponse } from '../../src/actions/click-element.js';
+import { ClickWithFallbackResponse } from '../../src/actions/click-element.js';
 import { TypeTextSuccessResponse } from '../../src/actions/type-text.js';
 import { CloseTabSuccessResponse } from '../../src/actions/close-tab.js';
 import { GetCurrentHtmlSuccessResponse } from '../../src/actions/get-current-html.js';
@@ -116,29 +116,49 @@ test('toJSON() converts response to plain object', () => {
   assert.deepStrictEqual(json.nextSteps, ['Step 1']);
 });
 
-// Test 8: ClickElementSuccessResponse validates html can be null
-test('ClickElementSuccessResponse allows null html', () => {
-  const response = new ClickElementSuccessResponse(
-    'https://example.com',
-    'Clicked button',
-    null,
-    ['Next step']
-  );
-  
-  assert.strictEqual(response.html, null);
-  assert.ok(response instanceof MCPResponse, 'Should be instance of MCPResponse');
+// Test 8: ClickWithFallbackResponse serializes metadata
+test('ClickWithFallbackResponse serializes metadata', () => {
+  const response = new ClickWithFallbackResponse({
+    status: 'success',
+    fallbackUsed: true,
+    nativeAttempt: { status: 'timeout', durationMs: 1200, error: 'timeout' },
+    fallbackAttempt: { status: 'success', durationMs: 400 },
+    postClickWait: { applied: true, waitedMs: 1000 },
+    currentUrl: 'https://example.com',
+    html: null,
+    message: 'Clicked with fallback',
+    nextSteps: ['Next step']
+  });
+
+  const json = response.toJSON();
+  assert.strictEqual(json.status, 'success');
+  assert.strictEqual(json.fallbackUsed, true);
+  assert.strictEqual(json.nativeAttempt.status, 'timeout');
+  assert.strictEqual(json.fallbackAttempt.status, 'success');
+  assert.strictEqual(json.postClickWait.waitedMs, 1000);
+  assert.strictEqual(json.currentUrl, 'https://example.com');
+  assert.strictEqual(json.html, null);
+  assert.strictEqual(json.message, 'Clicked with fallback');
+  assert.deepStrictEqual(json.nextSteps, ['Next step']);
 });
 
-// Test 9: ClickElementSuccessResponse rejects invalid html
-test('ClickElementSuccessResponse rejects non-string non-null html', () => {
-  assert.throws(() => {
-    new ClickElementSuccessResponse(
-      'https://example.com',
-      'Clicked button',
-      123,
-      ['Next step']
-    );
-  }, TypeError, 'Should throw TypeError for non-string non-null html');
+// Test 9: ClickWithFallbackResponse supports html string
+test('ClickWithFallbackResponse accepts html string', () => {
+  const response = new ClickWithFallbackResponse({
+    status: 'failed',
+    fallbackUsed: false,
+    nativeAttempt: { status: 'error', durationMs: 300, error: 'blocked' },
+    fallbackAttempt: null,
+    postClickWait: { applied: false, waitedMs: 0 },
+    currentUrl: 'https://example.com',
+    html: '<html></html>',
+    message: 'Click failed',
+    nextSteps: []
+  });
+
+  const json = response.toJSON();
+  assert.strictEqual(json.html, '<html></html>');
+  assert.match(response.getTextSummary(), /Click/);
 });
 
 // Test 10: TypeTextSuccessResponse validates message

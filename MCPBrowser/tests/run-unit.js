@@ -31,8 +31,7 @@ let totalFailed = 0;
 function runTest(testFile) {
   return new Promise((resolve) => {
     const child = spawn('node', [join(__dirname, testFile)], {
-      stdio: 'pipe',
-      shell: true
+      stdio: 'pipe'
     });
 
     let output = '';

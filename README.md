@@ -46,6 +46,7 @@ Example workflow for AI assistant to use MCPBrowser
   - [Windsurf](#windsurf)
 - [MCP Tools](#mcp-tools)
   - [fetch_webpage](#fetch_webpage)
+  - [execute_javascript](#execute_javascript)
   - [click_element](#click_element)
   - [type_text](#type_text)
   - [get_current_html](#get_current_html)
@@ -409,6 +410,37 @@ Fetches web pages using your Chrome/Edge browser. Handles authentication, CAPTCH
 
 ---
 
+### `execute_javascript`
+
+Executes a JavaScript snippet in the active page context and returns the result with metadata (execution time, truncation flag, URL-change detection). Use for structured data extraction (e.g., inbox rows) or JS-driven UI actions that are unreliable via protocol clicks.
+
+**⚠️ Note:** Page must be already loaded via `fetch_webpage` first.
+
+**Parameters:**
+- `url` (string, required) - The URL of the page (must match a previously fetched page)
+- `script` (string, required) - JavaScript source to execute in page context
+- `timeoutMs` (number, optional, default: `30000`, max: `60000`) - Execution timeout
+- `returnType` (string, optional, default: `json`) - `json` | `text` | `void`
+
+**Returns:** Serialized result (`outerHTML` for DOM nodes), `type`, `executionTimeMs`, `truncated`, `urlChanged`, `currentUrl`, and structured `error` on failure.
+
+**Examples:**
+```javascript
+// Extract structured data from a page
+{
+  url: "https://mail.google.com/",
+  script: "[...document.querySelectorAll('tr.zA')].slice(0,5).map(r => ({sender: r.querySelector('.zF')?.textContent, subject: r.querySelector('.bog')?.textContent}))"
+}
+
+// Click an element via JS when protocol clicks fail
+{ url: "https://example.com", script: "document.querySelector('#tricky-button').click(); return 'clicked';" }
+
+// Return void (side-effect only)
+{ url: "https://example.com", script: "localStorage.clear();", returnType: "void" }
+```
+
+---
+
 ### `click_element`
 
 Clicks on any clickable element (buttons, links, divs with onclick handlers, etc.). Can target by CSS selector or visible text content. Automatically scrolls element into view and waits for page stability after clicking.
@@ -438,6 +470,8 @@ Clicks on any clickable element (buttons, links, divs with onclick handlers, etc
 // Click with custom wait time
 { url: "https://example.com", text: "Load More", postClickWait: 2000 }
 ```
+
+**Fallback behavior:** If the native click times out after locating the element, MCPBrowser automatically retries with a JavaScript-based click. The response includes `fallbackUsed`, `nativeAttempt`, and `fallbackAttempt` metadata. If both attempts fail, the response lists both errors so you can choose another strategy.
 
 ---
 

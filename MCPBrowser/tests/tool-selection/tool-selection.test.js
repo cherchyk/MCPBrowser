@@ -17,6 +17,7 @@ import { CLICK_ELEMENT_TOOL } from '../../src/actions/click-element.js';
 import { TYPE_TEXT_TOOL } from '../../src/actions/type-text.js';
 import { CLOSE_TAB_TOOL } from '../../src/actions/close-tab.js';
 import { GET_CURRENT_HTML_TOOL } from '../../src/actions/get-current-html.js';
+import { EXECUTE_JAVASCRIPT_TOOL } from '../../src/actions/execute-javascript.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -63,6 +64,11 @@ function simulateToolSelection(tools, userRequest, context = null) {
         score += 15;
       }
       
+      // URL in request suggests fetching
+      if (!context && /https?:\/\//.test(request)) {
+        score += 10;
+      }
+
       // Penalize heavily if context exists (page already loaded)
       if (context && context.pageLoaded) {
         score -= 100;
@@ -118,6 +124,23 @@ function simulateToolSelection(tools, userRequest, context = null) {
         score -= 100;
       }
     }
+
+    // Execute JavaScript detection
+    if (tool.name === 'execute_javascript') {
+      if (/\b(run|execute|eval|evaluate)\b/.test(request) && /\b(js|javascript|script)\b/.test(request)) {
+        score += 50;
+      }
+
+      if (/\b(dom|queryselector|innerhtml|extract|custom logic)\b/.test(request)) {
+        score += 25;
+      }
+
+      if (context && context.pageLoaded) {
+        score += 25;
+      } else {
+        score -= 80; // Must have a loaded page first
+      }
+    }
     
     // Close tab detection
     if (tool.name === 'close_tab') {
@@ -132,8 +155,8 @@ function simulateToolSelection(tools, userRequest, context = null) {
     scores[tool.name] = score;
   });
   
-  // Return tool with highest score
-  const selectedTool = Object.entries(scores).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+  // Return tool with highest score (prefer earlier tools on ties — fetch_webpage is a safe default)
+  const selectedTool = Object.entries(scores).reduce((a, b) => a[1] >= b[1] ? a : b)[0];
   return selectedTool;
 }
 
@@ -269,7 +292,8 @@ function loadToolsFromCurrentFile() {
     CLICK_ELEMENT_TOOL,
     TYPE_TEXT_TOOL,
     CLOSE_TAB_TOOL,
-    GET_CURRENT_HTML_TOOL
+    GET_CURRENT_HTML_TOOL,
+    EXECUTE_JAVASCRIPT_TOOL
   ];
 }
 

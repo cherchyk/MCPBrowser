@@ -27,6 +27,7 @@ import { closeTab, CLOSE_TAB_TOOL } from './actions/close-tab.js';
 import { getCurrentHtml, GET_CURRENT_HTML_TOOL } from './actions/get-current-html.js';
 import { takeScreenshot, TAKE_SCREENSHOT_TOOL } from './actions/take-screenshot.js';
 import { scrollPage, SCROLL_PAGE_TOOL } from './actions/scroll-page.js';
+import { executeJavascript, EXECUTE_JAVASCRIPT_TOOL } from './actions/execute-javascript.js';
 
 // Import functions for testing exports
 import { getBrowser, closeBrowser } from './core/browser.js';
@@ -60,6 +61,7 @@ async function main() {
   const tools = [
     // ACCEPT_EULA_TOOL,
     FETCH_WEBPAGE_TOOL,
+    EXECUTE_JAVASCRIPT_TOOL,
     CLICK_ELEMENT_TOOL,
     TYPE_TEXT_TOOL,
     CLOSE_TAB_TOOL,
@@ -90,6 +92,10 @@ async function main() {
           
         case "fetch_webpage":
           result = await fetchPage(safeArgs);
+          break;
+
+        case "execute_javascript":
+          result = await executeJavascript(safeArgs);
           break;
           
         case "click_element":
@@ -158,6 +164,7 @@ export {
   extractAndProcessHtml,
   getBaseDomain,
   isLikelyAuthUrl,
+  executeJavascript,
   clickElement,
   typeText,
   closeTab,

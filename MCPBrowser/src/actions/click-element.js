@@ -33,48 +33,38 @@ import logger from '../core/logger.js';
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
  */
 
-// ============================================================================
-// RESPONSE CLASS
-// ============================================================================
-
 /**
- * Response for successful click_element operations
+ * Structured response for click_element with JS fallback metadata
  */
-export class ClickElementSuccessResponse extends MCPResponse {
-  /**
-   * @param {string} currentUrl - URL after click
-   * @param {string} message - Success message
-   * @param {string|null} html - Page HTML if returnHtml was true
-   * @param {string[]} nextSteps - Suggested next actions
-   */
-  constructor(currentUrl, message, html, nextSteps) {
+export class ClickWithFallbackResponse extends MCPResponse {
+  constructor({ status, fallbackUsed = false, nativeAttempt, fallbackAttempt, postClickWait, currentUrl, html = null, message, nextSteps = [] }) {
     super(nextSteps);
-    
-    if (typeof currentUrl !== 'string') {
-      throw new TypeError('currentUrl must be a string');
-    }
-    if (typeof message !== 'string') {
-      throw new TypeError('message must be a string');
-    }
-    if (html !== null && typeof html !== 'string') {
-      throw new TypeError('html must be a string or null');
-    }
-    
+    this.status = status;
+    this.fallbackUsed = fallbackUsed;
+    this.nativeAttempt = nativeAttempt;
+    this.fallbackAttempt = fallbackAttempt;
+    this.postClickWait = postClickWait;
     this.currentUrl = currentUrl;
-    this.message = message;
     this.html = html;
+    this.message = message;
   }
 
   _getAdditionalFields() {
     return {
+      status: this.status,
+      fallbackUsed: this.fallbackUsed,
+      nativeAttempt: this.nativeAttempt,
+      fallbackAttempt: this.fallbackAttempt,
+      postClickWait: this.postClickWait,
       currentUrl: this.currentUrl,
-      message: this.message,
-      html: this.html
+      html: this.html,
+      message: this.message
     };
   }
 
   getTextSummary() {
-    return this.message || "Element clicked successfully";
+    const base = this.message || 'Click completed';
+    return this.fallbackUsed ? `${base} (JS fallback used)` : base;
   }
 }
 
@@ -106,8 +96,38 @@ export const CLICK_ELEMENT_TOOL = {
   outputSchema: {
     type: "object",
     properties: {
+      status: { type: "string", enum: ["success", "failed"], description: "Overall click status after native and fallback attempts" },
+      fallbackUsed: { type: "boolean", description: "True when native click timed out and JS fallback ran" },
+      nativeAttempt: { 
+        type: "object",
+        properties: {
+          status: { type: "string", enum: ["success", "timeout", "error"] },
+          durationMs: { type: "number" },
+          error: { type: ["string", "null"] }
+        },
+        required: ["status", "durationMs"]
+      },
+      fallbackAttempt: {
+        type: ["object", "null"],
+        properties: {
+          status: { type: "string", enum: ["success", "timeout", "error"] },
+          durationMs: { type: "number" },
+          error: { type: ["string", "null"] }
+        },
+        required: ["status", "durationMs"],
+        description: "Present when fallbackUsed is true"
+      },
+      postClickWait: {
+        type: "object",
+        properties: {
+          applied: { type: "boolean" },
+          waitedMs: { type: "number" }
+        },
+        required: ["applied", "waitedMs"],
+        description: "Post-click wait metadata"
+      },
       currentUrl: { type: "string", description: "URL after click" },
-      message: { type: "string", description: "Success message" },
+      message: { type: "string", description: "Status message" },
       html: { 
         type: ["string", "null"], 
         description: "Page HTML if returnHtml was true, null otherwise" 
@@ -118,7 +138,7 @@ export const CLICK_ELEMENT_TOOL = {
         description: "Suggested next actions"
       }
     },
-    required: ["currentUrl", "message", "html", "nextSteps"],
+    required: ["status", "fallbackUsed", "nativeAttempt", "currentUrl", "message", "html", "nextSteps"],
     additionalProperties: false
   }
 };
@@ -252,28 +272,60 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     }
 
     // Scroll element into view and click
-    // For automation, use instant scroll instead of smooth animation to avoid delays
     await page.evaluate(el => el.scrollIntoView({ behavior: 'auto', block: 'center' }), elementHandle);
-    // original:
-    // Smooth scroll (commented out for performance):
-    // await page.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), elementHandle);
-    // await new Promise(r => setTimeout(r, 300)); // Brief delay after scroll
-    
+
+    const attemptClick = async (label, fn, timeoutMs) => {
+      const start = Date.now();
+      let timeoutId;
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+      });
+
+      try {
+        await Promise.race([fn(), timeoutPromise]);
+        return { status: 'success', durationMs: Date.now() - start };
+      } catch (error) {
+        const status = /timeout|timed.out/i.test(error?.message || '') ? 'timeout' : 'error';
+        return { status, durationMs: Date.now() - start, error: error?.message || 'Unknown error' };
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    };
+
+    const clickTimeout = Math.min(Math.max(waitForElementTimeout, 500), 60000);
     logger.debug(`Clicking: ${selector || `text="${text}"`}`);
-    await elementHandle.click();
-    
-    // Wait for page to stabilize (handles both navigation and SPA content updates)
-    logger.debug(`Waiting for page to be ready${returnHtml ? '' : ' (fast mode)'}...`);
-    await waitForPageReady(page, { afterInteraction: true });
-    
-    // Wait for SPAs to render dynamic content after click
-    if (postClickWait > 0) {
-      await new Promise(resolve => setTimeout(resolve, postClickWait));
+    const nativeAttempt = await attemptClick('native click', () => elementHandle.click(), clickTimeout);
+
+    let fallbackUsed = false;
+    let fallbackAttempt = null;
+
+    if (nativeAttempt.status === 'timeout') {
+      fallbackUsed = true;
+      fallbackAttempt = await attemptClick('fallback click', () => page.evaluate(el => el.click(), elementHandle), clickTimeout);
     }
-    
+
+    const finalStatus = nativeAttempt.status === 'success' || (fallbackAttempt && fallbackAttempt.status === 'success')
+      ? 'success'
+      : 'failed';
+
+    if (finalStatus === 'success') {
+      logger.debug(`Waiting for page to be ready${returnHtml ? '' : ' (fast mode)'}...`);
+      await waitForPageReady(page, { afterInteraction: true });
+
+      if (postClickWait > 0) {
+        await new Promise(resolve => setTimeout(resolve, postClickWait));
+      }
+    }
+
     const currentUrl = page.url();
-    const clickMessage = selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`;
-    const html = returnHtml ? await extractAndProcessHtml(page, removeUnnecessaryHTML) : null;
+    const html = finalStatus === 'success' && returnHtml ? await extractAndProcessHtml(page, removeUnnecessaryHTML) : null;
+    const baseMessage = selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`;
+    const message = finalStatus === 'success'
+      ? baseMessage
+      : fallbackUsed
+        ? `Click failed after fallback. Native: ${nativeAttempt.error || nativeAttempt.status}. Fallback: ${fallbackAttempt?.error || fallbackAttempt?.status}`
+        : `Click failed. Native: ${nativeAttempt.error || nativeAttempt.status}`;
+
     const nextSteps = returnHtml
       ? [
           "Use MCPBrowser's click_element again to navigate further",
@@ -288,10 +340,20 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
           "Use MCPBrowser's click_element or MCPBrowser's type_text for more interactions",
           "Use MCPBrowser's close_tab when finished"
         ];
-    
-    logger.info(`click_element completed: ${selector || `text="${text}"`}`);
-    
-    return new ClickElementSuccessResponse(currentUrl, clickMessage, html, nextSteps);
+
+    logger.info(`click_element completed: ${selector || `text="${text}"`}${fallbackUsed ? ' (fallback used)' : ''}`);
+
+    return new ClickWithFallbackResponse({
+      status: finalStatus,
+      fallbackUsed,
+      nativeAttempt,
+      fallbackAttempt,
+      postClickWait: { applied: finalStatus === 'success', waitedMs: finalStatus === 'success' ? postClickWait : 0 },
+      currentUrl,
+      html,
+      message,
+      nextSteps
+    });
   } catch (err) {
     logger.error(`click_element failed: ${err.message}`);
     return new InformationalResponse(

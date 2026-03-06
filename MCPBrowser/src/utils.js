@@ -72,6 +72,71 @@ export function truncate(str, max) {
   return str.length > max ? `${str.slice(0, max)}... [truncated]` : str;
 }
 
+function byteLength(str) {
+  return new TextEncoder().encode(str).length;
+}
+
+function safeStringify(value) {
+  const seen = new WeakSet();
+  return JSON.stringify(value, (key, val) => {
+    if (typeof val === 'function' || typeof val === 'symbol') return undefined;
+    if (typeof val === 'bigint') return val.toString();
+    if (val && typeof val === 'object') {
+      if (seen.has(val)) return '[Circular]';
+      seen.add(val);
+    }
+    return val;
+  });
+}
+
+/**
+ * Serialize a JS value for MCP responses with size and safety guards.
+ * Returns JSON-safe payload, detected type, and truncation flag.
+ * @param {any} value
+ * @param {object} options
+ * @param {number} [options.maxBytes=100000]
+ * @returns {{ result: any, type: string, truncated: boolean }}
+ */
+export function serializeExecutionResult(value, { maxBytes = 100_000 } = {}) {
+  let type = Array.isArray(value) ? 'array' : (value === null ? 'null' : typeof value);
+  let jsonString;
+
+  if (type === 'string') {
+    jsonString = String(value);
+  } else {
+    try {
+      jsonString = safeStringify(value);
+    } catch (err) {
+      jsonString = String(value);
+      type = 'string';
+    }
+  }
+
+  let truncated = false;
+  if (byteLength(jsonString) > maxBytes) {
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const sliced = encoder.encode(jsonString).slice(0, maxBytes);
+    jsonString = `${decoder.decode(sliced)}...[truncated]`;
+    truncated = true;
+    type = 'string';
+  }
+
+  let parsed = value;
+  if (type === 'object' || type === 'array' || type === 'null') {
+    try {
+      parsed = JSON.parse(jsonString);
+    } catch {
+      parsed = jsonString;
+      type = 'string';
+    }
+  } else if (type === 'string') {
+    parsed = jsonString;
+  }
+
+  return { result: parsed, type, truncated };
+}
+
 /**
  * Extract base domain from hostname (e.g., "mail.google.com" → "google.com")
  * @param {string} hostname - The hostname to parse
