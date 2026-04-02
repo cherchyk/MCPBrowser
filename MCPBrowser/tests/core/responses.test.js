@@ -11,6 +11,7 @@ import { ClickWithFallbackResponse } from '../../src/actions/click-element.js';
 import { TypeTextSuccessResponse } from '../../src/actions/type-text.js';
 import { CloseTabSuccessResponse } from '../../src/actions/close-tab.js';
 import { GetCurrentHtmlSuccessResponse } from '../../src/actions/get-current-html.js';
+import { NavigateHistorySuccessResponse } from '../../src/actions/navigate-history.js';
 
 console.log('🧪 Testing Response Classes (MCP Spec Compliant)');
 console.log();
@@ -226,6 +227,46 @@ test('Response serializes to JSON correctly', () => {
   assert.strictEqual(parsed.message, 'Tab closed successfully');
   assert.strictEqual(parsed.hostname, 'example.com');
   assert.deepStrictEqual(parsed.nextSteps, ['Use fetch_webpage to open new page']);
+});
+
+// Test 15: NavigateHistorySuccessResponse creates valid structure
+test('NavigateHistorySuccessResponse creates correct structure', () => {
+  const response = new NavigateHistorySuccessResponse(
+    'back',
+    'https://example.com/page2',
+    'https://example.com/page1',
+    '<html>page1</html>',
+    ['Step 1']
+  );
+  
+  assert.ok(response instanceof MCPResponse, 'Should be instance of MCPResponse');
+  assert.strictEqual(response.direction, 'back');
+  assert.strictEqual(response.previousUrl, 'https://example.com/page2');
+  assert.strictEqual(response.currentUrl, 'https://example.com/page1');
+  assert.strictEqual(response.html, '<html>page1</html>');
+});
+
+// Test 16: NavigateHistorySuccessResponse validates types
+test('NavigateHistorySuccessResponse validates types', () => {
+  assert.throws(() => {
+    new NavigateHistorySuccessResponse(123, 'url1', 'url2', null, []);
+  }, TypeError, 'Should throw TypeError for non-string direction');
+
+  assert.throws(() => {
+    new NavigateHistorySuccessResponse('back', 'url1', 'url2', 123, []);
+  }, TypeError, 'Should throw TypeError for non-string, non-null html');
+});
+
+// Test 17: NavigateHistorySuccessResponse accepts null html
+test('NavigateHistorySuccessResponse accepts null html', () => {
+  const response = new NavigateHistorySuccessResponse(
+    'forward',
+    'https://a.com',
+    'https://b.com',
+    null,
+    []
+  );
+  assert.strictEqual(response.html, null);
 });
 
 console.log();

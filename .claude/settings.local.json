@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude mcp:*)",
+      "WebSearch",
+      "mcp__mcpbrowser__fetch_webpage"
+    ]
+  }
+}

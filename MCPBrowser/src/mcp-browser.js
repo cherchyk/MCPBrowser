@@ -28,6 +28,7 @@ import { getCurrentHtml, GET_CURRENT_HTML_TOOL } from './actions/get-current-htm
 import { takeScreenshot, TAKE_SCREENSHOT_TOOL } from './actions/take-screenshot.js';
 import { scrollPage, SCROLL_PAGE_TOOL } from './actions/scroll-page.js';
 import { executeJavascript, EXECUTE_JAVASCRIPT_TOOL } from './actions/execute-javascript.js';
+import { navigateHistory, NAVIGATE_HISTORY_TOOL } from './actions/navigate-history.js';
 
 // Import functions for testing exports
 import { getBrowser, closeBrowser } from './core/browser.js';
@@ -67,7 +68,8 @@ async function main() {
     CLOSE_TAB_TOOL,
     GET_CURRENT_HTML_TOOL,
     TAKE_SCREENSHOT_TOOL,
-    SCROLL_PAGE_TOOL
+    SCROLL_PAGE_TOOL,
+    NAVIGATE_HISTORY_TOOL
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
@@ -121,6 +123,10 @@ async function main() {
         case "scroll_page":
           result = await scrollPage(safeArgs);
           break;
+
+        case "navigate_history":
+          result = await navigateHistory(safeArgs);
+          break;
           
         default:
           throw new Error(`Unknown tool: ${name}`);
@@ -171,6 +177,7 @@ export {
   getCurrentHtml,
   takeScreenshot,
   scrollPage,
+  navigateHistory,
   handleAcceptEula
 };
 
