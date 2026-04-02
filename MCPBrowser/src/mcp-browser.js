@@ -29,6 +29,7 @@ import { takeScreenshot, TAKE_SCREENSHOT_TOOL } from './actions/take-screenshot.
 import { scrollPage, SCROLL_PAGE_TOOL } from './actions/scroll-page.js';
 import { executeJavascript, EXECUTE_JAVASCRIPT_TOOL } from './actions/execute-javascript.js';
 import { navigateHistory, NAVIGATE_HISTORY_TOOL } from './actions/navigate-history.js';
+import { detectForms, DETECT_FORMS_TOOL } from './actions/detect-forms.js';
 
 // Import functions for testing exports
 import { getBrowser, closeBrowser } from './core/browser.js';
@@ -69,7 +70,8 @@ async function main() {
     GET_CURRENT_HTML_TOOL,
     TAKE_SCREENSHOT_TOOL,
     SCROLL_PAGE_TOOL,
-    NAVIGATE_HISTORY_TOOL
+    NAVIGATE_HISTORY_TOOL,
+    DETECT_FORMS_TOOL
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
@@ -127,6 +129,10 @@ async function main() {
         case "navigate_history":
           result = await navigateHistory(safeArgs);
           break;
+
+        case "detect_forms":
+          result = await detectForms(safeArgs);
+          break;
           
         default:
           throw new Error(`Unknown tool: ${name}`);
@@ -178,6 +184,7 @@ export {
   takeScreenshot,
   scrollPage,
   navigateHistory,
+  detectForms,
   handleAcceptEula
 };
 
