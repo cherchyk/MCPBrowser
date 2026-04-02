@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert';
-import { detectForms, fetchPage, executeJavascript } from '../../src/mcp-browser.js';
+import { detectForms, fetchPage, executeJavascript, closeTab } from '../../src/mcp-browser.js';
 import { ErrorResponse, InformationalResponse } from '../../src/core/responses.js';
 import { DetectFormsResponse } from '../../src/actions/detect-forms.js';
 import { runWithBrowsers } from '../browsers/browser-runner.js';
@@ -308,6 +308,60 @@ await runWithBrowsers(async (browserType) => {
     assert.strictEqual(result.orphanedFields.length, 0);
     assert.strictEqual(result.totalFieldCount, 0);
     assert.ok(result.summary.includes('No forms'), 'Summary should indicate no forms');
+  });
+
+  // ------------------------------------------------------------------
+  // Real-world test: w3schools HTML forms page
+  // ------------------------------------------------------------------
+
+  const realUrl = 'https://www.w3schools.com/html/html_forms.asp';
+
+  await test(`[${browserType}] Should detect forms on w3schools forms page`, async () => {
+    await fetchPage({ url: realUrl, browser: browserType, removeUnnecessaryHTML: false });
+    const result = await detectForms({ url: realUrl });
+    assert.strictEqual(result instanceof DetectFormsResponse, true, 'Should return DetectFormsResponse');
+    assert.ok(result.forms.length >= 1, `Should find at least 1 form, got ${result.forms.length}`);
+    assert.ok(result.totalFieldCount >= 1, `Should find fields, got ${result.totalFieldCount}`);
+    console.log(`      → Found ${result.forms.length} forms, ${result.totalFieldCount} total fields, ${result.orphanedFields.length} orphaned`);
+    console.log(`      → Summary: ${result.summary}`);
+
+    // Verify every form has a valid formType
+    for (const form of result.forms) {
+      assert.ok(
+        ['login', 'search', 'registration', 'contact', 'checkout', 'other'].includes(form.formType),
+        `Form type should be valid, got "${form.formType}"`
+      );
+    }
+
+    // Verify fields have selectors (usable for type_text/click_element)
+    const allFields = result.forms.flatMap(f => f.fields).concat(result.orphanedFields);
+    for (const field of allFields) {
+      assert.ok(field.selector, `Field "${field.name || field.id}" should have a selector`);
+      assert.ok(field.tag, `Field "${field.name || field.id}" should have a tag`);
+    }
+
+    // Verify nextSteps are populated
+    assert.ok(result.nextSteps.length > 0, 'Should have nextSteps');
+
+    await closeTab({ url: realUrl });
+  });
+
+  await test(`[${browserType}] Should detect forms with includeHidden on w3schools`, async () => {
+    await fetchPage({ url: realUrl, browser: browserType, removeUnnecessaryHTML: false });
+
+    const withoutHidden = await detectForms({ url: realUrl, includeHidden: false });
+    const withHidden = await detectForms({ url: realUrl, includeHidden: true });
+
+    console.log(`      → Without hidden: ${withoutHidden.totalFieldCount} fields`);
+    console.log(`      → With hidden: ${withHidden.totalFieldCount} fields`);
+
+    // With hidden should have >= fields than without
+    assert.ok(
+      withHidden.totalFieldCount >= withoutHidden.totalFieldCount,
+      `includeHidden should return >= fields (${withHidden.totalFieldCount} vs ${withoutHidden.totalFieldCount})`
+    );
+
+    await closeTab({ url: realUrl });
   });
 
 }, browserParam);
