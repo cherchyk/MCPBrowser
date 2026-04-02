@@ -3,6 +3,8 @@
 Auto-generated from all feature plans. Last updated: 2026-03-03
 
 ## Active Technologies
+- JavaScript (ES Modules), Node.js 18+ + `@modelcontextprotocol/sdk` ^1.25.1, `puppeteer-core` ^23.4.1 (002-site-plugins)
+- File-based plugin registry (`plugins.json`), plugin folders on disk (002-site-plugins)
 
 - Node.js 18+ (ESM) + puppeteer-core, @modelcontextprotocol/sdk (001-js-action-fallback)
 
@@ -34,6 +36,7 @@ MCPBrowser/
 - Node.js ESM modules; structured responses for MCP tools; prefer explicit async/await and try/catch with structured errors.
 
 ## Recent Changes
+- 002-site-plugins: Added JavaScript (ES Modules), Node.js 18+ + `@modelcontextprotocol/sdk` ^1.25.1, `puppeteer-core` ^23.4.1
 
 - 001-js-action-fallback: Added Node.js 18+ (ESM) + puppeteer-core, @modelcontextprotocol/sdk
 

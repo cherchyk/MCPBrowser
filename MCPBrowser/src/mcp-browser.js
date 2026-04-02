@@ -30,12 +30,19 @@ import { scrollPage, SCROLL_PAGE_TOOL } from './actions/scroll-page.js';
 import { executeJavascript, EXECUTE_JAVASCRIPT_TOOL } from './actions/execute-javascript.js';
 import { navigateHistory, NAVIGATE_HISTORY_TOOL } from './actions/navigate-history.js';
 
+// Import plugin dispatch tools
+import { pluginAction, PLUGIN_ACTION_TOOL } from './actions/plugin-action.js';
+import { pluginInfo, PLUGIN_INFO_TOOL } from './actions/plugin-info.js';
+
 // Import functions for testing exports
 import { getBrowser, closeBrowser } from './core/browser.js';
 import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml } from './core/page.js';
 import { isLikelyAuthUrl, waitForAuth, pollUntilAuthDone, detectLoginPage } from './core/auth.js';
 import { cleanHtml, enrichHtml, prepareHtml } from './core/html.js';
 import { getBaseDomain } from './utils.js';
+
+// Import plugin system
+import { loadPlugins, getLoadedPlugins, getPlugin, detectPlugins, getPluginNextSteps } from './core/plugin-loader.js';
 
 /**
  * Main entry point for the MCP server.
@@ -69,7 +76,9 @@ async function main() {
     GET_CURRENT_HTML_TOOL,
     TAKE_SCREENSHOT_TOOL,
     SCROLL_PAGE_TOOL,
-    NAVIGATE_HISTORY_TOOL
+    NAVIGATE_HISTORY_TOOL,
+    PLUGIN_INFO_TOOL,
+    PLUGIN_ACTION_TOOL
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
@@ -127,6 +136,14 @@ async function main() {
         case "navigate_history":
           result = await navigateHistory(safeArgs);
           break;
+
+        case "plugin_info":
+          result = pluginInfo(safeArgs);
+          break;
+
+        case "plugin_action":
+          result = await pluginAction(safeArgs);
+          break;
           
         default:
           throw new Error(`Unknown tool: ${name}`);
@@ -148,6 +165,13 @@ async function main() {
   });
 
   const transport = new StdioServerTransport();
+  
+  // Load plugins before starting the server
+  const pluginCount = await loadPlugins();
+  if (pluginCount > 0) {
+    logger.info(`${pluginCount} plugin(s) loaded and ready`);
+  }
+  
   await server.connect(transport);
   logger.info(`MCPBrowser server v${packageJson.version} started`);
 }
@@ -178,7 +202,15 @@ export {
   takeScreenshot,
   scrollPage,
   navigateHistory,
-  handleAcceptEula
+  handleAcceptEula,
+  // Plugin system exports
+  loadPlugins,
+  getLoadedPlugins,
+  getPlugin,
+  detectPlugins,
+  getPluginNextSteps,
+  pluginAction,
+  pluginInfo
 };
 
 // Run the MCP server only if this is the main module (not imported for testing)

@@ -28,6 +28,7 @@ import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageReady } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
+import { getPluginNextSteps } from '../core/plugin-loader.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -332,7 +333,8 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
           "Use MCPBrowser's type_text to fill forms if needed",
           "Use MCPBrowser's get_current_html to refresh page state",
           "Use MCPBrowser's take_screenshot if page has popups or visual content that's hard to parse from HTML",
-          "Use MCPBrowser's close_tab when finished"
+          "Use MCPBrowser's close_tab when finished",
+          ...(html ? getPluginNextSteps(currentUrl, html) : [])
         ]
       : [
           "Use MCPBrowser's get_current_html to see updated page state",

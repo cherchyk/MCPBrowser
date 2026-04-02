@@ -6,6 +6,7 @@ import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { extractAndProcessHtml } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
+import { getPluginNextSteps } from '../core/plugin-loader.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -160,7 +161,8 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
         "Use MCPBrowser's click_element to interact with elements",
         "Use MCPBrowser's type_text to fill forms",
         "Use MCPBrowser's take_screenshot if page layout or visual content is hard to understand from HTML",
-        "Use MCPBrowser's close_tab to free resources when done"
+        "Use MCPBrowser's close_tab to free resources when done",
+        ...getPluginNextSteps(currentUrl, html)
       ]
     );
   } catch (err) {
