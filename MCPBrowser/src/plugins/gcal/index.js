@@ -139,6 +139,7 @@ export function getActions() {
 
 export function getInfo() {
   return {
+    recommendation: "Manage Google Calendar — list, read, create, search, edit, RSVP, delete events and check availability.",
     description: "Google Calendar event management with hybrid UI resilience — list, read, create, search, edit, RSVP, delete events and check availability using URL navigation (T1), keyboard shortcuts (T2), ARIA selectors (T3), and CSS fallback (T4).",
     targetPages: ["Google Calendar (calendar.google.com)"],
     authFlow: "User must be signed into Google Calendar in the browser before using plugin actions. Keyboard shortcuts must be enabled in Calendar Settings.",

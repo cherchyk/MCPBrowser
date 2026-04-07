@@ -186,6 +186,7 @@ export function getActions() {
  */
 export function getInfo() {
   return {
+    recommendation: "Manage Gmail emails — list, read, search, compose, reply, forward, archive, delete, label, and mark as read/unread.",
     description: "Gmail email management with hybrid UI resilience — list, read, search, compose, reply, forward, archive, delete, label, and mark emails using URL navigation (T1), keyboard shortcuts (T2), ARIA selectors (T3), and CSS fallback (T4).",
     targetPages: ["Gmail inbox (mail.google.com)"],
     authFlow: "User must be signed into Gmail in the browser before using plugin actions. The plugin does not handle Google account authentication.",

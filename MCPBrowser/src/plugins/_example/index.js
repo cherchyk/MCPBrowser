@@ -131,6 +131,7 @@ export function getActions() {
  */
 export function getInfo() {
   return {
+    recommendation: "Interact with example.test pages — list items and view item details.",
     description: "Example stub plugin for testing MCPBrowser's plugin system. Lists items and retrieves item details from example.test pages.",
     targetPages: ["Example test page (example.test)"],
     authFlow: "No authentication required — example.test is a test domain",

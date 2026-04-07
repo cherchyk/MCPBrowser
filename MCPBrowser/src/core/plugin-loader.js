@@ -265,11 +265,12 @@ export function detectPlugins(url, html) {
         
         // Build nextSteps from plugin info — descriptive, actionable
         const info = plugin.getInfo();
+        const recommendationText = info.recommendation || info.description || 'Site-specific automation available.';
         const topActions = (info.actions || []).slice(0, 3);
         const actionLines = topActions.map(a => `  - ${a.name}: ${a.description}`);
         
         const nextSteps = [
-          `⚡ Plugin "${name}" detected (confidence: ${confidence}) — ${info.description || 'Site-specific automation available.'}`,
+          `\u26a1 Plugin "${name}" detected (confidence: ${confidence}) \u2014 ${recommendationText}`,
           ...(actionLines.length > 0 ? [`Recommended actions:\n${actionLines.join('\n')}\nUse plugin_action({ plugin: '${name}', action: '<name>', params: {...} }) to execute, or plugin_info({ plugin: '${name}' }) for the full action catalog.`] : [])
         ];
         
