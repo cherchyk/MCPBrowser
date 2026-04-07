@@ -107,6 +107,27 @@
       "expectedTool": "close_tab",
       "expectedReason": "Explicitly asked to close tab",
       "priority": "medium"
+    },
+    {
+      "id": "plugin-list-emails",
+      "userRequest": "Use the Gmail plugin to list my recent emails",
+      "expectedTool": "plugin_action",
+      "expectedReason": "User explicitly requests a plugin action for a specific site",
+      "priority": "medium"
+    },
+    {
+      "id": "plugin-what-available",
+      "userRequest": "What plugins are available for this browser?",
+      "expectedTool": "plugin_info",
+      "expectedReason": "User asks about available plugins or plugin capabilities",
+      "priority": "medium"
+    },
+    {
+      "id": "plugin-show-actions",
+      "userRequest": "Show me what actions the Outlook plugin can do",
+      "expectedTool": "plugin_info",
+      "expectedReason": "User wants to discover plugin actions before using them",
+      "priority": "medium"
     }
   ],
   "evaluationCriteria": {

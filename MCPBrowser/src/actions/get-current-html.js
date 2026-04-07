@@ -6,6 +6,7 @@ import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { extractAndProcessHtml } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
+import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -23,8 +24,9 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
    * @param {string} currentUrl - Current page URL
    * @param {string} html - Page HTML content
    * @param {string[]} nextSteps - Suggested next actions
+   * @param {Array} [recommendedPlugins] - Detected plugin metadata
    */
-  constructor(currentUrl, html, nextSteps) {
+  constructor(currentUrl, html, nextSteps, recommendedPlugins = []) {
     super(nextSteps);
     
     if (typeof currentUrl !== 'string') {
@@ -36,12 +38,14 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
     
     this.currentUrl = currentUrl;
     this.html = html;
+    this.recommendedPlugins = recommendedPlugins;
   }
 
   _getAdditionalFields() {
     return {
       currentUrl: this.currentUrl,
-      html: this.html
+      html: this.html,
+      recommendedPlugins: this.recommendedPlugins
     };
   }
 
@@ -157,11 +161,13 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
       currentUrl,
       html,
       [
+        ...getPluginNextSteps(currentUrl, html),
         "Use MCPBrowser's click_element to interact with elements",
         "Use MCPBrowser's type_text to fill forms",
         "Use MCPBrowser's take_screenshot if page layout or visual content is hard to understand from HTML",
         "Use MCPBrowser's close_tab to free resources when done"
-      ]
+      ],
+      getRecommendedPlugins(currentUrl, html)
     );
   } catch (err) {
     logger.error(`get_current_html failed: ${err.message}`);
