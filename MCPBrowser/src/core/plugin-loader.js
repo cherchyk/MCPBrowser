@@ -263,14 +263,12 @@ export function detectPlugins(url, html) {
       if (match && match.matched) {
         const confidence = typeof match.confidence === 'number' ? match.confidence : 1.0;
         
-        // Build nextSteps from plugin info
+        // Build nextSteps from plugin info — concise, actionable
         const info = plugin.getInfo();
-        const topActions = (info.actions || []).slice(0, 3);
-        const actionSummary = topActions.map(a => a.name).join(', ');
+        const recommendationText = info.recommendation || info.description || 'Site-specific automation available.';
         
         const nextSteps = [
-          `Plugin "${name}" detected — use plugin_info({ plugin: '${name}' }) to see all available actions`,
-          ...(actionSummary ? [`Top actions: ${actionSummary}. Use plugin_action({ plugin: '${name}', action: '<name>' }) to execute`] : [])
+          `Recommended: use "${name}" plugin to ${recommendationText.charAt(0).toLowerCase() + recommendationText.slice(1).replace(/\.$/, '')}. See recommendedPlugins for available actions.`
         ];
         
         results.push({ pluginName: name, confidence, nextSteps });
@@ -299,6 +297,29 @@ export function getPluginNextSteps(url, html) {
     steps.push(...d.nextSteps);
   }
   return steps;
+}
+
+/**
+ * Build the recommendedPlugins payload for structuredContent.
+ * Returns full plugin metadata including action catalog with params,
+ * so agents can call actions directly without needing plugin_info.
+ * @param {string} url - Current page URL
+ * @param {string} html - Extracted page HTML
+ * @returns {Array<{ plugin: string, recommendation: string, actions: Array, usage: string }>}
+ */
+export function getRecommendedPlugins(url, html) {
+  const detections = detectPlugins(url, html);
+  return detections.map(d => {
+    const plugin = loadedPlugins.get(d.pluginName);
+    const info = plugin.getInfo();
+    const recommendationText = info.recommendation || info.description || 'Site-specific automation available.';
+    return {
+      plugin: d.pluginName,
+      recommendation: recommendationText,
+      actions: info.actions || [],
+      usage: `plugin_action({ plugin: '${d.pluginName}', action: '<name>', params: {...} })`
+    };
+  });
 }
 
 // ============================================================================

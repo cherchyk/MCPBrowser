@@ -1,3 +1,4 @@
 {
-  "enabled": ["gmail"]
+  "enabled": [],
+  "enabled_no": ["gmail", "gcal"]
 }

@@ -9,6 +9,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-03
 - N/A (plugin registry is file-based `plugins.json`, already implemented) (003-gmail-plugin)
 - JavaScript (ES modules), Node.js 18+ + Puppeteer-core (for `page.keyboard`, `page.$()`, `page.evaluate()`), MCPBrowser core (responses.js, plugin-loader.js, browser.js, logger.js) (003-gmail-plugin)
 - N/A (stateless plugin, no persistence) (003-gmail-plugin)
+- JavaScript (ES Modules), Node.js 18+ + MCPBrowser plugin system (002-site-plugins), Puppeteer (page object provided by plugin-action dispatcher), MCPBrowser core responses (`MCPResponse`, `ErrorResponse`) (004-google-calendar-plugin)
+- N/A — stateless plugin, no persistence (004-google-calendar-plugin)
 
 - Node.js 18+ (ESM) + puppeteer-core, @modelcontextprotocol/sdk (001-js-action-fallback)
 
@@ -40,9 +42,9 @@ MCPBrowser/
 - Node.js ESM modules; structured responses for MCP tools; prefer explicit async/await and try/catch with structured errors.
 
 ## Recent Changes
+- 004-google-calendar-plugin: Added JavaScript (ES Modules), Node.js 18+ + MCPBrowser plugin system (002-site-plugins), Puppeteer (page object provided by plugin-action dispatcher), MCPBrowser core responses (`MCPResponse`, `ErrorResponse`)
 - 003-gmail-plugin: Added JavaScript (ES modules), Node.js 18+ + Puppeteer-core (for `page.keyboard`, `page.$()`, `page.evaluate()`), MCPBrowser core (responses.js, plugin-loader.js, browser.js, logger.js)
 - 003-gmail-plugin: Added JavaScript (ES Modules), Node.js 18+ + `@modelcontextprotocol/sdk` ^1.25.1, `puppeteer-core` ^23.4.1, MCPBrowser plugin system (002-site-plugins)
-- 002-site-plugins: Added JavaScript (ES Modules), Node.js 18+ + `@modelcontextprotocol/sdk` ^1.25.1, `puppeteer-core` ^23.4.1
 
 
 <!-- MANUAL ADDITIONS START -->
