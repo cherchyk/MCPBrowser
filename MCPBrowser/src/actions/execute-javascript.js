@@ -224,10 +224,10 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
     urlChanged,
     currentUrl,
     nextSteps: [
+      ...getPluginNextSteps(currentUrl, ''),
       'Use click_element or type_text for follow-up actions',
       'Inspect urlChanged to decide if navigation occurred',
-      serialization.truncated ? 'Narrow your selector or reduce returned fields to avoid truncation' : 'Proceed with the returned data',
-      ...getPluginNextSteps(currentUrl, '')
+      serialization.truncated ? 'Narrow your selector or reduce returned fields to avoid truncation' : 'Proceed with the returned data'
     ]
   });
 }

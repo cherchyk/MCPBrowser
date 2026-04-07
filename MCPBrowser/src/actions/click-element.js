@@ -329,12 +329,12 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
 
     const nextSteps = returnHtml
       ? [
+          ...(html ? getPluginNextSteps(currentUrl, html) : []),
           "Use MCPBrowser's click_element again to navigate further",
           "Use MCPBrowser's type_text to fill forms if needed",
           "Use MCPBrowser's get_current_html to refresh page state",
           "Use MCPBrowser's take_screenshot if page has popups or visual content that's hard to parse from HTML",
-          "Use MCPBrowser's close_tab when finished",
-          ...(html ? getPluginNextSteps(currentUrl, html) : [])
+          "Use MCPBrowser's close_tab when finished"
         ]
       : [
           "Use MCPBrowser's get_current_html to see updated page state",

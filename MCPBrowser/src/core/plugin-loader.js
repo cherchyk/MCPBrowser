@@ -263,14 +263,14 @@ export function detectPlugins(url, html) {
       if (match && match.matched) {
         const confidence = typeof match.confidence === 'number' ? match.confidence : 1.0;
         
-        // Build nextSteps from plugin info
+        // Build nextSteps from plugin info — descriptive, actionable
         const info = plugin.getInfo();
         const topActions = (info.actions || []).slice(0, 3);
-        const actionSummary = topActions.map(a => a.name).join(', ');
+        const actionLines = topActions.map(a => `  - ${a.name}: ${a.description}`);
         
         const nextSteps = [
-          `Plugin "${name}" detected — use plugin_info({ plugin: '${name}' }) to see all available actions`,
-          ...(actionSummary ? [`Top actions: ${actionSummary}. Use plugin_action({ plugin: '${name}', action: '<name>' }) to execute`] : [])
+          `⚡ Plugin "${name}" detected (confidence: ${confidence}) — ${info.description || 'Site-specific automation available.'}`,
+          ...(actionLines.length > 0 ? [`Recommended actions:\n${actionLines.join('\n')}\nUse plugin_action({ plugin: '${name}', action: '<name>', params: {...} }) to execute, or plugin_info({ plugin: '${name}' }) for the full action catalog.`] : [])
         ];
         
         results.push({ pluginName: name, confidence, nextSteps });
