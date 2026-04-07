@@ -38,13 +38,9 @@ async function notifyAgent(level, data) {
     // Skip if client requested a higher threshold.
     if (mcpServer.isMessageIgnored?.(level)) return;
     await mcpServer.sendLoggingMessage({ level, logger: 'mcpbrowser', data });
-  } catch (err) {
-    // Fall back to stderr without recursing through logger.
-    try {
-      process.stderr.write(`${PREFIX} logging notification failed: ${err?.message || err}\n`);
-    } catch (_) {
-      /* ignore */
-    }
+  } catch {
+    // Silently drop — this is expected during startup before the MCP
+    // transport handshake completes. Stderr already has the message.
   }
 }
 
