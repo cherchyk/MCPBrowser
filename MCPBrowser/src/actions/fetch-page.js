@@ -8,7 +8,7 @@ import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extract
 import { isLikelyAuthUrl, waitForAuth } from '../core/auth.js';
 import { MCPResponse, ErrorResponse, HttpStatusResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
-import { getPluginNextSteps } from '../core/plugin-loader.js';
+import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -26,8 +26,9 @@ export class FetchPageSuccessResponse extends MCPResponse {
    * @param {string} currentUrl - Final URL after redirects
    * @param {string} html - Page HTML content
    * @param {string[]} nextSteps - Suggested next actions
+   * @param {Array} [recommendedPlugins] - Detected plugin metadata
    */
-  constructor(currentUrl, html, nextSteps) {
+  constructor(currentUrl, html, nextSteps, recommendedPlugins = []) {
     super(nextSteps);
     
     if (typeof currentUrl !== 'string') {
@@ -39,12 +40,14 @@ export class FetchPageSuccessResponse extends MCPResponse {
     
     this.currentUrl = currentUrl;
     this.html = html;
+    this.recommendedPlugins = recommendedPlugins;
   }
 
   _getAdditionalFields() {
     return {
       currentUrl: this.currentUrl,
-      html: this.html
+      html: this.html,
+      recommendedPlugins: this.recommendedPlugins
     };
   }
 
@@ -227,7 +230,8 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, postLoadWait }
         "Use MCPBrowser's get_current_html to re-check page state after interactions",
         "Use MCPBrowser's take_screenshot if page has charts, images, or complex visual layout that's hard to understand from HTML",
         "Use MCPBrowser's close_tab when finished to free browser resources"
-      ]
+      ],
+      getRecommendedPlugins(page.url(), processedHtml)
     );
   } catch (err) {
     logger.error(`fetch_webpage failed: ${err.message || String(err)}`);

@@ -282,8 +282,7 @@ await test('[US1] getPluginNextSteps: returns nextSteps strings with plugin name
     assert.ok(steps.length > 0, 'Should return at least one nextStep');
     const joined = steps.join(' ');
     assert.ok(joined.includes('_example'), 'nextSteps should mention plugin name');
-    assert.ok(joined.includes('plugin_info'), 'nextSteps should reference plugin_info');
-    assert.ok(joined.includes('plugin_action'), 'nextSteps should reference plugin_action');
+    assert.ok(joined.includes('recommendedPlugins'), 'nextSteps should reference recommendedPlugins');
   });
 });
 

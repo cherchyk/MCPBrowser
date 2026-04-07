@@ -28,7 +28,7 @@ import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageReady } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
-import { getPluginNextSteps } from '../core/plugin-loader.js';
+import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -38,7 +38,7 @@ import { getPluginNextSteps } from '../core/plugin-loader.js';
  * Structured response for click_element with JS fallback metadata
  */
 export class ClickWithFallbackResponse extends MCPResponse {
-  constructor({ status, fallbackUsed = false, nativeAttempt, fallbackAttempt, postClickWait, currentUrl, html = null, message, nextSteps = [] }) {
+  constructor({ status, fallbackUsed = false, nativeAttempt, fallbackAttempt, postClickWait, currentUrl, html = null, message, nextSteps = [], recommendedPlugins = [] }) {
     super(nextSteps);
     this.status = status;
     this.fallbackUsed = fallbackUsed;
@@ -48,6 +48,7 @@ export class ClickWithFallbackResponse extends MCPResponse {
     this.currentUrl = currentUrl;
     this.html = html;
     this.message = message;
+    this.recommendedPlugins = recommendedPlugins;
   }
 
   _getAdditionalFields() {
@@ -59,7 +60,8 @@ export class ClickWithFallbackResponse extends MCPResponse {
       postClickWait: this.postClickWait,
       currentUrl: this.currentUrl,
       html: this.html,
-      message: this.message
+      message: this.message,
+      recommendedPlugins: this.recommendedPlugins
     };
   }
 
@@ -354,7 +356,8 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       currentUrl,
       html,
       message,
-      nextSteps
+      nextSteps,
+      recommendedPlugins: html ? getRecommendedPlugins(currentUrl, html) : []
     });
   } catch (err) {
     logger.error(`click_element failed: ${err.message}`);

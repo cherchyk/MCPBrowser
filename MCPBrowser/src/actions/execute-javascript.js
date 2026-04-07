@@ -7,7 +7,7 @@ import { waitForPageReady } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { serializeExecutionResult } from '../utils.js';
-import { getPluginNextSteps } from '../core/plugin-loader.js';
+import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
 
 // Shared execution defaults for script actions
 export const EXECUTION_TIMEOUT_DEFAULT_MS = 30_000;
@@ -22,7 +22,7 @@ export const EXECUTION_RESULT_MAX_BYTES = 100_000;
  * Structured response for execute_javascript action
  */
 export class ExecuteJavascriptResponse extends MCPResponse {
-  constructor({ result, type, executionTimeMs, truncated = false, urlChanged = false, currentUrl = '', error = null, nextSteps = [] }) {
+  constructor({ result, type, executionTimeMs, truncated = false, urlChanged = false, currentUrl = '', error = null, nextSteps = [], recommendedPlugins = [] }) {
     super(nextSteps);
 
     this.result = result;
@@ -32,6 +32,7 @@ export class ExecuteJavascriptResponse extends MCPResponse {
     this.urlChanged = urlChanged;
     this.currentUrl = currentUrl;
     this.error = error;
+    this.recommendedPlugins = recommendedPlugins;
   }
 
   _getAdditionalFields() {
@@ -42,7 +43,8 @@ export class ExecuteJavascriptResponse extends MCPResponse {
       truncated: this.truncated,
       urlChanged: this.urlChanged,
       currentUrl: this.currentUrl,
-      error: this.error || undefined
+      error: this.error || undefined,
+      recommendedPlugins: this.recommendedPlugins
     };
   }
 
@@ -228,7 +230,8 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
       'Use click_element or type_text for follow-up actions',
       'Inspect urlChanged to decide if navigation occurred',
       serialization.truncated ? 'Narrow your selector or reduce returned fields to avoid truncation' : 'Proceed with the returned data'
-    ]
+    ],
+    recommendedPlugins: getRecommendedPlugins(currentUrl, '')
   });
 }
 
