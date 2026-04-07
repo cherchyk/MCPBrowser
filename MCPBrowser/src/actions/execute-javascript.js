@@ -7,6 +7,7 @@ import { waitForPageReady } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { serializeExecutionResult } from '../utils.js';
+import { getPluginNextSteps } from '../core/plugin-loader.js';
 
 // Shared execution defaults for script actions
 export const EXECUTION_TIMEOUT_DEFAULT_MS = 30_000;
@@ -225,7 +226,8 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
     nextSteps: [
       'Use click_element or type_text for follow-up actions',
       'Inspect urlChanged to decide if navigation occurred',
-      serialization.truncated ? 'Narrow your selector or reduce returned fields to avoid truncation' : 'Proceed with the returned data'
+      serialization.truncated ? 'Narrow your selector or reduce returned fields to avoid truncation' : 'Proceed with the returned data',
+      ...getPluginNextSteps(currentUrl, '')
     ]
   });
 }
