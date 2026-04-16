@@ -29,6 +29,7 @@ import { extractAndProcessHtml, waitForPageReady } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
+import { scanPageForms } from './detect-forms.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -38,7 +39,7 @@ import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader
  * Structured response for click_element with JS fallback metadata
  */
 export class ClickWithFallbackResponse extends MCPResponse {
-  constructor({ status, fallbackUsed = false, nativeAttempt, fallbackAttempt, postClickWait, currentUrl, html = null, message, nextSteps = [], recommendedPlugins = [] }) {
+  constructor({ status, fallbackUsed = false, nativeAttempt, fallbackAttempt, postClickWait, currentUrl, html = null, message, nextSteps = [], recommendedPlugins = [], formData = null }) {
     super(nextSteps);
     this.status = status;
     this.fallbackUsed = fallbackUsed;
@@ -49,6 +50,9 @@ export class ClickWithFallbackResponse extends MCPResponse {
     this.html = html;
     this.message = message;
     this.recommendedPlugins = recommendedPlugins;
+    this.forms = formData?.forms || [];
+    this.orphanedFields = formData?.orphanedFields || [];
+    this.totalFieldCount = formData?.totalFieldCount || 0;
   }
 
   _getAdditionalFields() {
@@ -61,7 +65,10 @@ export class ClickWithFallbackResponse extends MCPResponse {
       currentUrl: this.currentUrl,
       html: this.html,
       message: this.message,
-      recommendedPlugins: this.recommendedPlugins
+      recommendedPlugins: this.recommendedPlugins,
+      forms: this.forms,
+      orphanedFields: this.orphanedFields,
+      totalFieldCount: this.totalFieldCount
     };
   }
 
@@ -135,13 +142,16 @@ export const CLICK_ELEMENT_TOOL = {
         type: ["string", "null"], 
         description: "Page HTML if returnHtml was true, null otherwise" 
       },
+      forms: { type: "array", items: { type: "object" }, description: "Detected forms with fields, selectors, and metadata (when returnHtml is true)" },
+      orphanedFields: { type: "array", items: { type: "object" }, description: "Input/select/textarea elements not inside any <form> (when returnHtml is true)" },
+      totalFieldCount: { type: "number", description: "Total number of form fields found on the page" },
       nextSteps: { 
         type: "array", 
         items: { type: "string" },
         description: "Suggested next actions"
       }
     },
-    required: ["status", "fallbackUsed", "nativeAttempt", "currentUrl", "message", "html", "nextSteps"],
+    required: ["status", "fallbackUsed", "nativeAttempt", "currentUrl", "message", "html", "forms", "orphanedFields", "totalFieldCount", "nextSteps"],
     additionalProperties: false
   }
 };
@@ -322,6 +332,17 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
 
     const currentUrl = page.url();
     const html = finalStatus === 'success' && returnHtml ? await extractAndProcessHtml(page, removeUnnecessaryHTML) : null;
+
+    // Scan for forms when returning HTML (lightweight, ~50-100ms)
+    let formData = null;
+    if (finalStatus === 'success' && returnHtml) {
+      try {
+        formData = await scanPageForms(page);
+      } catch (err) {
+        logger.debug(`Form scan failed (non-fatal): ${err.message}`);
+      }
+    }
+
     const baseMessage = selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`;
     const message = finalStatus === 'success'
       ? baseMessage
@@ -357,7 +378,8 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       html,
       message,
       nextSteps,
-      recommendedPlugins: html ? getRecommendedPlugins(currentUrl, html) : []
+      recommendedPlugins: html ? getRecommendedPlugins(currentUrl, html) : [],
+      formData
     });
   } catch (err) {
     logger.error(`click_element failed: ${err.message}`);

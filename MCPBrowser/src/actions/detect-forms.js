@@ -342,6 +342,22 @@ function buildScanFunction(includeHidden) {
 }
 
 // ============================================================================
+// SHARED SCAN FUNCTION (used by fetch-page, get-current-html, click-element)
+// ============================================================================
+
+/**
+ * Scan a page for forms and return structured data.
+ * Lightweight (~50-100ms) - safe to call on every page load.
+ * @param {Object} page - Puppeteer page object
+ * @param {boolean} [includeHidden=false] - Whether to include hidden fields
+ * @returns {Promise<{forms: Array, orphanedFields: Array, totalFieldCount: number}>}
+ */
+export async function scanPageForms(page, includeHidden = false) {
+  const scanFn = buildScanFunction(includeHidden);
+  return await page.evaluate(scanFn, includeHidden);
+}
+
+// ============================================================================
 // ACTION FUNCTION
 // ============================================================================
 
@@ -401,8 +417,7 @@ export async function detectForms({ url, includeHidden = false }) {
   }
 
   try {
-    const scanFn = buildScanFunction(includeHidden);
-    const raw = await page.evaluate(scanFn, includeHidden);
+    const raw = await scanPageForms(page, includeHidden);
 
     // Build summary
     const summary = buildSummary(raw.forms, raw.orphanedFields, raw.totalFieldCount);

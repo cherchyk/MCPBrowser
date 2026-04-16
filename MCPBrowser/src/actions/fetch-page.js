@@ -9,6 +9,7 @@ import { isLikelyAuthUrl, waitForAuth } from '../core/auth.js';
 import { MCPResponse, ErrorResponse, HttpStatusResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
+import { scanPageForms } from './detect-forms.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -27,8 +28,9 @@ export class FetchPageSuccessResponse extends MCPResponse {
    * @param {string} html - Page HTML content
    * @param {string[]} nextSteps - Suggested next actions
    * @param {Array} [recommendedPlugins] - Detected plugin metadata
+   * @param {Object} [formData] - Detected forms data
    */
-  constructor(currentUrl, html, nextSteps, recommendedPlugins = []) {
+  constructor(currentUrl, html, nextSteps, recommendedPlugins = [], formData = null) {
     super(nextSteps);
     
     if (typeof currentUrl !== 'string') {
@@ -41,13 +43,19 @@ export class FetchPageSuccessResponse extends MCPResponse {
     this.currentUrl = currentUrl;
     this.html = html;
     this.recommendedPlugins = recommendedPlugins;
+    this.forms = formData?.forms || [];
+    this.orphanedFields = formData?.orphanedFields || [];
+    this.totalFieldCount = formData?.totalFieldCount || 0;
   }
 
   _getAdditionalFields() {
     return {
       currentUrl: this.currentUrl,
       html: this.html,
-      recommendedPlugins: this.recommendedPlugins
+      recommendedPlugins: this.recommendedPlugins,
+      forms: this.forms,
+      orphanedFields: this.orphanedFields,
+      totalFieldCount: this.totalFieldCount
     };
   }
 
@@ -87,13 +95,16 @@ export const FETCH_WEBPAGE_TOOL = {
     properties: {
       currentUrl: { type: "string", description: "Final URL after any redirects" },
       html: { type: "string", description: "Page HTML content" },
+      forms: { type: "array", items: { type: "object" }, description: "Detected forms with fields, selectors, and metadata" },
+      orphanedFields: { type: "array", items: { type: "object" }, description: "Input/select/textarea elements not inside any <form>" },
+      totalFieldCount: { type: "number", description: "Total number of form fields found on the page" },
       nextSteps: { 
         type: "array", 
         items: { type: "string" },
         description: "Suggested next actions"
       }
     },
-    required: ["currentUrl", "html", "nextSteps"],
+    required: ["currentUrl", "html", "forms", "orphanedFields", "totalFieldCount", "nextSteps"],
     additionalProperties: false
   }
 };
@@ -212,6 +223,14 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, postLoadWait }
     // Extract and process HTML
     const processedHtml = await extractAndProcessHtml(page, removeUnnecessaryHTML);
     
+    // Scan for forms (lightweight, ~50-100ms)
+    let formData = null;
+    try {
+      formData = await scanPageForms(page);
+    } catch (err) {
+      logger.debug(`Form scan failed (non-fatal): ${err.message}`);
+    }
+    
     logger.info(`fetch_webpage completed: ${page.url()}`);
     
     // Check for non-2xx HTTP status codes
@@ -231,7 +250,8 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, postLoadWait }
         "Use MCPBrowser's take_screenshot if page has charts, images, or complex visual layout that's hard to understand from HTML",
         "Use MCPBrowser's close_tab when finished to free browser resources"
       ],
-      getRecommendedPlugins(page.url(), processedHtml)
+      getRecommendedPlugins(page.url(), processedHtml),
+      formData
     );
   } catch (err) {
     logger.error(`fetch_webpage failed: ${err.message || String(err)}`);

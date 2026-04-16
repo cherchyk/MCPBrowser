@@ -7,6 +7,7 @@ import { extractAndProcessHtml } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
+import { scanPageForms } from './detect-forms.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -25,8 +26,9 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
    * @param {string} html - Page HTML content
    * @param {string[]} nextSteps - Suggested next actions
    * @param {Array} [recommendedPlugins] - Detected plugin metadata
+   * @param {Object} [formData] - Detected forms data
    */
-  constructor(currentUrl, html, nextSteps, recommendedPlugins = []) {
+  constructor(currentUrl, html, nextSteps, recommendedPlugins = [], formData = null) {
     super(nextSteps);
     
     if (typeof currentUrl !== 'string') {
@@ -39,13 +41,19 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
     this.currentUrl = currentUrl;
     this.html = html;
     this.recommendedPlugins = recommendedPlugins;
+    this.forms = formData?.forms || [];
+    this.orphanedFields = formData?.orphanedFields || [];
+    this.totalFieldCount = formData?.totalFieldCount || 0;
   }
 
   _getAdditionalFields() {
     return {
       currentUrl: this.currentUrl,
       html: this.html,
-      recommendedPlugins: this.recommendedPlugins
+      recommendedPlugins: this.recommendedPlugins,
+      forms: this.forms,
+      orphanedFields: this.orphanedFields,
+      totalFieldCount: this.totalFieldCount
     };
   }
 
@@ -79,13 +87,16 @@ export const GET_CURRENT_HTML_TOOL = {
     properties: {
       currentUrl: { type: "string", description: "Current page URL" },
       html: { type: "string", description: "Page HTML content" },
+      forms: { type: "array", items: { type: "object" }, description: "Detected forms with fields, selectors, and metadata" },
+      orphanedFields: { type: "array", items: { type: "object" }, description: "Input/select/textarea elements not inside any <form>" },
+      totalFieldCount: { type: "number", description: "Total number of form fields found on the page" },
       nextSteps: { 
         type: "array", 
         items: { type: "string" },
         description: "Suggested next actions"
       }
     },
-    required: ["currentUrl", "html", "nextSteps"],
+    required: ["currentUrl", "html", "forms", "orphanedFields", "totalFieldCount", "nextSteps"],
     additionalProperties: false
   }
 };
@@ -155,6 +166,14 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
     const currentUrl = page.url();
     const html = await extractAndProcessHtml(page, removeUnnecessaryHTML);
     
+    // Scan for forms (lightweight, ~50-100ms)
+    let formData = null;
+    try {
+      formData = await scanPageForms(page);
+    } catch (err) {
+      logger.debug(`Form scan failed (non-fatal): ${err.message}`);
+    }
+    
     logger.info(`get_current_html completed: got HTML from ${currentUrl}`);
     
     return new GetCurrentHtmlSuccessResponse(
@@ -167,7 +186,8 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
         "Use MCPBrowser's take_screenshot if page layout or visual content is hard to understand from HTML",
         "Use MCPBrowser's close_tab to free resources when done"
       ],
-      getRecommendedPlugins(currentUrl, html)
+      getRecommendedPlugins(currentUrl, html),
+      formData
     );
   } catch (err) {
     logger.error(`get_current_html failed: ${err.message}`);
