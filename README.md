@@ -53,6 +53,7 @@ Example workflow for AI assistant to use MCPBrowser
   - [scroll_page](#scroll_page)
   - [take_screenshot](#take_screenshot)
   - [close_tab](#close_tab)
+- [CLI Mode](#cli-mode)
 - [Configuration](#configuration-optional)
 - [Troubleshooting](#troubleshooting)
 - [For Developers](#for-developers)
@@ -643,6 +644,40 @@ Closes the browser tab for the given URL's hostname. Removes the page from the t
 - Clear authentication/session state
 - Free up browser memory
 - Reset to fresh state before new login
+
+---
+
+## CLI Mode
+
+MCPBrowser can also be used as a **standalone command-line tool**, making it easy to use from shell scripts, CI/CD pipelines, or AI agents that work through shell commands (like GitHub Copilot CLI).
+
+```bash
+# Show help
+mcpbrowser --help
+
+# Fetch a page (handles auth, SSO, SPAs automatically)
+mcpbrowser fetch https://eng.ms/docs/my-page
+
+# Fetch with raw HTML output
+mcpbrowser fetch https://github.com --browser chrome --raw
+
+# Take a screenshot
+mcpbrowser screenshot https://example.com --output page.png --full-page
+
+# Click an element on a loaded page
+mcpbrowser click https://example.com --selector "#login-btn"
+
+# Type into a form field
+mcpbrowser type https://example.com --selector "input[name=q]" --text "search query"
+
+# Execute JavaScript
+mcpbrowser exec https://example.com --script "document.title"
+
+# Get current HTML of a loaded page
+mcpbrowser html https://example.com
+```
+
+**CLI vs MCP mode:** When run without arguments, MCPBrowser starts as an MCP server (stdin/stdout JSON-RPC). When run with a subcommand, it executes the command and exits — no MCP protocol needed.
 
 ---
 

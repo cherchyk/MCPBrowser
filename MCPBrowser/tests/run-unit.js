@@ -15,7 +15,8 @@ const unitTests = [
   'core/informational-response.test.js', // InformationalResponse (soft failures)
   'core/http-status-response.test.js',  // HttpStatusResponse (HTTP 4xx/5xx)
   'core/auth.test.js',                  // Auth flows with mock pages
-  'mcp-browser.test.js'                 // MCP server initialization
+  'mcp-browser.test.js',               // MCP server initialization
+  'cli.test.js'                         // CLI argument parsing and routing
   // Browser tests: see run-browser.js
   // Tool selection tests: see tool-selection/run-tool-selection-tests.js
 ];
