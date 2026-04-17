@@ -13,7 +13,7 @@ import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 
 // Import CLI mode
-import { isCliMode, runCli } from './cli.js';
+import { isCliMode, runCli } from './cli/index.js';
 
 // Import response classes
 import { ErrorResponse } from './core/responses.js';
