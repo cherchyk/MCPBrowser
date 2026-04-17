@@ -128,6 +128,23 @@ export class InformationalResponse extends MCPResponse {
     }
     return summary;
   }
+
+  /**
+   * Informational responses omit structuredContent to avoid schema violations.
+   * Their fields (message, reason, status) don't match tool-specific outputSchemas.
+   * @returns {Object} MCP-compliant response with text content only
+   */
+  toMcpFormat() {
+    return {
+      content: [
+        {
+          type: "text",
+          text: this.getTextSummary()
+        }
+      ],
+      isError: false
+    };
+  }
 }
 
 /**
@@ -271,6 +288,23 @@ export class HttpStatusResponse extends MCPResponse {
       summary += `\n\nSuggested actions:\n${this.nextSteps.map(s => `- ${s}`).join('\n')}`;
     }
     return summary;
+  }
+
+  /**
+   * HTTP status responses omit structuredContent to avoid schema violations.
+   * Their fields (url, statusCode, etc.) don't match tool-specific outputSchemas.
+   * @returns {Object} MCP-compliant response with text content only
+   */
+  toMcpFormat() {
+    return {
+      content: [
+        {
+          type: "text",
+          text: this.getTextSummary()
+        }
+      ],
+      isError: false
+    };
   }
 }
 

@@ -1,0 +1,25 @@
+{
+  "name": "mcpbrowser",
+  "description": "MCP server that gives AI assistants the ability to fetch and interact with web pages using a real Chrome, Edge, or Brave browser with full JavaScript rendering and authentication support. Required for corporate/enterprise sites, any page requiring login/SSO, anti-bot/CAPTCHA pages, and JavaScript-heavy applications. Tools: fetch_webpage, click_element, type_text, scroll_page, execute_javascript, take_screenshot, get_current_html, navigate_history, close_tab, and site-specific plugins for Gmail, Google Calendar, and more.",
+  "version": "0.3.38",
+  "author": {
+    "name": "Bogdan Cherchyk",
+    "email": "bocherch@microsoft.com"
+  },
+  "homepage": "https://github.com/cherchyk/MCPBrowser",
+  "repository": "https://github.com/cherchyk/MCPBrowser",
+  "license": "MIT",
+  "keywords": [
+    "browser",
+    "web",
+    "mcp",
+    "chrome",
+    "edge",
+    "authentication",
+    "web-scraping",
+    "automation",
+    "sso",
+    "captcha",
+    "javascript-rendering"
+  ]
+}

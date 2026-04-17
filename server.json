@@ -12,12 +12,12 @@
     "url": "https://github.com/cherchyk/MCPBrowser",
     "source": "github"
   },
-  "version": "0.3.37",
+  "version": "0.3.38",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "mcpbrowser",
-      "version": "0.3.37",
+      "version": "0.3.38",
       "transport": {
         "type": "stdio"
       }

@@ -14,6 +14,7 @@ const unitTests = [
   'core/responses.test.js',             // Response class validation
   'core/informational-response.test.js', // InformationalResponse (soft failures)
   'core/http-status-response.test.js',  // HttpStatusResponse (HTTP 4xx/5xx)
+  'core/output-schema-validation.test.js', // outputSchema vs structuredContent compliance
   'core/auth.test.js',                  // Auth flows with mock pages
   'mcp-browser.test.js',               // MCP server initialization
   'cli.test.js'                         // CLI argument parsing and routing
@@ -64,10 +65,10 @@ async function runUnitTests() {
     console.log(`▶️  ${testFile}`);
     
     if (output) {
-      const passMatch = output.match(/Tests Passed: (\d+)|pass (\d+)/i);
-      const failMatch = output.match(/Tests Failed: (\d+)|fail (\d+)/i);
-      const passCount = passMatch ? (passMatch[1] || passMatch[2]) : '?';
-      const failCount = failMatch ? (failMatch[1] || failMatch[2]) : '?';
+      const passMatch = output.match(/Tests Passed: (\d+)|pass(?:ed)? (\d+)|(\d+) passed/i);
+      const failMatch = output.match(/Tests Failed: (\d+)|fail(?:ed)? (\d+)|(\d+) failed/i);
+      const passCount = passMatch ? (passMatch[1] || passMatch[2] || passMatch[3]) : '?';
+      const failCount = failMatch ? (failMatch[1] || failMatch[2] || failMatch[3]) : '?';
       
       console.log(`   Tests: ${passCount} passed, ${failCount} failed`);
       
