@@ -14,6 +14,7 @@ const unitTests = [
   'core/responses.test.js',             // Response class validation
   'core/informational-response.test.js', // InformationalResponse (soft failures)
   'core/http-status-response.test.js',  // HttpStatusResponse (HTTP 4xx/5xx)
+  'core/output-schema-validation.test.js', // outputSchema vs structuredContent compliance
   'core/auth.test.js',                  // Auth flows with mock pages
   'mcp-browser.test.js',               // MCP server initialization
   'cli.test.js'                         // CLI argument parsing and routing

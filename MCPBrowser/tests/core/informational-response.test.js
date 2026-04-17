@@ -127,7 +127,7 @@ test('ErrorResponse.toMcpFormat() returns isError: true (RED)', () => {
   assert.strictEqual(mcpFormat.isError, true, 'isError must be true for error responses');
 });
 
-test('InformationalResponse has structuredContent (unlike ErrorResponse)', () => {
+test('InformationalResponse omits structuredContent (like ErrorResponse) to avoid schema violations', () => {
   const infoResponse = new InformationalResponse(
     'Action needed',
     'Prerequisite missing',
@@ -142,12 +142,15 @@ test('InformationalResponse has structuredContent (unlike ErrorResponse)', () =>
   const infoMcp = infoResponse.toMcpFormat();
   const errorMcp = errorResponse.toMcpFormat();
   
-  // Informational responses have structuredContent
-  assert.ok(infoMcp.structuredContent, 'InformationalResponse should have structuredContent');
-  assert.strictEqual(infoMcp.structuredContent.status, 'action_required');
+  // InformationalResponse omits structuredContent to avoid tool-specific schema violations
+  assert.strictEqual(infoMcp.structuredContent, undefined, 'InformationalResponse should NOT have structuredContent');
   
-  // Error responses do not have structuredContent per MCP spec
+  // Error responses also do not have structuredContent per MCP spec
   assert.strictEqual(errorMcp.structuredContent, undefined, 'ErrorResponse should NOT have structuredContent');
+
+  // Both convey info via text content
+  assert.ok(infoMcp.content[0].text.includes('Action needed'), 'Info text should include message');
+  assert.ok(errorMcp.content[0].text.includes('Failed'), 'Error text should include message');
 });
 
 // ============================================================================
@@ -204,9 +207,8 @@ test('Scenario: Fork does not exist - use InformationalResponse not ErrorRespons
   // CRITICAL ASSERTION: Should NOT appear as red error
   assert.strictEqual(mcpFormat.isError, false, 'Missing fork is NOT an error, just needs user action');
   
-  // Should have structured content for programmatic handling
-  assert.ok(mcpFormat.structuredContent, 'Should have structuredContent');
-  assert.strictEqual(mcpFormat.structuredContent.status, 'action_required');
+  // Should NOT have structuredContent (avoids schema violations with tool-specific outputSchemas)
+  assert.strictEqual(mcpFormat.structuredContent, undefined, 'Should not have structuredContent');
   
   // Should have helpful text for humans
   assert.ok(mcpFormat.content[0].text.includes('fork_repository'), 'Should suggest using fork_repository');

@@ -91,6 +91,11 @@ export const FETCH_WEBPAGE_TOOL = {
         type: "array", 
         items: { type: "string" },
         description: "Suggested next actions"
+      },
+      recommendedPlugins: {
+        type: "array",
+        items: { type: "object" },
+        description: "Detected site-specific plugins available for this domain"
       }
     },
     required: ["currentUrl", "html", "nextSteps"],

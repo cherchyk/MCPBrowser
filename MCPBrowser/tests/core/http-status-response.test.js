@@ -155,7 +155,7 @@ test('HttpStatusResponse.toMcpFormat() returns isError: false for 503 (NOT RED)'
   assert.strictEqual(mcpFormat.isError, false, 'isError must be false for HTTP 503');
 });
 
-test('HttpStatusResponse has structuredContent (unlike ErrorResponse)', () => {
+test('HttpStatusResponse omits structuredContent (like ErrorResponse) to avoid schema violations', () => {
   const httpResponse = new HttpStatusResponse(
     'https://example.com',
     404,
@@ -168,12 +168,15 @@ test('HttpStatusResponse has structuredContent (unlike ErrorResponse)', () => {
   const httpMcp = httpResponse.toMcpFormat();
   const errorMcp = errorResponse.toMcpFormat();
   
-  // HTTP responses have structuredContent for programmatic handling
-  assert.ok(httpMcp.structuredContent, 'HttpStatusResponse should have structuredContent');
-  assert.strictEqual(httpMcp.structuredContent.statusCode, 404);
+  // HTTP status responses omit structuredContent to avoid tool-specific schema violations
+  assert.strictEqual(httpMcp.structuredContent, undefined, 'HttpStatusResponse should NOT have structuredContent');
   
-  // Error responses do not have structuredContent per MCP spec
+  // Error responses also do not have structuredContent per MCP spec
   assert.strictEqual(errorMcp.structuredContent, undefined, 'ErrorResponse should NOT have structuredContent');
+
+  // Both convey info via text content
+  assert.ok(httpMcp.content[0].text.includes('404'), 'HTTP text should include status code');
+  assert.ok(errorMcp.content[0].text.includes('Network error'), 'Error text should include message');
 });
 
 // ============================================================================
@@ -293,12 +296,12 @@ test('SEMANTIC: HTTP 404 is NOT an MCP error - it is a valid response', () => {
   // The MCP request succeeded - we got information about the page
   assert.strictEqual(mcpFormat.isError, false, 'HTTP 404 is NOT an MCP error');
   
-  // We have structured data about what happened
-  assert.ok(mcpFormat.structuredContent, 'Should have structured data');
-  assert.strictEqual(mcpFormat.structuredContent.statusCode, 404);
+  // HTTP status responses use text-only format (no structuredContent) to avoid schema violations
+  assert.strictEqual(mcpFormat.structuredContent, undefined, 'Should not have structuredContent');
   
-  // The HTML content (even if it's an error page) is included
-  assert.ok(mcpFormat.structuredContent.html, 'Should include the response HTML');
+  // The text summary includes all relevant info
+  assert.ok(mcpFormat.content[0].text.includes('404'), 'Text should include status code');
+  assert.ok(mcpFormat.content[0].text.includes('Not Found'), 'Text should include status text');
 });
 
 test('SEMANTIC: HTTP 503 is NOT an MCP error - server responded', () => {

@@ -81,7 +81,12 @@ export const EXECUTE_JAVASCRIPT_TOOL = {
       urlChanged: { type: 'boolean', description: 'True if page URL changed during execution' },
       currentUrl: { type: 'string', description: 'URL after execution' },
       nextSteps: { type: 'array', items: { type: 'string' } },
-      error: { type: ['object', 'null'], description: 'Error object when script throws or times out' }
+      error: { type: ['object', 'null'], description: 'Error object when script throws or times out' },
+      recommendedPlugins: {
+        type: 'array',
+        items: { type: 'object' },
+        description: 'Detected site-specific plugins available for this domain'
+      }
     },
     required: ['type', 'executionTimeMs', 'truncated', 'urlChanged', 'currentUrl', 'nextSteps'],
     additionalProperties: false

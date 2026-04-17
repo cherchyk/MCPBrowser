@@ -139,6 +139,11 @@ export const CLICK_ELEMENT_TOOL = {
         type: "array", 
         items: { type: "string" },
         description: "Suggested next actions"
+      },
+      recommendedPlugins: {
+        type: "array",
+        items: { type: "object" },
+        description: "Detected site-specific plugins available for this domain"
       }
     },
     required: ["status", "fallbackUsed", "nativeAttempt", "currentUrl", "message", "html", "nextSteps"],
