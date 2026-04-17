@@ -1,6 +1,6 @@
 {
   "name": "mcpbrowser-workspace",
-  "version": "0.3.41",
+  "version": "0.3.42",
   "private": true,
   "description": "MCPBrowser workspace containing MCP server and VS Code extension",
   "scripts": {
