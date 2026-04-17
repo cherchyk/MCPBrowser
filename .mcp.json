@@ -2,7 +2,7 @@
   "mcpServers": {
     "MCPBrowser": {
       "command": "npx",
-      "args": ["-y", "mcpbrowser@0.3.38"]
+      "args": ["-y", "mcpbrowser@0.3.39"]
     }
   }
 }
