@@ -12,6 +12,9 @@ import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 
+// Import CLI mode
+import { isCliMode, runCli } from './cli/index.js';
+
 // Import response classes
 import { ErrorResponse } from './core/responses.js';
 import logger, { attachServer as attachLoggerServer } from './core/logger.js';
@@ -203,6 +206,9 @@ export {
   scrollPage,
   navigateHistory,
   handleAcceptEula,
+  // CLI exports
+  isCliMode,
+  runCli,
   // Plugin system exports
   loadPlugins,
   getLoadedPlugins,
@@ -216,8 +222,20 @@ export {
 // Run the MCP server only if this is the main module (not imported for testing)
 if (import.meta.url === new URL(process.argv[1], 'file://').href || 
     fileURLToPath(import.meta.url) === process.argv[1]) {
-  main().catch((err) => {
-    logger.error(`Server failed: ${err.message}`);
-    process.exit(1);
-  });
+  const argv = process.argv.slice(2);
+  if (isCliMode(argv)) {
+    // CLI mode: run command and exit
+    runCli(argv).then((code) => {
+      process.exit(code);
+    }).catch((err) => {
+      process.stderr.write(`Error: ${err.message}\n`);
+      process.exit(1);
+    });
+  } else {
+    // MCP server mode (default): stdin/stdout JSON-RPC
+    main().catch((err) => {
+      logger.error(`Server failed: ${err.message}`);
+      process.exit(1);
+    });
+  }
 }
