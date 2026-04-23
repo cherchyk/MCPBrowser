@@ -5,7 +5,7 @@
     {
       "id": "auth-corporate-site",
       "userRequest": "Fetch this page https://eng.ms/docs/architecture-guidance",
-      "expectedTool": "fetch_webpage",
+      "expectedTool": "browser_fetch_webpage",
       "expectedReason": "Corporate/enterprise domain requiring authentication",
       "mustNotUse": ["generic HTTP fetch"],
       "priority": "critical"
@@ -13,7 +13,7 @@
     {
       "id": "microsoft-internal",
       "userRequest": "Get the content from https://microsoft.sharepoint.com/teams/myteam",
-      "expectedTool": "fetch_webpage",
+      "expectedTool": "browser_fetch_webpage",
       "expectedReason": "Microsoft internal site with SSO",
       "mustNotUse": ["generic HTTP fetch"],
       "priority": "critical"
@@ -21,7 +21,7 @@
     {
       "id": "azure-portal",
       "userRequest": "Navigate to https://portal.azure.com and summarize the dashboard",
-      "expectedTool": "fetch_webpage",
+      "expectedTool": "browser_fetch_webpage",
       "expectedReason": "Azure domain requiring auth and JavaScript",
       "mustNotUse": ["generic HTTP fetch"],
       "priority": "critical"
@@ -29,14 +29,14 @@
     {
       "id": "spa-application",
       "userRequest": "Fetch https://example.com/react-app",
-      "expectedTool": "fetch_webpage",
+      "expectedTool": "browser_fetch_webpage",
       "expectedReason": "JavaScript-heavy SPA (mentioned React)",
       "priority": "high"
     },
     {
       "id": "unknown-domain",
       "userRequest": "Get the page https://randomcompany.internal/docs",
-      "expectedTool": "fetch_webpage",
+      "expectedTool": "browser_fetch_webpage",
       "expectedReason": "*.internal domain pattern",
       "mustNotUse": ["generic HTTP fetch"],
       "priority": "high"
@@ -44,14 +44,14 @@
     {
       "id": "form-interaction",
       "userRequest": "Go to https://example.com/login and fill in username field with 'test@example.com'",
-      "expectedToolSequence": ["fetch_webpage", "type_text"],
+      "expectedToolSequence": ["browser_fetch_webpage", "browser_type_text"],
       "expectedReason": "Must fetch page first, then type into form",
       "priority": "critical"
     },
     {
       "id": "execute-js-extract",
       "userRequest": "On the already loaded inbox page, run a JavaScript snippet to return the first 5 rows with sender and subject.",
-      "expectedTool": "execute_javascript",
+      "expectedTool": "browser_execute_javascript",
       "expectedReason": "Page-scoped JavaScript extraction on already loaded page",
       "contextDependent": true,
       "priority": "high"
@@ -59,29 +59,29 @@
     {
       "id": "button-click-navigation",
       "userRequest": "Load https://example.com and click the 'Next' button",
-      "expectedToolSequence": ["fetch_webpage", "click_element"],
+      "expectedToolSequence": ["browser_fetch_webpage", "browser_click_element"],
       "expectedReason": "Must fetch page first, then click for navigation",
       "priority": "critical"
     },
     {
       "id": "login-workflow",
       "userRequest": "Login to https://app.example.com with username 'user' and password 'pass', then click submit",
-      "expectedToolSequence": ["fetch_webpage", "type_text", "type_text", "click_element"],
+      "expectedToolSequence": ["browser_fetch_webpage", "browser_type_text", "browser_type_text", "browser_click_element"],
       "expectedReason": "Full login workflow: fetch, fill username, fill password, click submit",
       "priority": "critical"
     },
     {
       "id": "click-fallback",
       "userRequest": "If a click on an element times out, retry with a JavaScript click and report whether fallback was used.",
-      "expectedTool": "click_element",
-      "expectedReason": "click_element handles native timeout with automatic JS fallback and metadata",
+      "expectedTool": "browser_click_element",
+      "expectedReason": "browser_click_element handles native timeout with automatic JS fallback and metadata",
       "contextDependent": true,
       "priority": "high"
     },
     {
       "id": "check-page-state",
       "userRequest": "After clicking that button, what does the page say now?",
-      "expectedTool": "get_current_html",
+      "expectedTool": "browser_get_current_html",
       "expectedReason": "Checking current page state without reloading",
       "contextDependent": true,
       "priority": "high"
@@ -89,14 +89,14 @@
     {
       "id": "public-simple-page",
       "userRequest": "Fetch https://example.com/simple.html",
-      "expectedTool": "fetch_webpage",
+      "expectedTool": "browser_fetch_webpage",
       "expectedReason": "When unsure, default to browser fetch (works for simple pages too)",
       "priority": "medium"
     },
     {
       "id": "api-endpoint",
       "userRequest": "Call the API at https://api.example.com/users",
-      "acceptableTools": ["generic HTTP fetch", "fetch_webpage"],
+      "acceptableTools": ["generic HTTP fetch", "browser_fetch_webpage"],
       "preferredTool": "generic HTTP fetch",
       "expectedReason": "API endpoints can use basic HTTP fetch",
       "priority": "low"
@@ -104,28 +104,28 @@
     {
       "id": "close-session",
       "userRequest": "Close the browser tab for https://example.com to clear the session",
-      "expectedTool": "close_tab",
+      "expectedTool": "browser_close_tab",
       "expectedReason": "Explicitly asked to close tab",
       "priority": "medium"
     },
     {
       "id": "plugin-list-emails",
       "userRequest": "Use the Gmail plugin to list my recent emails",
-      "expectedTool": "plugin_action",
+      "expectedTool": "browser_plugin_action",
       "expectedReason": "User explicitly requests a plugin action for a specific site",
       "priority": "medium"
     },
     {
       "id": "plugin-what-available",
       "userRequest": "What plugins are available for this browser?",
-      "expectedTool": "plugin_info",
+      "expectedTool": "browser_plugin_info",
       "expectedReason": "User asks about available plugins or plugin capabilities",
       "priority": "medium"
     },
     {
       "id": "plugin-show-actions",
       "userRequest": "Show me what actions the Outlook plugin can do",
-      "expectedTool": "plugin_info",
+      "expectedTool": "browser_plugin_info",
       "expectedReason": "User wants to discover plugin actions before using them",
       "priority": "medium"
     }

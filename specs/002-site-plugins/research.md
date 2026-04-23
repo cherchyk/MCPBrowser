@@ -80,11 +80,11 @@ return new FetchPageSuccessResponse(currentUrl, processedHtml, allNextSteps);
 
 ## R5: Plugin Action Dispatch Design
 
-**Decision**: `plugin_action` receives `{ plugin, action, params }`, looks up the loaded plugin by name, finds the action in its action list, provides the browser page object, and calls the action's `execute` function.
+**Decision**: `browser_plugin_action` receives `{ plugin, action, params }`, looks up the loaded plugin by name, finds the action in its action list, provides the browser page object, and calls the action's `execute` function.
 
 **Key design**:
 1. Loaded plugins stored in a `Map<string, PluginInstance>` in `plugin-loader.js`
-2. `plugin_action` imports the map, validates plugin + action names
+2. `browser_plugin_action` imports the map, validates plugin + action names
 3. Gets active page for the plugin's domain via existing `getOrCreatePage` / `getValidatedPage`
 4. Calls `action.execute({ page, params })` — the page object is the browser context
 5. Action returns an MCPResponse subclass or the dispatch wraps raw results

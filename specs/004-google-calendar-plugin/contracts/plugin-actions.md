@@ -4,13 +4,13 @@
 **Date**: 2026-04-06  
 **Interface Version**: 1
 
-This document defines the contracts for the `gcal` plugin's 8 actions as dispatched through `plugin_action` and `plugin_info`.
+This document defines the contracts for the `gcal` plugin's 8 actions as dispatched through `browser_plugin_action` and `browser_plugin_info`.
 
 ---
 
 ## Plugin Discovery
 
-### `plugin_info({ plugin: "gcal" })`
+### `browser_plugin_info({ plugin: "gcal" })`
 
 **Response**:
 ```json
@@ -64,7 +64,7 @@ List events visible in the current calendar view.
 ```
 
 **Error Cases**:
-- Not on Google Calendar → `ErrorResponse("Google Calendar is not the active page. Use fetch_webpage to navigate to calendar.google.com first.", [...])`
+- Not on Google Calendar → `ErrorResponse("Google Calendar is not the active page. Use browser_fetch_webpage to navigate to calendar.google.com first.", [...])`
 - Page not loaded → `ErrorResponse("Google Calendar is still loading. Wait a moment and try again.", [...])`
 
 ---

@@ -2,31 +2,31 @@
 
 ## Problem
 
-Previously, `fetch_webpage` performed **two distinct functions**:
+Previously, `browser_fetch_webpage` performed **two distinct functions**:
 1. **Navigate/load** a webpage (or reuse existing page)
 2. **Extract HTML** from the DOM
 
 This created inefficiency in interactive workflows:
 
 ```
-User clicks button → wait for content → fetch_webpage (RELOADS page!) → extract HTML
+User clicks button → wait for content → browser_fetch_webpage (RELOADS page!) → extract HTML
                                               ↑
                                         UNNECESSARY!
 ```
 
-After interactions like `click_element`, `type_text`, or `wait_for_element`, we don't need to **reload** the page - we just need the **updated DOM state**.
+After interactions like `browser_click_element`, `browser_type_text`, or `wait_for_element`, we don't need to **reload** the page - we just need the **updated DOM state**.
 
 ## Solution
 
-Introduced a new function: **`get_current_html`**
+Introduced a new function: **`browser_get_current_html`**
 
 ### New Workflow
 
 ```
-Initial load:     fetch_webpage(url)           → Navigate + Extract HTML
-After interaction: click_element(selector)     → Click
+Initial load:     browser_fetch_webpage(url)           → Navigate + Extract HTML
+After interaction: browser_click_element(selector)     → Click
                    wait_for_element(selector)  → Wait for content
-                   get_current_html(url)       → Extract HTML ONLY (no navigation!)
+                   browser_get_current_html(url)       → Extract HTML ONLY (no navigation!)
 ```
 
 ### Benefits
@@ -39,13 +39,13 @@ After interaction: click_element(selector)     → Click
 
 ## API
 
-### `get_current_html`
+### `browser_get_current_html`
 
 Gets HTML from an already-loaded page without navigation.
 
 **Parameters:**
 - `url` (required): URL of the page (for identifying which tab)
-- `removeUnnecessaryHTML` (default: true): Clean HTML like fetch_webpage
+- `removeUnnecessaryHTML` (default: true): Clean HTML like browser_fetch_webpage
 
 **Returns:**
 ```json
@@ -57,8 +57,8 @@ Gets HTML from an already-loaded page without navigation.
 ```
 
 **Use after:**
-- `click_element` - Get HTML after clicking
-- `type_text` - Get HTML after form input
+- `browser_click_element` - Get HTML after clicking
+- `browser_type_text` - Get HTML after form input
 - `wait_for_element` - Get HTML after dynamic content loads
 
 ## Example Usage
@@ -66,48 +66,48 @@ Gets HTML from an already-loaded page without navigation.
 ### Old inefficient way:
 ```javascript
 // Load Gmail
-await fetch_webpage({ url: "https://mail.google.com" })
+await browser_fetch_webpage({ url: "https://mail.google.com" })
 
 // Click first email
-await click_element({ url: "...", selector: "tr:first-child" })
+await browser_click_element({ url: "...", selector: "tr:first-child" })
 
 // Wait for content
 await wait_for_element({ url: "...", selector: ".email-body" })
 
 // Get updated HTML - PROBLEM: This reloads the page!
-await fetch_webpage({ url: "..." })  // ❌ Wasteful!
+await browser_fetch_webpage({ url: "..." })  // ❌ Wasteful!
 ```
 
 ### New efficient way:
 ```javascript
 // Load Gmail
-await fetch_webpage({ url: "https://mail.google.com" })
+await browser_fetch_webpage({ url: "https://mail.google.com" })
 
 // Click first email
-await click_element({ url: "...", selector: "tr:first-child" })
+await browser_click_element({ url: "...", selector: "tr:first-child" })
 
 // Wait for content
 await wait_for_element({ url: "...", selector: ".email-body" })
 
 // Get updated HTML - Just extracts DOM, no navigation
-await get_current_html({ url: "..." })  // ✅ Efficient!
+await browser_get_current_html({ url: "..." })  // ✅ Efficient!
 ```
 
 ## Implementation Details
 
 - Reuses existing `extractAndProcessHtml` from `core/page.js`
-- Uses same HTML cleaning/enrichment pipeline as `fetch_webpage`
+- Uses same HTML cleaning/enrichment pipeline as `browser_fetch_webpage`
 - Requires page to be already loaded (returns error if not)
 - No navigation, no waiting - just instant DOM extraction
 
 ## When to Use Each Function
 
-### Use `fetch_webpage` when:
+### Use `browser_fetch_webpage` when:
 - Loading a page for the first time
 - Navigating to a new URL
 - Need to handle authentication flows
 
-### Use `get_current_html` when:
+### Use `browser_get_current_html` when:
 - Getting updated content after interactions
 - Page is already loaded and you just need current state
 - Want faster response without navigation overhead

@@ -15,7 +15,7 @@ An automation user executes a custom JavaScript snippet in the current page cont
 
 **Acceptance Scenarios**:
 
-1. **Given** a loaded page with visible list items, **When** the user runs an `execute_javascript` script that maps the first 10 rows to sender and subject, **Then** the response returns a structured array capped to size limits within the default timeout.
+1. **Given** a loaded page with visible list items, **When** the user runs an `browser_execute_javascript` script that maps the first 10 rows to sender and subject, **Then** the response returns a structured array capped to size limits within the default timeout.
 2. **Given** a loaded page where native clicks often time out, **When** the script calls `element.click()` on a targeted row, **Then** the target opens and the response indicates whether the page URL changed or remained stable.
 
 ---
@@ -52,12 +52,12 @@ When a user requests a click on a found element and the native click attempt tim
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST provide an `execute_javascript` action that runs a user-supplied script in the active page context and returns the last expression result in a serialized form.
+- **FR-001**: The system MUST provide an `browser_execute_javascript` action that runs a user-supplied script in the active page context and returns the last expression result in a serialized form.
 - **FR-002**: The action MUST enforce an execution timeout (default 30s, max 60s) and return a structured timeout error instead of hanging.
 - **FR-003**: The action MUST cap the serialized response to a maximum size (e.g., 100KB) and indicate when truncation occurs.
 - **FR-004**: The action MUST report execution metadata including elapsed time, detected URL change, and result type to guide follow-up steps.
 - **FR-005**: The action MUST return structured error details (message and stack trace where available) when the script throws.
-- **FR-006**: When `click_element` locates a target but the native click exceeds its allowed wait, the system MUST automatically retry with a JavaScript-based click on the same handle before failing the action.
+- **FR-006**: When `browser_click_element` locates a target but the native click exceeds its allowed wait, the system MUST automatically retry with a JavaScript-based click on the same handle before failing the action.
 - **FR-007**: The click action MUST flag when the JS fallback path was used and still perform the normal readiness/wait logic after the fallback click.
 - **FR-008**: If both native and fallback clicks fail, the system MUST return a consolidated failure response that lists both attempts and their errors.
 
@@ -71,7 +71,7 @@ When a user requests a click on a found element and the native click attempt tim
 
 ### Measurable Outcomes
 
-- **SC-001**: Targeted inbox-style extraction succeeds in 95% of acceptance runs using ≤2 tool calls, with each `execute_javascript` response completing in under 5 seconds.
+- **SC-001**: Targeted inbox-style extraction succeeds in 95% of acceptance runs using ≤2 tool calls, with each `browser_execute_javascript` response completing in under 5 seconds.
 - **SC-002**: For elements that previously timed out, the automatic JS fallback yields a successful click outcome in at least 90% of measured scenarios during acceptance testing.
 - **SC-003**: No JS execution run exceeds the configured timeout or returns more than the capped payload size; 100% of over-limit cases report clear timeout or truncation status.
 - **SC-004**: 100% of failure responses from JS execution or fallback clicks include actionable error details and flags so users can decide the next step without re-running the same command blindly.

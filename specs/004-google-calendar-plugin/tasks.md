@@ -52,7 +52,7 @@
 
 **Goal**: AI agent can list calendar events from any view, navigate to specific dates, and receive structured EventSummary data.
 
-**Independent Test**: Navigate to `calendar.google.com`, invoke `plugin_action({ plugin: "gcal", action: "list_events" })`, verify structured event data returned.
+**Independent Test**: Navigate to `calendar.google.com`, invoke `browser_plugin_action({ plugin: "gcal", action: "list_events" })`, verify structured event data returned.
 
 ### Tests for User Story 1 (MANDATORY)
 
@@ -214,12 +214,12 @@
 
 - [X] T042 [P] Run full test suite: `node --test MCPBrowser/tests/plugins/gcal/` — all 13 test files must pass
 - [X] T043 [P] Validate quickstart.md workflows end-to-end against implemented actions — verify all 9 examples from `specs/004-google-calendar-plugin/quickstart.md` produce expected response shapes
-- [X] T044 [P] Verify plugin detection: navigate to `calendar.google.com` via `fetch_webpage` → confirm `nextSteps` includes gcal plugin detection → `plugin_info({ plugin: "gcal" })` returns all 8 actions with correct params
+- [X] T044 [P] Verify plugin detection: navigate to `calendar.google.com` via `browser_fetch_webpage` → confirm `nextSteps` includes gcal plugin detection → `browser_plugin_info({ plugin: "gcal" })` returns all 8 actions with correct params
 - [X] T045 [P] Verify tier compliance: audit all action files to confirm ≥70% of interactions use T1/T2 methods per SC-007 — document tier usage per action in code review
 - [X] T046 Review selectors.js version tag is current date, all CSS selectors have comments noting absence of ARIA alternative
 - [X] T047 [P] Create integration tests in `MCPBrowser/tests/plugins/gcal/gcal-integration.test.js` — test 4 chained workflows per plan Test Plan: (1) list_events → read_event with returned index, (2) list_events → edit_event with save:true, (3) search_events → read_event on result, (4) create_event with save:true → list_events to confirm event appears
 - [X] T048 Run integration tests: `node --test MCPBrowser/tests/plugins/gcal/gcal-integration.test.js` — all 4 scenarios must pass
-- [X] T049 [P] Create tool-selection tests in `MCPBrowser/tests/plugins/gcal/gcal-tool-selection.test.js` — test 3 scenarios per plan Test Plan: (1) "What meetings do I have today?" → fetch_webpage → plugin_info → plugin_action(gcal, list_events), (2) "Schedule a 1:1 with Alice at 2pm" → plugin_action(gcal, create_event), (3) "Am I free at 3pm tomorrow?" → plugin_action(gcal, check_availability)
+- [X] T049 [P] Create tool-selection tests in `MCPBrowser/tests/plugins/gcal/gcal-tool-selection.test.js` — test 3 scenarios per plan Test Plan: (1) "What meetings do I have today?" → browser_fetch_webpage → browser_plugin_info → browser_plugin_action(gcal, list_events), (2) "Schedule a 1:1 with Alice at 2pm" → browser_plugin_action(gcal, create_event), (3) "Am I free at 3pm tomorrow?" → browser_plugin_action(gcal, check_availability)
 - [X] T050 Run tool-selection tests: `node --test MCPBrowser/tests/plugins/gcal/gcal-tool-selection.test.js` — all 3 scenarios must pass
 
 ---
@@ -278,6 +278,6 @@
 - Total tasks: **50**
 - Tasks per user story: US1=4, US2=4, US3=4, US4=4, US5=4, US6=4, US7=4, US8=4 (32 story tasks + 9 setup/foundational + 9 polish)
 - Test files: 11 unit + 1 integration + 1 tool-selection = **13 test files**
-- Plugin name: `gcal` (manifest and all `plugin_action`/`plugin_info` calls)
+- Plugin name: `gcal` (manifest and all `browser_plugin_action`/`browser_plugin_info` calls)
 - All action files follow Gmail plugin pattern: `async function({ page, params })` → `GCalActionResponse` | `ErrorResponse`
 - CSS selectors are TBD placeholders in selectors.js — actual values captured during implementation by inspecting live Google Calendar DOM

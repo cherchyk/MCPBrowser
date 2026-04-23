@@ -3,7 +3,7 @@
     "allow": [
       "Bash(claude mcp:*)",
       "WebSearch",
-      "mcp__mcpbrowser__fetch_webpage"
+      "mcp__mcpbrowser__browser_fetch_webpage"
     ]
   }
 }

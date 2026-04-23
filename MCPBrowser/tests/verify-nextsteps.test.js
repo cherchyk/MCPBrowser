@@ -33,27 +33,27 @@ function test(description, fn) {
 // Test nextSteps in responses
 // ============================================================================
 
-await test('fetch_webpage success should include nextSteps', async () => {
+await test('browser_fetch_webpage success should include nextSteps', async () => {
   const result = await fetchPage({ url: 'https://example.com', removeUnnecessaryHTML: true });
   assert.ok(!(result instanceof ErrorResponse), 'Should succeed');
   assert.ok(result.nextSteps, 'Should have nextSteps field');
   assert.ok(Array.isArray(result.nextSteps), 'nextSteps should be an array');
   assert.ok(result.nextSteps.length > 0, 'nextSteps should not be empty');
-  assert.ok(result.nextSteps.some(s => s.includes('click_element')), 'Should suggest click_element');
-  assert.ok(result.nextSteps.some(s => s.includes('close_tab')), 'Should suggest close_tab');
+  assert.ok(result.nextSteps.some(s => s.includes('browser_click_element')), 'Should suggest browser_click_element');
+  assert.ok(result.nextSteps.some(s => s.includes('browser_close_tab')), 'Should suggest browser_close_tab');
   console.log(`   nextSteps: ${result.nextSteps.join(', ')}`);
 });
 
-await test('click_element error should include nextSteps', async () => {
+await test('browser_click_element error should include nextSteps', async () => {
   const result = await clickElement({ url: 'https://never-loaded-domain-12345.com', selector: '#test' });
   assert.ok(result instanceof InformationalResponse, 'Should return InformationalResponse for non-loaded page (not red error)');
   assert.ok(result.nextSteps, 'Response should have nextSteps field');
   assert.ok(Array.isArray(result.nextSteps), 'nextSteps should be an array');
-  assert.ok(result.nextSteps.some(s => s.includes('MCPBrowser') && s.includes('fetch_webpage')), 'Should suggest MCPBrowser fetch_webpage');
+  assert.ok(result.nextSteps.some(s => s.includes('MCPBrowser') && s.includes('browser_fetch_webpage')), 'Should suggest MCPBrowser browser_fetch_webpage');
   console.log(`   nextSteps: ${result.nextSteps.join(', ')}`);
 });
 
-await test('type_text error should include nextSteps', async () => {
+await test('browser_type_text error should include nextSteps', async () => {
   const result = await typeText({ url: 'https://never-loaded-domain-12345.com', fields: [{ selector: '#test', text: 'hello' }] });
   assert.ok(result instanceof InformationalResponse, 'Should return InformationalResponse for non-loaded page (not red error)');
   assert.ok(result.nextSteps, 'Response should have nextSteps field');
@@ -61,7 +61,7 @@ await test('type_text error should include nextSteps', async () => {
   console.log(`   nextSteps: ${result.nextSteps.join(', ')}`);
 });
 
-await test('get_current_html with loaded page should include nextSteps', async () => {
+await test('browser_get_current_html with loaded page should include nextSteps', async () => {
   const result = await getCurrentHtml({ url: 'https://example.com' });
   assert.ok(!(result instanceof ErrorResponse), 'Should succeed for loaded page');
   assert.ok(result.nextSteps, 'Should have nextSteps field');
@@ -70,12 +70,12 @@ await test('get_current_html with loaded page should include nextSteps', async (
   console.log(`   nextSteps: ${result.nextSteps.join(', ')}`);
 });
 
-await test('close_tab success should include nextSteps', async () => {
+await test('browser_close_tab success should include nextSteps', async () => {
   const result = await closeTab({ url: 'https://example.com' });
   assert.ok(!(result instanceof ErrorResponse), 'Should succeed');
   assert.ok(result.nextSteps, 'Should have nextSteps field');
   assert.ok(Array.isArray(result.nextSteps), 'nextSteps should be an array');
-  assert.ok(result.nextSteps.some(s => s.includes('fetch_webpage')), 'Should suggest fetch_webpage');
+  assert.ok(result.nextSteps.some(s => s.includes('browser_fetch_webpage')), 'Should suggest browser_fetch_webpage');
   console.log(`   nextSteps: ${result.nextSteps.join(', ')}`);
 });
 

@@ -69,130 +69,130 @@ function validateAgainstSchema(structuredContent, outputSchema, toolName) {
   }
 }
 
-// fetch_webpage
-test('fetch_webpage: success response matches outputSchema', () => {
+// browser_fetch_webpage
+test('browser_fetch_webpage: success response matches outputSchema', () => {
   const r = new FetchPageSuccessResponse('https://example.com', '<html></html>', ['next'], []);
   const m = r.toMcpFormat();
   assert.ok(m.structuredContent, 'Should have structuredContent');
-  validateAgainstSchema(m.structuredContent, FETCH_WEBPAGE_TOOL.outputSchema, 'fetch_webpage');
+  validateAgainstSchema(m.structuredContent, FETCH_WEBPAGE_TOOL.outputSchema, 'browser_fetch_webpage');
 });
 
-test('fetch_webpage: with recommendedPlugins matches outputSchema', () => {
+test('browser_fetch_webpage: with recommendedPlugins matches outputSchema', () => {
   const r = new FetchPageSuccessResponse('https://mail.google.com', '<html></html>', ['next'], [{ name: 'gmail' }]);
-  validateAgainstSchema(r.toMcpFormat().structuredContent, FETCH_WEBPAGE_TOOL.outputSchema, 'fetch_webpage');
+  validateAgainstSchema(r.toMcpFormat().structuredContent, FETCH_WEBPAGE_TOOL.outputSchema, 'browser_fetch_webpage');
 });
 
-test('fetch_webpage: has all required fields', () => {
+test('browser_fetch_webpage: has all required fields', () => {
   const sc = new FetchPageSuccessResponse('https://example.com', '<html></html>', ['next'], []).toMcpFormat().structuredContent;
   for (const f of FETCH_WEBPAGE_TOOL.outputSchema.required) assert.ok(f in sc, 'missing: ' + f);
 });
 
-// click_element
-test('click_element: success response matches outputSchema', () => {
+// browser_click_element
+test('browser_click_element: success response matches outputSchema', () => {
   const r = new ClickWithFallbackResponse({ status: 'success', fallbackUsed: false, nativeAttempt: { status: 'success', durationMs: 150 }, fallbackAttempt: null, postClickWait: { applied: true, waitedMs: 1000 }, currentUrl: 'https://example.com', html: '<html></html>', message: 'Clicked', nextSteps: ['next'], recommendedPlugins: [] });
-  validateAgainstSchema(r.toMcpFormat().structuredContent, CLICK_ELEMENT_TOOL.outputSchema, 'click_element');
+  validateAgainstSchema(r.toMcpFormat().structuredContent, CLICK_ELEMENT_TOOL.outputSchema, 'browser_click_element');
 });
 
-test('click_element: with fallback and plugins matches outputSchema', () => {
+test('browser_click_element: with fallback and plugins matches outputSchema', () => {
   const r = new ClickWithFallbackResponse({ status: 'success', fallbackUsed: true, nativeAttempt: { status: 'timeout', durationMs: 5000, error: 'timeout' }, fallbackAttempt: { status: 'success', durationMs: 50 }, postClickWait: { applied: true, waitedMs: 1000 }, currentUrl: 'https://mail.google.com', html: '<html></html>', message: 'Clicked', nextSteps: ['next'], recommendedPlugins: [{ name: 'gmail' }] });
-  validateAgainstSchema(r.toMcpFormat().structuredContent, CLICK_ELEMENT_TOOL.outputSchema, 'click_element');
+  validateAgainstSchema(r.toMcpFormat().structuredContent, CLICK_ELEMENT_TOOL.outputSchema, 'browser_click_element');
 });
 
-test('click_element: has all required fields', () => {
+test('browser_click_element: has all required fields', () => {
   const r = new ClickWithFallbackResponse({ status: 'success', fallbackUsed: false, nativeAttempt: { status: 'success', durationMs: 100 }, fallbackAttempt: null, postClickWait: { applied: false, waitedMs: 0 }, currentUrl: 'https://example.com', html: '<html></html>', message: 'Clicked', nextSteps: ['next'] });
   const sc = r.toMcpFormat().structuredContent;
   for (const f of CLICK_ELEMENT_TOOL.outputSchema.required) assert.ok(f in sc, 'missing: ' + f);
 });
 
-// close_tab
-test('close_tab: success response matches outputSchema', () => {
+// browser_close_tab
+test('browser_close_tab: success response matches outputSchema', () => {
   const r = new CloseTabSuccessResponse('Closed', 'example.com', ['next']);
-  validateAgainstSchema(r.toMcpFormat().structuredContent, CLOSE_TAB_TOOL.outputSchema, 'close_tab');
+  validateAgainstSchema(r.toMcpFormat().structuredContent, CLOSE_TAB_TOOL.outputSchema, 'browser_close_tab');
 });
 
-test('close_tab: has all required fields', () => {
+test('browser_close_tab: has all required fields', () => {
   const sc = new CloseTabSuccessResponse('Closed', 'example.com', ['next']).toMcpFormat().structuredContent;
   for (const f of CLOSE_TAB_TOOL.outputSchema.required) assert.ok(f in sc, 'missing: ' + f);
 });
 
-// execute_javascript
-test('execute_javascript: success response matches outputSchema', () => {
+// browser_execute_javascript
+test('browser_execute_javascript: success response matches outputSchema', () => {
   const r = new ExecuteJavascriptResponse({ result: 42, type: 'number', executionTimeMs: 15, truncated: false, urlChanged: false, currentUrl: 'https://example.com', error: null, nextSteps: ['next'], recommendedPlugins: [] });
-  validateAgainstSchema(r.toMcpFormat().structuredContent, EXECUTE_JAVASCRIPT_TOOL.outputSchema, 'execute_javascript');
+  validateAgainstSchema(r.toMcpFormat().structuredContent, EXECUTE_JAVASCRIPT_TOOL.outputSchema, 'browser_execute_javascript');
 });
 
-test('execute_javascript: with error matches outputSchema', () => {
+test('browser_execute_javascript: with error matches outputSchema', () => {
   const r = new ExecuteJavascriptResponse({ result: null, type: 'error', executionTimeMs: 5, truncated: false, urlChanged: false, currentUrl: 'https://example.com', error: { message: 'fail' }, nextSteps: ['fix'], recommendedPlugins: [] });
-  validateAgainstSchema(r.toMcpFormat().structuredContent, EXECUTE_JAVASCRIPT_TOOL.outputSchema, 'execute_javascript');
+  validateAgainstSchema(r.toMcpFormat().structuredContent, EXECUTE_JAVASCRIPT_TOOL.outputSchema, 'browser_execute_javascript');
 });
 
-test('execute_javascript: has all required fields', () => {
+test('browser_execute_javascript: has all required fields', () => {
   const r = new ExecuteJavascriptResponse({ result: 'hi', type: 'string', executionTimeMs: 10, truncated: false, urlChanged: false, currentUrl: 'https://example.com', error: null, nextSteps: ['next'] });
   const sc = r.toMcpFormat().structuredContent;
   for (const f of EXECUTE_JAVASCRIPT_TOOL.outputSchema.required) assert.ok(f in sc, 'missing: ' + f);
 });
 
-// get_current_html
-test('get_current_html: success response matches outputSchema', () => {
+// browser_get_current_html
+test('browser_get_current_html: success response matches outputSchema', () => {
   const r = new GetCurrentHtmlSuccessResponse('https://example.com', '<html></html>', ['next'], []);
-  validateAgainstSchema(r.toMcpFormat().structuredContent, GET_CURRENT_HTML_TOOL.outputSchema, 'get_current_html');
+  validateAgainstSchema(r.toMcpFormat().structuredContent, GET_CURRENT_HTML_TOOL.outputSchema, 'browser_get_current_html');
 });
 
-test('get_current_html: with plugins matches outputSchema', () => {
+test('browser_get_current_html: with plugins matches outputSchema', () => {
   const r = new GetCurrentHtmlSuccessResponse('https://calendar.google.com', '<html></html>', ['next'], [{ name: 'gcal' }]);
-  validateAgainstSchema(r.toMcpFormat().structuredContent, GET_CURRENT_HTML_TOOL.outputSchema, 'get_current_html');
+  validateAgainstSchema(r.toMcpFormat().structuredContent, GET_CURRENT_HTML_TOOL.outputSchema, 'browser_get_current_html');
 });
 
-test('get_current_html: has all required fields', () => {
+test('browser_get_current_html: has all required fields', () => {
   const sc = new GetCurrentHtmlSuccessResponse('https://example.com', '<html></html>', ['next'], []).toMcpFormat().structuredContent;
   for (const f of GET_CURRENT_HTML_TOOL.outputSchema.required) assert.ok(f in sc, 'missing: ' + f);
 });
 
-// navigate_history
-test('navigate_history: success response matches outputSchema', () => {
+// browser_navigate_history
+test('browser_navigate_history: success response matches outputSchema', () => {
   const r = new NavigateHistorySuccessResponse('back', 'https://a.com', 'https://b.com', '<html></html>', ['next']);
-  validateAgainstSchema(r.toMcpFormat().structuredContent, NAVIGATE_HISTORY_TOOL.outputSchema, 'navigate_history');
+  validateAgainstSchema(r.toMcpFormat().structuredContent, NAVIGATE_HISTORY_TOOL.outputSchema, 'browser_navigate_history');
 });
 
-test('navigate_history: has all required fields', () => {
+test('browser_navigate_history: has all required fields', () => {
   const sc = new NavigateHistorySuccessResponse('forward', 'https://a.com', 'https://b.com', '<html></html>', ['next']).toMcpFormat().structuredContent;
   for (const f of NAVIGATE_HISTORY_TOOL.outputSchema.required) assert.ok(f in sc, 'missing: ' + f);
 });
 
-// scroll_page
-test('scroll_page: success response matches outputSchema', () => {
+// browser_scroll_page
+test('browser_scroll_page: success response matches outputSchema', () => {
   const r = new ScrollPageSuccessResponse('https://example.com', 0, 500, 1920, 5000, 1920, 1080, ['next']);
-  validateAgainstSchema(r.toMcpFormat().structuredContent, SCROLL_PAGE_TOOL.outputSchema, 'scroll_page');
+  validateAgainstSchema(r.toMcpFormat().structuredContent, SCROLL_PAGE_TOOL.outputSchema, 'browser_scroll_page');
 });
 
-test('scroll_page: has all required fields', () => {
+test('browser_scroll_page: has all required fields', () => {
   const sc = new ScrollPageSuccessResponse('https://example.com', 0, 0, 1920, 1080, 1920, 1080, ['next']).toMcpFormat().structuredContent;
   for (const f of SCROLL_PAGE_TOOL.outputSchema.required) assert.ok(f in sc, 'missing: ' + f);
 });
 
-// take_screenshot
-test('take_screenshot: success response matches outputSchema', () => {
+// browser_take_screenshot
+test('browser_take_screenshot: success response matches outputSchema', () => {
   const r = new TakeScreenshotSuccessResponse('https://example.com', 'base64data', 'image/png', ['next']);
-  validateAgainstSchema(r.toMcpFormat().structuredContent, TAKE_SCREENSHOT_TOOL.outputSchema, 'take_screenshot');
+  validateAgainstSchema(r.toMcpFormat().structuredContent, TAKE_SCREENSHOT_TOOL.outputSchema, 'browser_take_screenshot');
 });
 
-test('take_screenshot: has all required fields', () => {
+test('browser_take_screenshot: has all required fields', () => {
   const sc = new TakeScreenshotSuccessResponse('https://example.com', 'data', 'image/png', ['next']).toMcpFormat().structuredContent;
   for (const f of TAKE_SCREENSHOT_TOOL.outputSchema.required) assert.ok(f in sc, 'missing: ' + f);
 });
 
-// type_text
-test('type_text: success response matches outputSchema', () => {
+// browser_type_text
+test('browser_type_text: success response matches outputSchema', () => {
   const r = new TypeTextSuccessResponse('https://example.com', 'Typed hello', '<html></html>', ['next']);
-  validateAgainstSchema(r.toMcpFormat().structuredContent, TYPE_TEXT_TOOL.outputSchema, 'type_text');
+  validateAgainstSchema(r.toMcpFormat().structuredContent, TYPE_TEXT_TOOL.outputSchema, 'browser_type_text');
 });
 
-test('type_text: with null html matches outputSchema', () => {
+test('browser_type_text: with null html matches outputSchema', () => {
   const r = new TypeTextSuccessResponse('https://example.com', 'Typed', null, ['next']);
-  validateAgainstSchema(r.toMcpFormat().structuredContent, TYPE_TEXT_TOOL.outputSchema, 'type_text');
+  validateAgainstSchema(r.toMcpFormat().structuredContent, TYPE_TEXT_TOOL.outputSchema, 'browser_type_text');
 });
 
-test('type_text: has all required fields', () => {
+test('browser_type_text: has all required fields', () => {
   const sc = new TypeTextSuccessResponse('https://example.com', 'Typed', '<html></html>', ['next']).toMcpFormat().structuredContent;
   for (const f of TYPE_TEXT_TOOL.outputSchema.required) assert.ok(f in sc, 'missing: ' + f);
 });

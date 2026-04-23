@@ -19,7 +19,7 @@ Sync Impact Report
 - Scope sessions to the minimum domains necessary and close tabs when finished to avoid lingering auth state.
 
 ### II. Deterministic MCP Tool Contracts
-- Every MCP tool (fetch_webpage, click_element, type_text, get_current_html, scroll_page, take_screenshot, close_tab) MUST have stable inputs/outputs documented in specs and tests before release.
+- Every MCP tool (browser_fetch_webpage, browser_click_element, browser_type_text, browser_get_current_html, browser_scroll_page, browser_take_screenshot, browser_close_tab) MUST have stable inputs/outputs documented in specs and tests before release.
 - Structured responses are required: success payloads plus machine-parseable error shapes; include hostname/tab context for traceability.
 - Backward-incompatible changes demand a contract version bump and migration notes in specs/ contracts/.
 
@@ -33,7 +33,7 @@ Sync Impact Report
 ### IV. Observability & Diagnostics
 - Emit structured logs with correlation IDs per URL/hostname and clearly labeled error causes; redact secrets and PII.
 - Capture diagnostics on failure paths (HTML snapshot or screenshot when size allows) while honoring redaction rules.
-- Document expected latency budgets (e.g., fetch vs. get_current_html) and surface timing in responses for tuning.
+- Document expected latency budgets (e.g., fetch vs. browser_get_current_html) and surface timing in responses for tuning.
 
 ### V. Intent-Explicit Documentation
 - Each file, class, and function MUST state its purpose/intent (why it exists, what it does) near its definition.

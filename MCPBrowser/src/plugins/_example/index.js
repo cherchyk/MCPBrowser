@@ -81,7 +81,7 @@ export function getActions() {
         }, limit);
 
         return new ExampleActionResponse(items, [
-          "Call plugin_action with action 'get_item_detail' to read a specific item"
+          "Call browser_plugin_action with action 'get_item_detail' to read a specific item"
         ]);
       }
     },
@@ -114,7 +114,7 @@ export function getActions() {
         }
 
         return new ExampleActionResponse(detail, [
-          "Use plugin_action with action 'list_items' to see all items"
+          "Use browser_plugin_action with action 'list_items' to see all items"
         ]);
       }
     }

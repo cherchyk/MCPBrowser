@@ -79,7 +79,7 @@ Returned by `getInfo()`.
 
 ### ActionSummary
 
-Lightweight action description for `plugin_info` responses (no `execute` function).
+Lightweight action description for `browser_plugin_info` responses (no `execute` function).
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -129,7 +129,7 @@ Plugin Registry (plugins.json)
 [Registered] → (server startup, manifest valid, interface compatible) → [Loaded]
 [Registered] → (manifest invalid or interface incompatible) → [Skipped] (warning logged)
 [Loaded] → (matchesPage returns true for current URL/DOM) → [Active for page]
-[Active for page] → (agent calls plugin_action) → [Executing action]
+[Active for page] → (agent calls browser_plugin_action) → [Executing action]
 [Executing action] → (action completes) → [Active for page]
 ```
 

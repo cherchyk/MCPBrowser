@@ -4,7 +4,7 @@
 
 ## Action Catalog
 
-All actions are dispatched via `plugin_action({ plugin: "gmail", action: "<name>", params: {...} })`.  
+All actions are dispatched via `browser_plugin_action({ plugin: "gmail", action: "<name>", params: {...} })`.  
 All actions return an MCPResponse subclass with `nextSteps` array.  
 All actions detect the current Gmail view via URL hash (T1) with DOM fallback (T3) per FR-024.  
 All actions wait up to 10 seconds for dynamic content to load (FR-012).  
@@ -49,7 +49,7 @@ All actions validate preconditions before sending keyboard shortcuts (FR-025).
 **Returns**: `{ emails: EmailSummary[], folder: string, totalVisible: number, nextSteps: string[] }`
 
 **Errors**:
-- Not on Gmail → error with `fetch_webpage` guidance
+- Not on Gmail → error with `browser_fetch_webpage` guidance
 - Timeout waiting for email list → error suggesting page reload
 
 **nextSteps**: `["read_email to open a specific email", "search_emails to find specific messages", "compose_email to write a new email"]`
@@ -73,7 +73,7 @@ All actions validate preconditions before sending keyboard shortcuts (FR-025).
 **Errors**:
 - Index out of range → error with valid range and `list_emails` suggestion
 - Not in email list view → error suggesting `list_emails` first
-- Not on Gmail → error with `fetch_webpage` guidance
+- Not on Gmail → error with `browser_fetch_webpage` guidance
 
 **nextSteps**: `["reply_email to respond", "forward_email to forward", "archive_email to archive", "delete_email to remove", "list_emails to return to inbox"]`
 
@@ -92,7 +92,7 @@ All actions validate preconditions before sending keyboard shortcuts (FR-025).
 **Returns**: `{ emails: EmailSummary[], query: string, resultCount: number, nextSteps: string[] }`
 
 **Errors**:
-- Not on Gmail → error with `fetch_webpage` guidance
+- Not on Gmail → error with `browser_fetch_webpage` guidance
 - Empty query → error indicating query is required
 
 **nextSteps**: `["read_email to open a specific result", "search_emails with a different query", "list_emails to return to inbox"]`
@@ -115,7 +115,7 @@ All actions validate preconditions before sending keyboard shortcuts (FR-025).
 **Returns**: `{ status: "sent" | "draft", to: string, subject: string, nextSteps: string[] }`
 
 **Errors**:
-- Not on Gmail → error with `fetch_webpage` guidance
+- Not on Gmail → error with `browser_fetch_webpage` guidance
 - Empty `to` → error indicating recipient is required
 - Existing compose window detected → warning, close and reopen
 
@@ -139,7 +139,7 @@ All actions validate preconditions before sending keyboard shortcuts (FR-025).
 
 **Errors**:
 - No thread open → error suggesting `read_email` first
-- Not on Gmail → error with `fetch_webpage` guidance
+- Not on Gmail → error with `browser_fetch_webpage` guidance
 
 **nextSteps** (draft): `["Review and send the reply manually in Gmail"]`  
 **nextSteps** (sent): `["list_emails to return to inbox", "read_email to open another email"]`
@@ -161,7 +161,7 @@ All actions validate preconditions before sending keyboard shortcuts (FR-025).
 
 **Errors**:
 - No thread open → error suggesting `read_email` first
-- Not on Gmail → error with `fetch_webpage` guidance
+- Not on Gmail → error with `browser_fetch_webpage` guidance
 - Empty `to` → error indicating recipient is required
 
 **nextSteps**: Same as `reply_email`
@@ -183,7 +183,7 @@ All actions validate preconditions before sending keyboard shortcuts (FR-025).
 **Returns**: `{ archived: true, nextSteps: string[] }`
 
 **Errors**:
-- Not on Gmail → error with `fetch_webpage` guidance
+- Not on Gmail → error with `browser_fetch_webpage` guidance
 - In list view but no index/id provided → error
 
 **nextSteps**: `["list_emails to see remaining emails", "search_emails to find other emails"]`

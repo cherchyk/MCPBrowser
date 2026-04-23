@@ -2,7 +2,7 @@
  * plugin-action.js — MCP tool that dispatches to a plugin's action.
  * Looks up the plugin by name, finds the action, provides the browser
  * page object, and calls the action's execute function.
- * Part of the plugin dispatch pair (plugin_info + plugin_action).
+ * Part of the plugin dispatch pair (browser_plugin_info + browser_plugin_action).
  */
 
 import { MCPResponse, ErrorResponse } from '../core/responses.js';
@@ -36,9 +36,9 @@ export class PluginActionSuccessResponse extends MCPResponse {
 
 /** @type {Tool} */
 export const PLUGIN_ACTION_TOOL = {
-  name: "plugin_action",
+  name: "browser_plugin_action",
   title: "Plugin Action",
-  description: "Execute a site-specific plugin action. Use plugin_info first to discover available actions and their parameters. Plugins provide specialized automation for UI-heavy websites like Gmail, Outlook, PowerBI, AWS, and Azure — faster and more reliable than generic DOM interaction.",
+  description: "Execute a site-specific plugin action. Use browser_plugin_info first to discover available actions and their parameters. Plugins provide specialized automation for UI-heavy websites like Gmail, Outlook, PowerBI, AWS, and Azure — faster and more reliable than generic DOM interaction.",
   inputSchema: {
     type: "object",
     properties: {
@@ -52,7 +52,7 @@ export const PLUGIN_ACTION_TOOL = {
       },
       params: {
         type: "object",
-        description: "Action parameters. Use plugin_info to discover accepted parameters.",
+        description: "Action parameters. Use browser_plugin_info to discover accepted parameters.",
         additionalProperties: true
       }
     },
@@ -86,7 +86,7 @@ export const PLUGIN_ACTION_TOOL = {
  * @returns {Promise<MCPResponse>}
  */
 export async function pluginAction({ plugin: pluginName, action: actionName, params = {} }) {
-  logger.info(`plugin_action called: plugin=${pluginName} action=${actionName}`);
+  logger.info(`browser_plugin_action called: plugin=${pluginName} action=${actionName}`);
 
   const loadedPlugins = getLoadedPlugins();
 
@@ -96,7 +96,7 @@ export async function pluginAction({ plugin: pluginName, action: actionName, par
     const available = [...loadedPlugins.keys()].join(', ') || '(none)';
     return new ErrorResponse(
       `Unknown plugin: '${pluginName}'. Available plugins: ${available}`,
-      ["Call plugin_info() to list all loaded plugins"]
+      ["Call browser_plugin_info() to list all loaded plugins"]
     );
   }
 
@@ -107,7 +107,7 @@ export async function pluginAction({ plugin: pluginName, action: actionName, par
     const validActions = actions.map(a => a.name).join(', ');
     return new ErrorResponse(
       `Unknown action '${actionName}' for plugin '${pluginName}'. Available actions: ${validActions}`,
-      [`Call plugin_info({ plugin: '${pluginName}' }) to see all available actions and their parameters`]
+      [`Call browser_plugin_info({ plugin: '${pluginName}' }) to see all available actions and their parameters`]
     );
   }
 
@@ -136,17 +136,17 @@ export async function pluginAction({ plugin: pluginName, action: actionName, par
     if (!matchedPage) {
       const targetPatterns = pluginInstance.manifest.urlPatterns.join(', ');
       return new ErrorResponse(
-        `Plugin '${pluginName}' requires ${targetPatterns} but no matching page is open. Use fetch_webpage to navigate to the correct site first.`,
-        [`Use MCPBrowser's fetch_webpage to navigate to a page matching: ${targetPatterns}`, `Then retry plugin_action`]
+        `Plugin '${pluginName}' requires ${targetPatterns} but no matching page is open. Use browser_fetch_webpage to navigate to the correct site first.`,
+        [`Use MCPBrowser's browser_fetch_webpage to navigate to a page matching: ${targetPatterns}`, `Then retry browser_plugin_action`]
       );
     }
     
     page = matchedPage;
   } catch (err) {
-    logger.error(`plugin_action: browser error — ${err.message}`);
+    logger.error(`browser_plugin_action: browser error — ${err.message}`);
     return new ErrorResponse(
       `Browser connection failed: ${err.message}`,
-      ["Ensure the browser is running with remote debugging enabled", "Retry plugin_action after browser is connected"]
+      ["Ensure the browser is running with remote debugging enabled", "Retry browser_plugin_action after browser is connected"]
     );
   }
 
@@ -164,15 +164,15 @@ export async function pluginAction({ plugin: pluginName, action: actionName, par
       pluginName,
       actionName,
       result,
-      [`Use plugin_info({ plugin: '${pluginName}' }) to see other available actions`]
+      [`Use browser_plugin_info({ plugin: '${pluginName}' }) to see other available actions`]
     );
   } catch (err) {
-    logger.error(`plugin_action: "${pluginName}/${actionName}" failed — ${err.message}`);
+    logger.error(`browser_plugin_action: "${pluginName}/${actionName}" failed — ${err.message}`);
     return new ErrorResponse(
-      `Plugin '${pluginName}' action '${actionName}' failed: ${err.message}. The site structure may have changed. You can fall back to generic MCPBrowser tools (click_element, get_current_html).`,
+      `Plugin '${pluginName}' action '${actionName}' failed: ${err.message}. The site structure may have changed. You can fall back to generic MCPBrowser tools (browser_click_element, browser_get_current_html).`,
       [
         "Check if the page is on the correct site",
-        "Try MCPBrowser's get_current_html to inspect the page state",
+        "Try MCPBrowser's browser_get_current_html to inspect the page state",
         "Use generic MCPBrowser tools as a fallback"
       ]
     );

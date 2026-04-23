@@ -14,10 +14,10 @@ This is an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) serv
 Example workflow for AI assistant to use MCPBrowser
 
 ```
-1. fetch_webpage    → Load the login page
-2. type_text        → Enter username and password (multiple fields at once)
-3. click_element    → Click "Sign In"
-4. get_current_html → Extract the content after login
+1. browser_fetch_webpage    → Load the login page
+2. browser_type_text        → Enter username and password (multiple fields at once)
+3. browser_click_element    → Click "Sign In"
+4. browser_get_current_html → Extract the content after login
 ```
 
 
@@ -30,14 +30,14 @@ Example workflow for AI assistant to use MCPBrowser
   - [Claude Desktop](#option-3-claude-desktop)
   - [npm Package](#option-4-npm-package)
 - [MCP Tools](#mcp-tools)
-  - [fetch_webpage](#fetch_webpage)
-  - [execute_javascript](#execute_javascript)
-  - [click_element](#click_element)
-  - [type_text](#type_text)
-  - [get_current_html](#get_current_html)
-  - [scroll_page](#scroll_page)
-  - [take_screenshot](#take_screenshot)
-  - [close_tab](#close_tab)
+  - [browser_fetch_webpage](#browser_fetch_webpage)
+  - [browser_execute_javascript](#browser_execute_javascript)
+  - [browser_click_element](#browser_click_element)
+  - [browser_type_text](#browser_type_text)
+  - [browser_get_current_html](#browser_get_current_html)
+  - [browser_scroll_page](#browser_scroll_page)
+  - [browser_take_screenshot](#browser_take_screenshot)
+  - [browser_close_tab](#browser_close_tab)
 - [CLI Mode](#cli-mode)
 - [Configuration](#configuration-optional)
 - [Troubleshooting](#troubleshooting)
@@ -144,7 +144,7 @@ For VS Code, Kiro, Antigravity, or other editors — manual MCP setup. Add to yo
 
 ## MCP Tools
 
-### `fetch_webpage`
+### `browser_fetch_webpage`
 
 Fetches web pages using your Chrome/Edge browser. Handles authentication, CAPTCHA, SSO, anti-bot protection, and JavaScript-heavy sites. Opens the URL in a browser tab (reuses existing tab for same domain) and waits for the page to fully load before returning content. **Automatically detects SPAs** (React, Vue, Angular) and waits for JavaScript to render content.
 
@@ -167,11 +167,11 @@ Fetches web pages using your Chrome/Edge browser. Handles authentication, CAPTCH
 
 ---
 
-### `execute_javascript`
+### `browser_execute_javascript`
 
 Executes a JavaScript snippet in the active page context and returns the result with metadata (execution time, truncation flag, URL-change flag). Use this for structured extraction (e.g., inbox rows) or JS-driven UI actions that are unreliable via protocol clicks.
 
-**⚠️ Note:** Page must be already loaded via `fetch_webpage` first.
+**⚠️ Note:** Page must be already loaded via `browser_fetch_webpage` first.
 
 **Parameters:**
 - `url` (string, required) - The URL of the page (must match a previously fetched page)
@@ -184,7 +184,7 @@ Executes a JavaScript snippet in the active page context and returns the result 
 **Example:**
 ```json
 {
-  "action": "execute_javascript",
+  "action": "browser_execute_javascript",
   "url": "https://mail.google.com/",
   "script": "[...document.querySelectorAll('tr.zA')].slice(0,5).map((row,i)=>({index:i+1,sender:row.querySelector('.zF,.yP')?.textContent,subject:row.querySelector('.bog')?.textContent}))",
   "timeoutMs": 30000,
@@ -194,11 +194,11 @@ Executes a JavaScript snippet in the active page context and returns the result 
 
 ---
 
-### `click_element`
+### `browser_click_element`
 
 Clicks on any clickable element (buttons, links, divs with onclick handlers, etc.). Can target by CSS selector or visible text content. Automatically scrolls element into view and waits for page stability after clicking.
 
-**⚠️ Note:** Page must be already loaded via `fetch_webpage` first.
+**⚠️ Note:** Page must be already loaded via `browser_fetch_webpage` first.
 
 **Parameters:**
 - `url` (string, required) - The URL of the page (must match a previously fetched page)
@@ -228,11 +228,11 @@ Clicks on any clickable element (buttons, links, divs with onclick handlers, etc
 
 ---
 
-### `type_text`
+### `browser_type_text`
 
 Types text into one or more input fields in a single call. Supports filling entire forms at once for efficient automation. Automatically clears existing text by default.
 
-**⚠️ Note:** Page must be already loaded via `fetch_webpage` first.
+**⚠️ Note:** Page must be already loaded via `browser_fetch_webpage` first.
 
 **Parameters:**
 - `url` (string, required) - The URL of the page (must match a previously fetched page)
@@ -281,11 +281,11 @@ Types text into one or more input fields in a single call. Supports filling enti
 
 ---
 
-### `get_current_html`
+### `browser_get_current_html`
 
-Gets the current HTML from an already-loaded page **WITHOUT** navigating or reloading. Much faster than `fetch_webpage` since it only extracts the current DOM state. Use this after interactions (click, type) to get the updated page content efficiently.
+Gets the current HTML from an already-loaded page **WITHOUT** navigating or reloading. Much faster than `browser_fetch_webpage` since it only extracts the current DOM state. Use this after interactions (click, type) to get the updated page content efficiently.
 
-**⚠️ Note:** Page must be already loaded via `fetch_webpage` first.
+**⚠️ Note:** Page must be already loaded via `browser_fetch_webpage` first.
 
 **Parameters:**
 - `url` (string, required) - The URL of the page (must match a previously fetched page)
@@ -301,20 +301,20 @@ Gets the current HTML from an already-loaded page **WITHOUT** navigating or relo
 ```
 
 **Performance comparison:**
-- `fetch_webpage`: 2-5 seconds (full page reload)
-- `get_current_html`: 0.1-0.3 seconds (just extracts HTML) ✅
+- `browser_fetch_webpage`: 2-5 seconds (full page reload)
+- `browser_get_current_html`: 0.1-0.3 seconds (just extracts HTML) ✅
 
 ---
 
-### `scroll_page`
+### `browser_scroll_page`
 
-Scrolls within an already-loaded page. Use before `take_screenshot` to capture different parts of the page, or to bring elements into view before interaction. Supports multiple scroll modes:
+Scrolls within an already-loaded page. Use before `browser_take_screenshot` to capture different parts of the page, or to bring elements into view before interaction. Supports multiple scroll modes:
 
 - **By direction**: Scroll up/down/left/right by pixel amount
 - **To element**: Scroll until a specific element is visible
 - **To position**: Scroll to absolute coordinates
 
-**⚠️ Note:** Page must be already loaded via `fetch_webpage` first.
+**⚠️ Note:** Page must be already loaded via `browser_fetch_webpage` first.
 
 **Parameters:**
 - `url` (string, required) - The URL of the page (must match a previously fetched page)
@@ -346,11 +346,11 @@ Scrolls within an already-loaded page. Use before `take_screenshot` to capture d
 
 ---
 
-### `take_screenshot`
+### `browser_take_screenshot`
 
 Takes a screenshot of an already-loaded page for visual analysis. **Useful when HTML parsing is insufficient** — for example, pages with charts, images, complex layouts, popups, or visual content that's hard to understand from HTML alone. Returns a PNG image.
 
-**⚠️ Note:** Page must be already loaded via `fetch_webpage` first.
+**⚠️ Note:** Page must be already loaded via `browser_fetch_webpage` first.
 
 **Parameters:**
 - `url` (string, required) - The URL of the page (must match a previously fetched page)
@@ -374,7 +374,7 @@ Takes a screenshot of an already-loaded page for visual analysis. **Useful when 
 
 ---
 
-### `close_tab`
+### `browser_close_tab`
 
 Closes the browser tab for the given URL's hostname. Removes the page from the tab pool and forces a fresh session on the next visit to that hostname. Useful for clearing authentication state, managing memory, or starting fresh with a domain.
 
@@ -446,18 +446,18 @@ Environment variables for advanced setup:
 MCPBrowser logs all operations to help you understand what's happening:
 
 ```
-[MCPBrowser] fetch_webpage called: url=https://example.com
+[MCPBrowser] browser_fetch_webpage called: url=https://example.com
 [MCPBrowser] Tab created: example.com
 [MCPBrowser] Navigating to: https://example.com
 [MCPBrowser] Navigation complete: https://example.com (1234ms)
 [MCPBrowser] SPA detected: React, minimal content (0 chars)
 [MCPBrowser] SPA content ready
-[MCPBrowser] fetch_webpage completed: https://example.com
+[MCPBrowser] browser_fetch_webpage completed: https://example.com
 ```
 
 **Error messages are marked with ❌:**
 ```
-[MCPBrowser] ❌ fetch_webpage failed: net::ERR_NAME_NOT_RESOLVED
+[MCPBrowser] ❌ browser_fetch_webpage failed: net::ERR_NAME_NOT_RESOLVED
 [MCPBrowser] ❌ No open page found for example.com
 ```
 

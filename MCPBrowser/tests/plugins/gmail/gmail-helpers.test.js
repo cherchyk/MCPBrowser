@@ -215,7 +215,7 @@ describe('checkPrecondition', async () => {
     const result = await checkPrecondition(page, 'on_gmail');
     assert.equal(result.met, false);
     assert.ok(result.error.includes('not the active page'));
-    assert.ok(result.suggestion.includes('fetch_webpage'));
+    assert.ok(result.suggestion.includes('browser_fetch_webpage'));
   });
 
   it('thread_open: met when URL has thread ID', async () => {

@@ -15,7 +15,7 @@ import logger from '../core/logger.js';
 // ============================================================================
 
 /**
- * Response for successful close_tab operations
+ * Response for successful browser_close_tab operations
  */
 export class CloseTabSuccessResponse extends MCPResponse {
   /**
@@ -57,7 +57,7 @@ export class CloseTabSuccessResponse extends MCPResponse {
  * @type {Tool}
  */
 export const CLOSE_TAB_TOOL = {
-  name: "close_tab",
+  name: "browser_close_tab",
   title: "Close Tab",
   description: "**BROWSER MANAGEMENT** - Closes the browser tab for the given URL's hostname. This removes the page from the tab pool and forces a fresh session on the next visit to that hostname. Useful for memory management or when you need to clear session state. Note: Uses exact hostname match (www.example.com and example.com are treated as different tabs).",
   inputSchema: {
@@ -97,7 +97,7 @@ export const CLOSE_TAB_TOOL = {
  */
 export async function closeTab({ url }) {
   const startTime = Date.now();
-  logger.info(`close_tab called: url=${url}`);
+  logger.info(`browser_close_tab called: url=${url}`);
   
   try {
     // Validate URL
@@ -145,7 +145,7 @@ export async function closeTab({ url }) {
           'No open tab found for this hostname',
           hostname,
           [
-            "Use MCPBrowser's fetch_webpage to open a new page if needed"
+            "Use MCPBrowser's browser_fetch_webpage to open a new page if needed"
           ]
         );
       }
@@ -164,7 +164,7 @@ export async function closeTab({ url }) {
         'Tab was already closed',
         hostname,
         [
-          "Use MCPBrowser's fetch_webpage to open a new page if needed"
+          "Use MCPBrowser's browser_fetch_webpage to open a new page if needed"
         ]
       );
     }
@@ -175,18 +175,18 @@ export async function closeTab({ url }) {
     // Remove from domain pool
     domainPages.delete(hostname);
     
-    logger.info(`close_tab completed: closed tab for ${hostname}`);
+    logger.info(`browser_close_tab completed: closed tab for ${hostname}`);
     
     return new CloseTabSuccessResponse(
       `Successfully closed tab for ${hostname}`,
       hostname,
       [
-        "Use MCPBrowser's fetch_webpage to open a new page if needed"
+        "Use MCPBrowser's browser_fetch_webpage to open a new page if needed"
       ]
     );
     
   } catch (error) {
-    logger.error(`close_tab failed: ${error.message}`);
+    logger.error(`browser_close_tab failed: ${error.message}`);
     return new ErrorResponse(
       error.message,
       [

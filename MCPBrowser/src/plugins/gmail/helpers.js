@@ -230,7 +230,7 @@ export async function checkPrecondition(page, requirement) {
         return {
           met: false,
           error: 'Gmail is not the active page.',
-          suggestion: "Use fetch_webpage({ url: 'https://mail.google.com' }) to navigate to Gmail first."
+          suggestion: "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to navigate to Gmail first."
         };
       }
       return { met: true };
@@ -243,7 +243,7 @@ export async function checkPrecondition(page, requirement) {
         return {
           met: false,
           error: 'No email thread is currently open.',
-          suggestion: "Use plugin_action({ plugin: 'gmail', action: 'read_email', params: { index: 0 } }) to open an email first."
+          suggestion: "Use browser_plugin_action({ plugin: 'gmail', action: 'read_email', params: { index: 0 } }) to open an email first."
         };
       }
       return { met: true };
@@ -255,7 +255,7 @@ export async function checkPrecondition(page, requirement) {
         return {
           met: false,
           error: 'Not in email list view.',
-          suggestion: "Use plugin_action({ plugin: 'gmail', action: 'list_emails' }) to return to the email list."
+          suggestion: "Use browser_plugin_action({ plugin: 'gmail', action: 'list_emails' }) to return to the email list."
         };
       }
       return { met: true };

@@ -17,7 +17,7 @@ import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader
 // ============================================================================
 
 /**
- * Response for successful get_current_html operations
+ * Response for successful browser_get_current_html operations
  */
 export class GetCurrentHtmlSuccessResponse extends MCPResponse {
   /**
@@ -62,9 +62,9 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
  * @type {Tool}
  */
 export const GET_CURRENT_HTML_TOOL = {
-  name: "get_current_html",
+  name: "browser_get_current_html",
   title: "Get Current HTML",
-  description: "**BROWSER STATE EXTRACTION** - Retrieves current HTML from an already-loaded page WITHOUT navigating/reloading. Use this to check page state after interactions (click, type) or to re-examine the current page. Much faster than fetch_webpage since it only extracts HTML from the current page state.\n\n**PREREQUISITE**: Page MUST be loaded with fetch_webpage first. This tool reads from an already-loaded page in the browser.",
+  description: "**BROWSER STATE EXTRACTION** - Retrieves current HTML from an already-loaded page WITHOUT navigating/reloading. Use this to check page state after interactions (click, type) or to re-examine the current page. Much faster than browser_fetch_webpage since it only extracts HTML from the current page state.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first. This tool reads from an already-loaded page in the browser.",
   inputSchema: {
     type: "object",
     properties: {
@@ -109,7 +109,7 @@ export const GET_CURRENT_HTML_TOOL = {
  */
 export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
   const startTime = Date.now();
-  logger.info(`get_current_html called: url=${url}`);
+  logger.info(`browser_get_current_html called: url=${url}`);
   
   if (!url) {
     throw new Error("url parameter is required");
@@ -126,7 +126,7 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
   try {
     await getBrowser();
   } catch (err) {
-    logger.error(`get_current_html: Failed to connect to browser: ${err.message}`);
+    logger.error(`browser_get_current_html: Failed to connect to browser: ${err.message}`);
     return new InformationalResponse(
       `Browser connection failed: ${err.message}`,
       'The browser must be running with remote debugging enabled.',
@@ -143,15 +143,15 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
   
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
-    logger.debug(`get_current_html: ${pageError || 'No page found for ' + hostname}`);
+    logger.debug(`browser_get_current_html: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
       isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
       isConnectionLost 
         ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
         : 'The page must be loaded before you can get its current HTML',
       [
-        "Use MCPBrowser's fetch_webpage tool to load the page first",
-        "Then retry MCPBrowser's get_current_html with the same URL"
+        "Use MCPBrowser's browser_fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's browser_get_current_html with the same URL"
       ]
     );
   }
@@ -160,28 +160,28 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
     const currentUrl = page.url();
     const html = await extractAndProcessHtml(page, removeUnnecessaryHTML);
     
-    logger.info(`get_current_html completed: got HTML from ${currentUrl}`);
+    logger.info(`browser_get_current_html completed: got HTML from ${currentUrl}`);
     
     return new GetCurrentHtmlSuccessResponse(
       currentUrl,
       html,
       [
         ...getPluginNextSteps(currentUrl, html),
-        "Use MCPBrowser's click_element to interact with elements",
-        "Use MCPBrowser's type_text to fill forms",
-        "Use MCPBrowser's take_screenshot if page layout or visual content is hard to understand from HTML",
-        "Use MCPBrowser's close_tab to free resources when done"
+        "Use MCPBrowser's browser_click_element to interact with elements",
+        "Use MCPBrowser's browser_type_text to fill forms",
+        "Use MCPBrowser's browser_take_screenshot if page layout or visual content is hard to understand from HTML",
+        "Use MCPBrowser's browser_close_tab to free resources when done"
       ],
       getRecommendedPlugins(currentUrl, html)
     );
   } catch (err) {
-    logger.error(`get_current_html failed: ${err.message}`);
+    logger.error(`browser_get_current_html failed: ${err.message}`);
     return new InformationalResponse(
       `Failed to get HTML: ${err.message}`,
       'Could not extract HTML from the page. The page may have navigated away or the connection was lost.',
       [
-        "Try MCPBrowser's fetch_webpage to reload the page",
-        "Use MCPBrowser's close_tab and start fresh if needed"
+        "Try MCPBrowser's browser_fetch_webpage to reload the page",
+        "Use MCPBrowser's browser_close_tab and start fresh if needed"
       ]
     );
   }

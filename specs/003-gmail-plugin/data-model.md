@@ -113,7 +113,7 @@ Gmail Plugin (plugins/gmail/)
 ```
 Gmail View States (detected per action call via URL hash + DOM):
   
-  [not_gmail] --fetch_webpage(mail.google.com)--> [loading]
+  [not_gmail] --browser_fetch_webpage(mail.google.com)--> [loading]
   [loading] --content renders--> [email_list] (inbox)
   [email_list] --read_email(index)--> [thread]  (URL: #inbox → #inbox/<id>)
   [email_list] --search_emails(query)--> [search_results]  (URL: #inbox → #search/<query>)

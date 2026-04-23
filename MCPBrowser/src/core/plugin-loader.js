@@ -302,7 +302,7 @@ export function getPluginNextSteps(url, html) {
 /**
  * Build the recommendedPlugins payload for structuredContent.
  * Returns full plugin metadata including action catalog with params,
- * so agents can call actions directly without needing plugin_info.
+ * so agents can call actions directly without needing browser_plugin_info.
  * @param {string} url - Current page URL
  * @param {string} html - Extracted page HTML
  * @returns {Array<{ plugin: string, recommendation: string, actions: Array, usage: string }>}
@@ -317,7 +317,7 @@ export function getRecommendedPlugins(url, html) {
       plugin: d.pluginName,
       recommendation: recommendationText,
       actions: info.actions || [],
-      usage: `plugin_action({ plugin: '${d.pluginName}', action: '<name>', params: {...} })`
+      usage: `browser_plugin_action({ plugin: '${d.pluginName}', action: '<name>', params: {...} })`
     };
   });
 }

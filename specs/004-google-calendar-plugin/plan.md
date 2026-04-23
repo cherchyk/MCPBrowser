@@ -28,7 +28,7 @@ Build a Google Calendar site plugin (`gcal`) for MCPBrowser that enables AI agen
 | Principle | Status | Evidence |
 |-----------|--------|----------|
 | **I. User-Safe Browser Mediation** | ✅ PASS | Write actions (create, edit, delete) default to `save: false` (FR-015). No credential capture. Uses existing user session. Plugin does not navigate away from Google Calendar domain. |
-| **II. Deterministic MCP Tool Contracts** | ✅ PASS | All 8 actions have documented params, return shapes (FR-003–FR-010), and structured responses (FR-013). Plugin dispatches through existing `plugin_action`/`plugin_info` tools — no new MCP tool registration needed. |
+| **II. Deterministic MCP Tool Contracts** | ✅ PASS | All 8 actions have documented params, return shapes (FR-003–FR-010), and structured responses (FR-013). Plugin dispatches through existing `browser_plugin_action`/`browser_plugin_info` tools — no new MCP tool registration needed. |
 | **III. Test-First Coverage** | ✅ PASS | Test plan enumerated below. 1:1 action-to-test mapping + module tests for index, helpers, selectors — 11 unit test files + integration and tool-selection tests. |
 | **IV. Observability & Diagnostics** | ✅ PASS | Structured error messages with tier identification (FR-014, FR-021). View detection logged via MCPBrowser logger. Timeout errors include diagnostic context (FR-012). |
 | **V. Intent-Explicit Documentation** | ✅ PASS | Each action file documents tier usage in JSDoc header. Selectors module includes version date tag. helpers.js exports are organized by tier with purpose comments. |
@@ -130,6 +130,6 @@ List the unit, integration, and tool-selection tests to add. Implementation step
 
 | Scenario | Expected Tool Chain |
 |----------|-------------------|
-| "What meetings do I have today?" | `fetch_webpage` → `plugin_info` → `plugin_action(gcal, list_events)` |
-| "Schedule a 1:1 with Alice at 2pm" | `plugin_action(gcal, create_event, {title, date, startTime, endTime, attendees})` |
-| "Am I free at 3pm tomorrow?" | `plugin_action(gcal, check_availability, {date, startTime, endTime})` |
+| "What meetings do I have today?" | `browser_fetch_webpage` → `browser_plugin_info` → `browser_plugin_action(gcal, list_events)` |
+| "Schedule a 1:1 with Alice at 2pm" | `browser_plugin_action(gcal, create_event, {title, date, startTime, endTime, attendees})` |
+| "Am I free at 3pm tomorrow?" | `browser_plugin_action(gcal, check_availability, {date, startTime, endTime})` |

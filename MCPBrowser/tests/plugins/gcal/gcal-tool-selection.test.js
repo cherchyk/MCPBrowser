@@ -14,15 +14,15 @@ describe('GCal Tool Selection — Agent Workflow Scenarios', () => {
   const info = getInfo();
 
   it('Scenario 1: "What meetings do I have today?" → plugin detects Calendar → list_events', () => {
-    // Step 1: Agent navigates to calendar.google.com via fetch_webpage
+    // Step 1: Agent navigates to calendar.google.com via browser_fetch_webpage
     // Step 2: Plugin detection — matchesPage returns matched for Calendar URL
     const match = matchesPage('https://calendar.google.com/calendar/u/0/r/week', '');
     assert.equal(match.matched, true);
     assert.equal(match.confidence, 1.0);
 
-    // Step 3: Agent calls plugin_info to discover actions
+    // Step 3: Agent calls browser_plugin_info to discover actions
     assert.ok(info.actions.find(a => a.name === 'list_events'),
-      'plugin_info must list list_events action');
+      'browser_plugin_info must list list_events action');
 
     // Step 4: Agent calls list_events (no params = current view)
     const listAction = actionMap.get('list_events');

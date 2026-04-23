@@ -16,7 +16,7 @@ npm run mcp
 Example: list first 5 inbox rows with sender and subject.
 ```json
 {
-  "action": "execute_javascript",
+  "action": "browser_execute_javascript",
   "url": "https://mail.google.com/",
   "script": "[...document.querySelectorAll('tr.zA')].slice(0,5).map((row,i)=>({index:i+1,sender:row.querySelector('.zF,.yP')?.textContent,subject:row.querySelector('.bog')?.textContent}))",
   "timeoutMs": 30000,
@@ -31,7 +31,7 @@ Example: list first 5 inbox rows with sender and subject.
 No payload changes required; fallback is automatic when native click times out.
 ```json
 {
-  "action": "click_element",
+  "action": "browser_click_element",
   "url": "https://mail.google.com/",
   "selector": "tr.zA:nth-of-type(3)"
 }
