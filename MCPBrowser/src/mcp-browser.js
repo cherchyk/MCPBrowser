@@ -86,9 +86,15 @@ async function main() {
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     const { name, arguments: args } = request.params;
     const safeArgs = args || {};
+    
+    // Enable MCP progress notifications for this request if the client sent a progressToken.
+    // Every logger.info() call during tool execution will automatically send a
+    // notifications/progress message so the agent sees real-time status updates.
+    const progressToken = extra?._meta?.progressToken;
+    logger.setProgressToken(progressToken);
     
     let result;
     
@@ -161,6 +167,8 @@ async function main() {
         `${name} failed: ${error.message}`,
         ['Check browser is installed', 'Try specifying browser parameter explicitly (chrome, edge, or brave)', 'Check MCP server logs for details']
       ).toMcpFormat();
+    } finally {
+      logger.clearProgressToken();
     }
     
     // Transform result into MCP-compliant response using instance method
