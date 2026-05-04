@@ -86,9 +86,15 @@ async function main() {
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     const { name, arguments: args } = request.params;
     const safeArgs = args || {};
+    
+    // Enable MCP progress notifications for this request if the client sent a progressToken.
+    // Every logger.info() call during tool execution will automatically send a
+    // notifications/progress message so the agent sees real-time status updates.
+    const progressToken = extra?._meta?.progressToken;
+    logger.setProgressToken(progressToken);
     
     let result;
     
@@ -104,47 +110,47 @@ async function main() {
         //   result = await handleAcceptEula(safeArgs);
         //   break;
           
-        case "fetch_webpage":
+        case "browser_fetch_webpage":
           result = await fetchPage(safeArgs);
           break;
 
-        case "execute_javascript":
+        case "browser_execute_javascript":
           result = await executeJavascript(safeArgs);
           break;
           
-        case "click_element":
+        case "browser_click_element":
           result = await clickElement(safeArgs);
           break;
           
-        case "type_text":
+        case "browser_type_text":
           result = await typeText(safeArgs);
           break;
           
-        case "close_tab":
+        case "browser_close_tab":
           result = await closeTab(safeArgs);
           break;
           
-        case "get_current_html":
+        case "browser_get_current_html":
           result = await getCurrentHtml(safeArgs);
           break;
           
-        case "take_screenshot":
+        case "browser_take_screenshot":
           result = await takeScreenshot(safeArgs);
           break;
           
-        case "scroll_page":
+        case "browser_scroll_page":
           result = await scrollPage(safeArgs);
           break;
 
-        case "navigate_history":
+        case "browser_navigate_history":
           result = await navigateHistory(safeArgs);
           break;
 
-        case "plugin_info":
+        case "browser_plugin_info":
           result = pluginInfo(safeArgs);
           break;
 
-        case "plugin_action":
+        case "browser_plugin_action":
           result = await pluginAction(safeArgs);
           break;
           
@@ -161,6 +167,8 @@ async function main() {
         `${name} failed: ${error.message}`,
         ['Check browser is installed', 'Try specifying browser parameter explicitly (chrome, edge, or brave)', 'Check MCP server logs for details']
       ).toMcpFormat();
+    } finally {
+      logger.clearProgressToken();
     }
     
     // Transform result into MCP-compliant response using instance method

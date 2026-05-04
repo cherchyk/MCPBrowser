@@ -1,5 +1,5 @@
 /**
- * Tests for plugin-action.js — the plugin_action MCP tool.
+ * Tests for plugin-action.js — the browser_plugin_action MCP tool.
  * Covers: dispatch routing, error handling, response conformance, page context.
  */
 
@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const registryPath = join(__dirname, '../../src/plugins.json');
 
-console.log('🧪 Testing plugin_action tool');
+console.log('🧪 Testing browser_plugin_action tool');
 console.log();
 
 let passed = 0;
@@ -51,7 +51,7 @@ function withRegistry(data, fn) {
 await withRegistry({ enabled: ["_example"] }, async () => { await loadPlugins(); });
 
 // ============================================================================
-// T017: plugin_action tests (US2)
+// T017: browser_plugin_action tests (US2)
 // ============================================================================
 
 console.log('--- Error Cases (no browser needed) ---');

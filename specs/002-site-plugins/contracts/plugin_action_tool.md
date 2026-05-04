@@ -1,4 +1,4 @@
-# Contract: `plugin_action` MCP Tool
+# Contract: `browser_plugin_action` MCP Tool
 
 **Feature**: 002-site-plugins
 
@@ -6,9 +6,9 @@
 
 ```javascript
 {
-  name: "plugin_action",
+  name: "browser_plugin_action",
   title: "Plugin Action",
-  description: "Execute a site-specific plugin action. Use plugin_info first to discover available actions and their parameters. Plugins provide specialized automation for UI-heavy websites like Gmail, Outlook, PowerBI, AWS, and Azure — faster and more reliable than generic DOM interaction.",
+  description: "Execute a site-specific plugin action. Use browser_plugin_info first to discover available actions and their parameters. Plugins provide specialized automation for UI-heavy websites like Gmail, Outlook, PowerBI, AWS, and Azure — faster and more reliable than generic DOM interaction.",
   inputSchema: {
     type: "object",
     properties: {
@@ -22,7 +22,7 @@
       },
       params: {
         type: "object",
-        description: "Action parameters. Use plugin_info to discover accepted parameters.",
+        description: "Action parameters. Use browser_plugin_info to discover accepted parameters.",
         additionalProperties: true
       }
     },
@@ -79,7 +79,7 @@ When the browser's active page does not match the plugin's target site:
 ```javascript
 {
   isError: true,
-  content: [{ type: "text", text: "Plugin 'gmail' requires mail.google.com but current page is bing.com. Use fetch_webpage to navigate to the correct site first." }]
+  content: [{ type: "text", text: "Plugin 'gmail' requires mail.google.com but current page is bing.com. Use browser_fetch_webpage to navigate to the correct site first." }]
 }
 ```
 
@@ -88,6 +88,6 @@ When the browser's active page does not match the plugin's target site:
 ```javascript
 {
   isError: true,
-  content: [{ type: "text", text: "Plugin 'gmail' action 'list_emails' failed: Element not found. The site structure may have changed. You can fall back to generic MCPBrowser tools (click_element, get_current_html)." }]
+  content: [{ type: "text", text: "Plugin 'gmail' action 'list_emails' failed: Element not found. The site structure may have changed. You can fall back to generic MCPBrowser tools (browser_click_element, browser_get_current_html)." }]
 }
 ```

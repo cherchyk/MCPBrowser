@@ -218,7 +218,7 @@ test('Response serializes to JSON correctly', () => {
   const response = new CloseTabSuccessResponse(
     'Tab closed successfully',
     'example.com',
-    ['Use fetch_webpage to open new page']
+    ['Use browser_fetch_webpage to open new page']
   );
   
   const json = JSON.stringify(response);
@@ -226,7 +226,7 @@ test('Response serializes to JSON correctly', () => {
   
   assert.strictEqual(parsed.message, 'Tab closed successfully');
   assert.strictEqual(parsed.hostname, 'example.com');
-  assert.deepStrictEqual(parsed.nextSteps, ['Use fetch_webpage to open new page']);
+  assert.deepStrictEqual(parsed.nextSteps, ['Use browser_fetch_webpage to open new page']);
 });
 
 // Test 15: NavigateHistorySuccessResponse creates valid structure

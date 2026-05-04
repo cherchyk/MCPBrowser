@@ -25,7 +25,7 @@ When a page requires authentication, return an immediate response to the agent/u
   - `timeoutMinutes`: how long the browser will keep the tab open
   - Suggested next steps for the user
 - User completes auth in browser
-- User calls `fetch_webpage` again with same URL → gets the content
+- User calls `browser_fetch_webpage` again with same URL → gets the content
 
 **Benefits:**
 - Agent gets instant feedback that auth is needed

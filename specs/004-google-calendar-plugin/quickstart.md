@@ -14,12 +14,12 @@
 
 Navigate to Google Calendar:
 ```
-fetch_webpage({ url: "https://calendar.google.com" })
+browser_fetch_webpage({ url: "https://calendar.google.com" })
 ```
 
 The MCP response will include nextSteps indicating the `gcal` plugin is available:
 ```
-"nextSteps": ["Google Calendar plugin detected. Use plugin_info({ plugin: 'gcal' }) to see available actions."]
+"nextSteps": ["Google Calendar plugin detected. Use browser_plugin_info({ plugin: 'gcal' }) to see available actions."]
 ```
 
 ## Common Workflows
@@ -27,7 +27,7 @@ The MCP response will include nextSteps indicating the `gcal` plugin is availabl
 ### 1. List Today's Events
 
 ```
-plugin_action({ plugin: "gcal", action: "list_events" })
+browser_plugin_action({ plugin: "gcal", action: "list_events" })
 ```
 
 Returns up to 25 events from the currently-displayed view.
@@ -35,13 +35,13 @@ Returns up to 25 events from the currently-displayed view.
 ### 2. Check a Specific Date
 
 ```
-plugin_action({ plugin: "gcal", action: "list_events", params: { date: "2026-04-10", view: "day" } })
+browser_plugin_action({ plugin: "gcal", action: "list_events", params: { date: "2026-04-10", view: "day" } })
 ```
 
 ### 3. Read Event Details
 
 ```
-plugin_action({ plugin: "gcal", action: "read_event", params: { index: 0 } })
+browser_plugin_action({ plugin: "gcal", action: "read_event", params: { index: 0 } })
 ```
 
 Opens the first event and returns full details: title, time, location, description, attendees, conferencing link.
@@ -49,7 +49,7 @@ Opens the first event and returns full details: title, time, location, descripti
 ### 4. Create an Event
 
 ```
-plugin_action({
+browser_plugin_action({
   plugin: "gcal",
   action: "create_event",
   params: {
@@ -69,13 +69,13 @@ Note: `save` defaults to `false` — the form is populated but not submitted unt
 ### 5. Search for Events
 
 ```
-plugin_action({ plugin: "gcal", action: "search_events", params: { query: "standup" } })
+browser_plugin_action({ plugin: "gcal", action: "search_events", params: { query: "standup" } })
 ```
 
 ### 6. Check Availability
 
 ```
-plugin_action({
+browser_plugin_action({
   plugin: "gcal",
   action: "check_availability",
   params: { date: "2026-04-07", startTime: "14:00", endTime: "15:00" }
@@ -87,13 +87,13 @@ Returns `"free"` or `"busy"` with conflicting events listed.
 ### 7. RSVP to an Invitation
 
 ```
-plugin_action({ plugin: "gcal", action: "rsvp_event", params: { index: 2, response: "accept" } })
+browser_plugin_action({ plugin: "gcal", action: "rsvp_event", params: { index: 2, response: "accept" } })
 ```
 
 ### 8. Edit an Event
 
 ```
-plugin_action({
+browser_plugin_action({
   plugin: "gcal",
   action: "edit_event",
   params: { index: 0, startTime: "15:00", endTime: "16:00", save: true }
@@ -103,16 +103,16 @@ plugin_action({
 ### 9. Delete an Event
 
 ```
-plugin_action({ plugin: "gcal", action: "delete_event", params: { index: 0 } })
+browser_plugin_action({ plugin: "gcal", action: "delete_event", params: { index: 0 } })
 ```
 
 ## Error Recovery
 
 | Error | Recovery |
 |-------|----------|
-| "Google Calendar is not the active page" | `fetch_webpage({ url: "https://calendar.google.com" })` |
+| "Google Calendar is not the active page" | `browser_fetch_webpage({ url: "https://calendar.google.com" })` |
 | "Keyboard shortcuts are not enabled" | Enable in Calendar Settings → Keyboard shortcuts → Enable keyboard shortcuts |
-| "Event index N is out of range" | `plugin_action({ plugin: "gcal", action: "list_events" })` to refresh |
+| "Event index N is out of range" | `browser_plugin_action({ plugin: "gcal", action: "list_events" })` to refresh |
 | "Page is still loading" | Wait a moment, then retry the action |
 
 ## Action Chaining

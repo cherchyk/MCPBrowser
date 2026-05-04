@@ -128,6 +128,6 @@ MCPBrowser/tests/plugins/gmail/
 |------|------------------|
 | `nextSteps` guidance | Each action returns contextually appropriate nextSteps |
 | Error recovery | Error responses include actionable remediation steps |
-| Plugin detection | `fetch_webpage` on Gmail triggers plugin discovery hint |
+| Plugin detection | `browser_fetch_webpage` on Gmail triggers plugin discovery hint |
 
 ````

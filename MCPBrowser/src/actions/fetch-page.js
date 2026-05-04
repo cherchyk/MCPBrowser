@@ -19,7 +19,7 @@ import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader
 // ============================================================================
 
 /**
- * Response for successful fetch_webpage operations
+ * Response for successful browser_fetch_webpage operations
  */
 export class FetchPageSuccessResponse extends MCPResponse {
   /**
@@ -64,7 +64,7 @@ export class FetchPageSuccessResponse extends MCPResponse {
  * @type {Tool}
  */
 export const FETCH_WEBPAGE_TOOL = {
-  name: "fetch_webpage",
+  name: "browser_fetch_webpage",
   title: "Fetch Web Page",
   description: "Fetches web pages using Chrome/Edge browser with full JavaScript rendering and authentication support. **REQUIRED for corporate/enterprise sites, any page requiring login/SSO, anti-bot/CAPTCHA pages, and JavaScript-heavy applications.** Use this as the DEFAULT for all webpage fetching - it handles simple HTML pages too. Opens browser for user authentication when needed. Never use generic HTTP fetch for pages that might require authentication.",
   inputSchema: {
@@ -123,7 +123,7 @@ export const FETCH_WEBPAGE_TOOL = {
  * @returns {Promise<Object>} Result object with success status, URL, HTML content, or error details
  */
 export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = true, postLoadWait = 0 }) {
-  logger.info(`fetch_webpage called: url=${url}`);
+  logger.info(`browser_fetch_webpage called: url=${url}`);
   
   // Handle missing URL with environment variable fallback
   if (!url) {
@@ -166,7 +166,7 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, postLoadWait }
   try {
     browserInstance = await getBrowser(browser);
   } catch (err) {
-    logger.error(`fetch_webpage: Failed to connect to browser: ${err.message}`);
+    logger.error(`browser_fetch_webpage: Failed to connect to browser: ${err.message}`);
     return new InformationalResponse(
       `Browser connection failed: ${err.message}`,
       'The browser must be running with remote debugging enabled.',
@@ -195,8 +195,8 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, postLoadWait }
           authResult.error,
           [
             "Complete authentication in the browser window",
-            "Call MCPBrowser's fetch_webpage again with the same URL to retry",
-            "Use MCPBrowser's close_tab to reset the session if authentication fails"
+            "Call MCPBrowser's browser_fetch_webpage again with the same URL to retry",
+            "Use MCPBrowser's browser_close_tab to reset the session if authentication fails"
           ]
         );
       }
@@ -217,7 +217,7 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, postLoadWait }
     // Extract and process HTML
     const processedHtml = await extractAndProcessHtml(page, removeUnnecessaryHTML);
     
-    logger.info(`fetch_webpage completed: ${page.url()}`);
+    logger.info(`browser_fetch_webpage completed: ${page.url()}`);
     
     // Check for non-2xx HTTP status codes
     if (statusCode && (statusCode >= 400 && statusCode < 600)) {
@@ -230,22 +230,22 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, postLoadWait }
       processedHtml,
       [
         ...getPluginNextSteps(page.url(), processedHtml),
-        "Use MCPBrowser's click_element to interact with buttons/links on the page",
-        "Use MCPBrowser's type_text to fill in form fields",
-        "Use MCPBrowser's get_current_html to re-check page state after interactions",
-        "Use MCPBrowser's take_screenshot if page has charts, images, or complex visual layout that's hard to understand from HTML",
-        "Use MCPBrowser's close_tab when finished to free browser resources"
+        "Use MCPBrowser's browser_click_element to interact with buttons/links on the page",
+        "Use MCPBrowser's browser_type_text to fill in form fields",
+        "Use MCPBrowser's browser_get_current_html to re-check page state after interactions",
+        "Use MCPBrowser's browser_take_screenshot if page has charts, images, or complex visual layout that's hard to understand from HTML",
+        "Use MCPBrowser's browser_close_tab when finished to free browser resources"
       ],
       getRecommendedPlugins(page.url(), processedHtml)
     );
   } catch (err) {
-    logger.error(`fetch_webpage failed: ${err.message || String(err)}`);
+    logger.error(`browser_fetch_webpage failed: ${err.message || String(err)}`);
     return new ErrorResponse(
       err.message || String(err),
       [
         "Complete authentication in the browser if prompted",
-        "Call MCPBrowser's fetch_webpage again with the same URL to retry",
-        "Use MCPBrowser's close_tab to reset the session if needed"
+        "Call MCPBrowser's browser_fetch_webpage again with the same URL to retry",
+        "Use MCPBrowser's browser_close_tab to reset the session if needed"
       ]
     );
   }

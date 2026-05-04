@@ -162,7 +162,7 @@ export function printHelp() {
   o('━'.repeat(70));
   o('');
   o('  No arguments → starts MCP server (stdin/stdout JSON-RPC).');
-  o('  CLI commands map 1:1 to MCP tools (fetch→fetch_webpage, etc.).');
+  o('  CLI commands map 1:1 to MCP tools (fetch→browser_fetch_webpage, etc.).');
   o('');
   o('  { "mcpServers": { "mcpbrowser": { "command": "npx", "args": ["-y", "mcpbrowser@latest"] } } }');
   o('');

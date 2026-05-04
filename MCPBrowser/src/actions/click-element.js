@@ -20,7 +20,7 @@
  * Why this design?
  * - Solves SPA navigation issue: URL hash changes instantly (#inbox → #trash),
  *   but content loads asynchronously. Without waiting, we'd return old content.
- * - Consistent with fetch_webpage: Both wait for stability and return HTML
+ * - Consistent with browser_fetch_webpage: Both wait for stability and return HTML
  * - Flexible: Can disable waiting for fast form interactions
  */
 
@@ -35,7 +35,7 @@ import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader
  */
 
 /**
- * Structured response for click_element with JS fallback metadata
+ * Structured response for browser_click_element with JS fallback metadata
  */
 export class ClickWithFallbackResponse extends MCPResponse {
   constructor({ status, fallbackUsed = false, nativeAttempt, fallbackAttempt, postClickWait, currentUrl, html = null, message, nextSteps = [], recommendedPlugins = [] }) {
@@ -79,9 +79,9 @@ export class ClickWithFallbackResponse extends MCPResponse {
  * @type {Tool}
  */
 export const CLICK_ELEMENT_TOOL = {
-  name: "click_element",
+  name: "browser_click_element",
   title: "Click Element",
-  description: "**BROWSER INTERACTION** - Clicks elements on browser-loaded pages. Use this for navigation (clicking links/buttons), form submission, and any user interaction that requires clicking.\n\nWorks with any clickable element including buttons, links, or elements with onclick handlers. Can target by CSS selector or text content. Waits for page stability and returns updated HTML by default.\n\n**PREREQUISITE**: Page MUST be loaded with fetch_webpage first. This tool operates on an already-loaded page in the browser.",
+  description: "**BROWSER INTERACTION** - Clicks elements on browser-loaded pages. Use this for navigation (clicking links/buttons), form submission, and any user interaction that requires clicking.\n\nWorks with any clickable element including buttons, links, or elements with onclick handlers. Can target by CSS selector or text content. Waits for page stability and returns updated HTML by default.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first. This tool operates on an already-loaded page in the browser.",
   inputSchema: {
     type: "object",
     properties: {
@@ -182,7 +182,7 @@ export const CLICK_ELEMENT_TOOL = {
  * });
  */
 export async function clickElement({ url, selector, text, waitForElementTimeout = 30000, returnHtml = true, removeUnnecessaryHTML = true, postClickWait = 1000 }) {
-  logger.info(`click_element called: ${selector || `text="${text}"`}`);
+  logger.info(`browser_click_element called: ${selector || `text="${text}"`}`);
   
   if (!url) {
     throw new Error("url parameter is required");
@@ -203,7 +203,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
   try {
     await getBrowser();
   } catch (err) {
-    logger.error(`click_element: Failed to connect to browser: ${err.message}`);
+    logger.error(`browser_click_element: Failed to connect to browser: ${err.message}`);
     return new InformationalResponse(
       `Browser connection failed: ${err.message}`,
       'The browser must be running with remote debugging enabled.',
@@ -220,15 +220,15 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
   
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
-    logger.debug(`click_element: ${pageError || 'No page found for ' + hostname}`);
+    logger.debug(`browser_click_element: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
       isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
       isConnectionLost 
         ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
         : 'The page must be loaded before you can interact with elements on it',
       [
-        "Use MCPBrowser's fetch_webpage tool to load the page first",
-        "Then retry MCPBrowser's click_element with the same URL"
+        "Use MCPBrowser's browser_fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's browser_click_element with the same URL"
       ]
     );
   }
@@ -271,8 +271,8 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
         selector ? `Element not found: ${selector}` : `Element with text "${text}" not found`,
         'The element could not be located on the page. It may be hidden, dynamically loaded, or the selector/text may be incorrect.',
         [
-          "Use MCPBrowser's get_current_html to verify page content",
-          "Use MCPBrowser's take_screenshot to see the visual layout if HTML is unclear",
+          "Use MCPBrowser's browser_get_current_html to verify page content",
+          "Use MCPBrowser's browser_take_screenshot to see the visual layout if HTML is unclear",
           "Try a different selector or text",
           "Check if the element is visible on the page"
         ]
@@ -337,20 +337,20 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     const nextSteps = returnHtml
       ? [
           ...(html ? getPluginNextSteps(currentUrl, html) : []),
-          "Use MCPBrowser's click_element again to navigate further",
-          "Use MCPBrowser's type_text to fill forms if needed",
-          "Use MCPBrowser's get_current_html to refresh page state",
-          "Use MCPBrowser's take_screenshot if page has popups or visual content that's hard to parse from HTML",
-          "Use MCPBrowser's close_tab when finished"
+          "Use MCPBrowser's browser_click_element again to navigate further",
+          "Use MCPBrowser's browser_type_text to fill forms if needed",
+          "Use MCPBrowser's browser_get_current_html to refresh page state",
+          "Use MCPBrowser's browser_take_screenshot if page has popups or visual content that's hard to parse from HTML",
+          "Use MCPBrowser's browser_close_tab when finished"
         ]
       : [
-          "Use MCPBrowser's get_current_html to see updated page state",
-          "Use MCPBrowser's take_screenshot if the page has popups, modals, or visual content",
-          "Use MCPBrowser's click_element or MCPBrowser's type_text for more interactions",
-          "Use MCPBrowser's close_tab when finished"
+          "Use MCPBrowser's browser_get_current_html to see updated page state",
+          "Use MCPBrowser's browser_take_screenshot if the page has popups, modals, or visual content",
+          "Use MCPBrowser's browser_click_element or MCPBrowser's browser_type_text for more interactions",
+          "Use MCPBrowser's browser_close_tab when finished"
         ];
 
-    logger.info(`click_element completed: ${selector || `text="${text}"`}${fallbackUsed ? ' (fallback used)' : ''}`);
+    logger.info(`browser_click_element completed: ${selector || `text="${text}"`}${fallbackUsed ? ' (fallback used)' : ''}`);
 
     return new ClickWithFallbackResponse({
       status: finalStatus,
@@ -365,15 +365,15 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       recommendedPlugins: html ? getRecommendedPlugins(currentUrl, html) : []
     });
   } catch (err) {
-    logger.error(`click_element failed: ${err.message}`);
+    logger.error(`browser_click_element failed: ${err.message}`);
     return new InformationalResponse(
       `Failed to click element: ${err.message}`,
       'The element was found but could not be clicked. It may be covered by another element, not interactable, or the page may have changed.',
       [
-        "Use MCPBrowser's get_current_html to check current page state",
-        "Use MCPBrowser's take_screenshot to see what's visually blocking the element",
+        "Use MCPBrowser's browser_get_current_html to check current page state",
+        "Use MCPBrowser's browser_take_screenshot to see what's visually blocking the element",
         "Verify the selector or text is correct",
-        "Try MCPBrowser's fetch_webpage to reload if page is stale"
+        "Try MCPBrowser's browser_fetch_webpage to reload if page is stale"
       ]
     );
   }

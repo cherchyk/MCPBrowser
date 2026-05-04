@@ -45,7 +45,7 @@
 
 - [x] T007 Create MCPBrowser/src/core/plugin-loader.js with: CURRENT_INTERFACE_VERSION constant (set to 1), readRegistry() function that reads and parses MCPBrowser/plugins.json, validateManifest(manifest, folderName) function that checks all required fields and interface version
 - [x] T008 Add loadPlugins() function to MCPBrowser/src/core/plugin-loader.js: reads registry, iterates enabled list, dynamically imports each plugin via `await import()` with absolute file:// URL, validates manifest and exports, stores valid plugins in `loadedPlugins` Map, logs warnings for skipped plugins
-- [x] T009 Add detectPlugins(url, html) function to MCPBrowser/src/core/plugin-loader.js: iterates all loaded plugins, calls each plugin's matchesPage(url, html), checks URL patterns first then DOM patterns, returns array of DetectionResult objects sorted by confidence descending, converts matches to nextSteps strings referencing plugin_info and plugin_action
+- [x] T009 Add detectPlugins(url, html) function to MCPBrowser/src/core/plugin-loader.js: iterates all loaded plugins, calls each plugin's matchesPage(url, html), checks URL patterns first then DOM patterns, returns array of DetectionResult objects sorted by confidence descending, converts matches to nextSteps strings referencing browser_plugin_info and browser_plugin_action
 - [x] T010 Add getLoadedPlugins() and getPlugin(name) accessor functions to MCPBrowser/src/core/plugin-loader.js for use by dispatch tools
 - [x] T011 Run T004, T005, T006 tests and verify all pass — foundational phase complete only when green
 
@@ -75,23 +75,23 @@
 
 ## Phase 4: User Story 2 - Plugin Dispatch Tools (Priority: P1)
 
-**Goal**: Implement plugin_action and plugin_info MCP tools so the agent can query and execute plugin actions.
+**Goal**: Implement browser_plugin_action and browser_plugin_info MCP tools so the agent can query and execute plugin actions.
 
-**Independent Test**: Call plugin_info to list plugins, get action catalog. Call plugin_action to execute a stub action.
+**Independent Test**: Call browser_plugin_info to list plugins, get action catalog. Call browser_plugin_action to execute a stub action.
 
 ### Tests for User Story 2 (MANDATORY)
 
-- [x] T016 [P] [US2] Write unit tests for plugin_info in MCPBrowser/tests/actions/plugin-info.test.js: no plugin param returns list of all loaded plugins with name/description/actionCount, valid plugin param returns full action catalog with params and site context, valid plugin + action param returns single action details, unknown plugin returns ErrorResponse listing available plugins, response includes nextSteps guiding to plugin_action
-- [x] T017 [P] [US2] Write unit tests for plugin_action in MCPBrowser/tests/actions/plugin-action.test.js: valid plugin + action dispatches to execute function and returns result, unknown plugin returns ErrorResponse listing available plugins, unknown action returns ErrorResponse listing valid actions for that plugin, response conforms to MCPResponse hierarchy (has toMcpFormat)
+- [x] T016 [P] [US2] Write unit tests for browser_plugin_info in MCPBrowser/tests/actions/plugin-info.test.js: no plugin param returns list of all loaded plugins with name/description/actionCount, valid plugin param returns full action catalog with params and site context, valid plugin + action param returns single action details, unknown plugin returns ErrorResponse listing available plugins, response includes nextSteps guiding to browser_plugin_action
+- [x] T017 [P] [US2] Write unit tests for browser_plugin_action in MCPBrowser/tests/actions/plugin-action.test.js: valid plugin + action dispatches to execute function and returns result, unknown plugin returns ErrorResponse listing available plugins, unknown action returns ErrorResponse listing valid actions for that plugin, response conforms to MCPResponse hierarchy (has toMcpFormat)
 
 ### Implementation for User Story 2
 
-- [x] T018 [US2] Create MCPBrowser/src/actions/plugin-info.js: define PLUGIN_INFO_TOOL constant per contracts/plugin_info_tool.md, implement pluginInfo({ plugin, action }) function with three modes (list all / plugin detail / action detail), create PluginInfoResponse and PluginListResponse classes extending MCPResponse, return ErrorResponse for unknown plugin/action
-- [x] T019 [US2] Create MCPBrowser/src/actions/plugin-action.js: define PLUGIN_ACTION_TOOL constant per contracts/plugin_action_tool.md, implement pluginAction({ plugin, action, params }) function that looks up plugin in loadedPlugins map, finds action by name, gets browser page via getValidatedPage, calls action.execute({ page, params }), wraps result, create PluginActionSuccessResponse class extending MCPResponse, return ErrorResponse for unknown plugin/action/wrong page/execution failure
+- [x] T018 [US2] Create MCPBrowser/src/actions/plugin-info.js: define PLUGIN_INFO_TOOL constant per contracts/browser_plugin_info_tool.md, implement pluginInfo({ plugin, action }) function with three modes (list all / plugin detail / action detail), create PluginInfoResponse and PluginListResponse classes extending MCPResponse, return ErrorResponse for unknown plugin/action
+- [x] T019 [US2] Create MCPBrowser/src/actions/plugin-action.js: define PLUGIN_ACTION_TOOL constant per contracts/browser_plugin_action_tool.md, implement pluginAction({ plugin, action, params }) function that looks up plugin in loadedPlugins map, finds action by name, gets browser page via getValidatedPage, calls action.execute({ page, params }), wraps result, create PluginActionSuccessResponse class extending MCPResponse, return ErrorResponse for unknown plugin/action/wrong page/execution failure
 - [x] T020 [US2] Register dispatch tools in MCPBrowser/src/mcp-browser.js: import PLUGIN_ACTION_TOOL, PLUGIN_INFO_TOOL, pluginAction, pluginInfo, add tools to tools array, add cases to CallToolRequestSchema switch statement
 - [x] T021 [US2] Run T016, T017 tests and verify all pass; verify existing tests still pass via `node MCPBrowser/tests/run-all.js`
 
-**Checkpoint**: Agent can call plugin_info and plugin_action. Dispatch routing works. Error cases handled.
+**Checkpoint**: Agent can call browser_plugin_info and browser_plugin_action. Dispatch routing works. Error cases handled.
 
 ---
 
@@ -104,7 +104,7 @@
 ### Tests for User Story 1 (MANDATORY)
 
 - [x] T022 [P] [US1] Write unit tests for detectPlugins in MCPBrowser/tests/core/plugin-loader.test.js: URL matching returns correct plugin with confidence 1.0, DOM pattern matching returns plugin when URL doesn't match, no match returns empty array, multiple plugins loaded but only one matches — returns only that one, multiple plugins match same page — returns all sorted by confidence
-- [x] T023 [P] [US1] Write unit tests for nextSteps augmentation in MCPBrowser/tests/actions/plugin-action.test.js (or a new integration test file): verify detectPlugins output converts to nextSteps strings containing plugin name and reference to plugin_info/plugin_action
+- [x] T023 [P] [US1] Write unit tests for nextSteps augmentation in MCPBrowser/tests/actions/plugin-action.test.js (or a new integration test file): verify detectPlugins output converts to nextSteps strings containing plugin name and reference to browser_plugin_info/browser_plugin_action
 
 ### Implementation for User Story 1
 
@@ -117,13 +117,13 @@
 
 ## Phase 6: User Story 4 - Plugin Recommendation in All Tool Responses (Priority: P2)
 
-**Goal**: Extend detection hooks to get_current_html, click_element, and execute_javascript so plugin recommendations appear consistently.
+**Goal**: Extend detection hooks to browser_get_current_html, browser_click_element, and browser_execute_javascript so plugin recommendations appear consistently.
 
-**Independent Test**: Call get_current_html on a page matching _example plugin, verify nextSteps includes plugin recommendation.
+**Independent Test**: Call browser_get_current_html on a page matching _example plugin, verify nextSteps includes plugin recommendation.
 
 ### Tests for User Story 4 (MANDATORY)
 
-- [x] T026 [P] [US4] Write unit test verifying detection hook integration exists in get_current_html, click_element, execute_javascript — each action's success response includes plugin recommendations when a matching plugin is loaded
+- [x] T026 [P] [US4] Write unit test verifying detection hook integration exists in browser_get_current_html, browser_click_element, browser_execute_javascript — each action's success response includes plugin recommendations when a matching plugin is loaded
 
 ### Implementation for User Story 4
 
@@ -140,7 +140,7 @@
 
 **Goal**: Ensure plugin actions receive the correct browser page object and handle wrong-page errors properly.
 
-**Independent Test**: Call plugin_action for _example plugin while on correct and incorrect pages — verify page object received and error handling works.
+**Independent Test**: Call browser_plugin_action for _example plugin while on correct and incorrect pages — verify page object received and error handling works.
 
 ### Tests for User Story 5 (MANDATORY)
 
@@ -148,7 +148,7 @@
 
 ### Implementation for User Story 5
 
-- [x] T032 [US5] Enhance plugin_action dispatch in MCPBrowser/src/actions/plugin-action.js: before calling action.execute, check if current page URL matches any of the plugin's manifest.urlPatterns, if not return ErrorResponse with "Plugin 'X' requires Y but current page is Z. Use fetch_webpage to navigate first.", pass page object to execute({ page, params })
+- [x] T032 [US5] Enhance browser_plugin_action dispatch in MCPBrowser/src/actions/plugin-action.js: before calling action.execute, check if current page URL matches any of the plugin's manifest.urlPatterns, if not return ErrorResponse with "Plugin 'X' requires Y but current page is Z. Use browser_fetch_webpage to navigate first.", pass page object to execute({ page, params })
 - [x] T033 [US5] Run T031 tests and verify all pass; verify existing tests still pass via `node MCPBrowser/tests/run-all.js`
 
 **Checkpoint**: Plugin actions receive correct page context. Wrong-page errors are clear and actionable.
@@ -157,13 +157,13 @@
 
 ## Phase 8: User Story 6 - Plugin High-Level Site Context (Priority: P3)
 
-**Goal**: plugin_info returns high-level site context (auth flow, target pages) alongside action catalog, without exposing internal details.
+**Goal**: browser_plugin_info returns high-level site context (auth flow, target pages) alongside action catalog, without exposing internal details.
 
-**Independent Test**: Call plugin_info for _example plugin, verify response includes targetPages and authFlow but no CSS selectors or JS code.
+**Independent Test**: Call browser_plugin_info for _example plugin, verify response includes targetPages and authFlow but no CSS selectors or JS code.
 
 ### Tests for User Story 6 (MANDATORY)
 
-- [x] T034 [P] [US6] Write unit test in MCPBrowser/tests/actions/plugin-info.test.js: verify plugin_info response includes description, targetPages, authFlow fields from getInfo(), verify response does NOT contain any CSS selector patterns (no `.class` or `#id` strings) or JavaScript code, verify actions array in getInfo response has no execute functions
+- [x] T034 [P] [US6] Write unit test in MCPBrowser/tests/actions/plugin-info.test.js: verify browser_plugin_info response includes description, targetPages, authFlow fields from getInfo(), verify response does NOT contain any CSS selector patterns (no `.class` or `#id` strings) or JavaScript code, verify actions array in getInfo response has no execute functions
 
 ### Implementation for User Story 6
 
@@ -178,7 +178,7 @@
 
 **Purpose**: Tool-selection tests, existing test regression, final validation
 
-- [x] T037 [P] Add tool-selection test entries to MCPBrowser/tests/tool-selection/tool-selection-tests.json: queries like "list Gmail emails" should recommend plugin_action, "what plugins are available" should recommend plugin_info
+- [x] T037 [P] Add tool-selection test entries to MCPBrowser/tests/tool-selection/tool-selection-tests.json: queries like "list Gmail emails" should recommend browser_plugin_action, "what plugins are available" should recommend browser_plugin_info
 - [x] T038 [P] Add plugin-related exports to MCPBrowser/src/mcp-browser.js export block for testing: loadPlugins, getLoadedPlugins, detectPlugins, pluginAction, pluginInfo
 - [x] T039 Run full existing test suite via `node MCPBrowser/tests/run-all.js` to verify SC-005 (backward compatibility, all existing tests pass unchanged)
 - [x] T040 Run quickstart.md validation: follow the steps in specs/002-site-plugins/quickstart.md to create a test plugin, verify the documented workflow works end-to-end
@@ -198,7 +198,7 @@
 - **US1 (Phase 5)**: Depends on Phase 2 — detection is independent of dispatch
 - **US4 (Phase 6)**: Depends on Phase 5 — extends detection to more tools
 - **US5 (Phase 7)**: Depends on Phase 4 — enhances dispatch with page validation
-- **US6 (Phase 8)**: Depends on Phase 4 — enhances plugin_info output
+- **US6 (Phase 8)**: Depends on Phase 4 — enhances browser_plugin_info output
 - **Polish (Phase 9)**: Depends on all user stories complete
 
 ### User Story Dependencies
@@ -208,7 +208,7 @@
 - **US1 (Detection)**: Foundational only — independent of dispatch tools
 - **US4 (Recommendations in all tools)**: Depends on US1 (extends detection)
 - **US5 (Browser context)**: Depends on US2 (enhances dispatch)
-- **US6 (Site context)**: Depends on US2 (enhances plugin_info)
+- **US6 (Site context)**: Depends on US2 (enhances browser_plugin_info)
 
 ### Parallel Opportunities
 

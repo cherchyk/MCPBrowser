@@ -1,4 +1,4 @@
-# Contract — execute_javascript action
+# Contract — browser_execute_javascript action
 
 ## Request
 - `url` (string, required): Target tab/page URL; must match an open session.

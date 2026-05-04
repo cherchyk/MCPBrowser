@@ -13,17 +13,17 @@ The new interactive features allow you to:
 
 ## Prerequisites
 
-Before interacting with a page, you **must first load it** using `fetch_webpage`:
+Before interacting with a page, you **must first load it** using `browser_fetch_webpage`:
 
 ```javascript
-fetch_webpage({ url: "https://example.com" })
+browser_fetch_webpage({ url: "https://example.com" })
 ```
 
 All interactive operations work on already-loaded pages and reuse the same browser tab.
 
 ## Available Tools
 
-### 1. `click_element` - Click on page elements
+### 1. `browser_click_element` - Click on page elements
 
 Click on any clickable element using either a CSS selector or text content.
 
@@ -37,19 +37,19 @@ Click on any clickable element using either a CSS selector or text content.
 
 ```javascript
 // Click by CSS selector
-click_element({
+browser_click_element({
   url: "https://example.com",
   selector: "#login-button"
 })
 
 // Click by text content
-click_element({
+browser_click_element({
   url: "https://example.com",
   text: "Sign In"
 })
 
 // Click with custom timeout
-click_element({
+browser_click_element({
   url: "https://example.com",
   text: "Submit",
   timeout: 5000
@@ -64,7 +64,7 @@ click_element({
 
 ---
 
-### 2. `type_text` - Type into input fields
+### 2. `browser_type_text` - Type into input fields
 
 Type text into input fields, textareas, or any editable element with human-like typing simulation.
 
@@ -80,14 +80,14 @@ Type text into input fields, textareas, or any editable element with human-like 
 
 ```javascript
 // Type username
-type_text({
+browser_type_text({
   url: "https://example.com",
   selector: "#username",
   text: "myuser@example.com"
 })
 
 // Type password without clearing
-type_text({
+browser_type_text({
   url: "https://example.com",
   selector: "#password",
   text: "mypassword123",
@@ -95,7 +95,7 @@ type_text({
 })
 
 // Fast typing (no delay)
-type_text({
+browser_type_text({
   url: "https://example.com",
   selector: "#search",
   text: "search query",
@@ -217,7 +217,7 @@ wait_for_element({
 
 ---
 
-### 5. `take_screenshot` - Capture visual state
+### 5. `browser_take_screenshot` - Capture visual state
 
 Take a screenshot of the current page state. **Useful when HTML parsing is insufficient** — for example, pages with charts, images, complex layouts, popups, or visual content that's hard to understand from HTML alone.
 
@@ -229,12 +229,12 @@ Take a screenshot of the current page state. **Useful when HTML parsing is insuf
 
 ```javascript
 // Capture viewport screenshot (default)
-take_screenshot({
+browser_take_screenshot({
   url: "https://example.com"
 })
 
 // Capture full scrollable page
-take_screenshot({
+browser_take_screenshot({
   url: "https://dashboard.example.com",
   fullPage: true
 })
@@ -255,23 +255,23 @@ take_screenshot({
 
 ```javascript
 // Step 1: Load the login page
-fetch_webpage({ url: "https://example.com/login" })
+browser_fetch_webpage({ url: "https://example.com/login" })
 
 // Step 2: Fill in credentials
-type_text({ 
+browser_type_text({ 
   url: "https://example.com/login", 
   selector: "#username", 
   text: "user@example.com" 
 })
 
-type_text({ 
+browser_type_text({ 
   url: "https://example.com/login", 
   selector: "#password", 
   text: "mypassword" 
 })
 
 // Step 3: Click login button
-click_element({ 
+browser_click_element({ 
   url: "https://example.com/login", 
   text: "Sign In" 
 })
@@ -287,7 +287,7 @@ wait_for_element({
 
 ```javascript
 // Step 1: Load the page
-fetch_webpage({ url: "https://shop.example.com" })
+browser_fetch_webpage({ url: "https://shop.example.com" })
 
 // Step 2: Discover search elements
 get_interactive_elements({ 
@@ -296,14 +296,14 @@ get_interactive_elements({
 })
 
 // Step 3: Type in search box
-type_text({ 
+browser_type_text({ 
   url: "https://shop.example.com", 
   selector: "#search-input", 
   text: "laptop" 
 })
 
 // Step 4: Click search button
-click_element({ 
+browser_click_element({ 
   url: "https://shop.example.com", 
   selector: "#search-button" 
 })
@@ -315,7 +315,7 @@ wait_for_element({
 })
 
 // Step 6: Click on a filter
-click_element({ 
+browser_click_element({ 
   url: "https://shop.example.com", 
   text: "Price: Low to High" 
 })
@@ -325,29 +325,29 @@ click_element({
 
 ```javascript
 // Step 1: Load the form
-fetch_webpage({ url: "https://example.com/contact" })
+browser_fetch_webpage({ url: "https://example.com/contact" })
 
 // Step 2: Fill all fields
-type_text({ 
+browser_type_text({ 
   url: "https://example.com/contact", 
   selector: "#name", 
   text: "John Doe" 
 })
 
-type_text({ 
+browser_type_text({ 
   url: "https://example.com/contact", 
   selector: "#email", 
   text: "john@example.com" 
 })
 
-type_text({ 
+browser_type_text({ 
   url: "https://example.com/contact", 
   selector: "#message", 
   text: "Hello, I have a question..." 
 })
 
 // Step 3: Submit
-click_element({ 
+browser_click_element({ 
   url: "https://example.com/contact", 
   selector: "button[type='submit']" 
 })
@@ -366,17 +366,17 @@ wait_for_element({
 ### 1. Always load the page first
 ```javascript
 // ❌ Wrong - will fail
-click_element({ url: "https://example.com", selector: "#btn" })
+browser_click_element({ url: "https://example.com", selector: "#btn" })
 
 // ✅ Correct
-fetch_webpage({ url: "https://example.com" })
-click_element({ url: "https://example.com", selector: "#btn" })
+browser_fetch_webpage({ url: "https://example.com" })
+browser_click_element({ url: "https://example.com", selector: "#btn" })
 ```
 
 ### 2. Use text-based selection when selector is unknown
 ```javascript
 // When you don't know the exact selector
-click_element({ url: "https://example.com", text: "Continue" })
+browser_click_element({ url: "https://example.com", text: "Continue" })
 ```
 
 ### 3. Discover elements before interacting
@@ -384,20 +384,20 @@ click_element({ url: "https://example.com", text: "Continue" })
 // Find out what's on the page first
 get_interactive_elements({ url: "https://example.com" })
 // Then use the selector from the results
-click_element({ url: "https://example.com", selector: "#found-selector" })
+browser_click_element({ url: "https://example.com", selector: "#found-selector" })
 ```
 
 ### 4. Wait for dynamic content
 ```javascript
 // After clicking, wait for results to appear
-click_element({ url: "https://example.com", text: "Load More" })
+browser_click_element({ url: "https://example.com", text: "Load More" })
 wait_for_element({ url: "https://example.com", selector: ".new-content" })
 ```
 
 ### 5. Use human-like typing for anti-bot detection
 ```javascript
 // Slower typing appears more human-like
-type_text({ 
+browser_type_text({ 
   url: "https://example.com", 
   selector: "#input", 
   text: "text",
@@ -442,14 +442,14 @@ All interactions happen in the **same browser tab** for the same domain:
 
 ```javascript
 // Opens gmail.com in a new tab
-fetch_webpage({ url: "https://gmail.com/mail" })
+browser_fetch_webpage({ url: "https://gmail.com/mail" })
 
 // Reuses the same tab
-click_element({ url: "https://gmail.com/mail", text: "Compose" })
-type_text({ url: "https://gmail.com/mail", selector: "#to", text: "test@example.com" })
+browser_click_element({ url: "https://gmail.com/mail", text: "Compose" })
+browser_type_text({ url: "https://gmail.com/mail", selector: "#to", text: "test@example.com" })
 
 // Opens example.com in a NEW tab (different domain)
-fetch_webpage({ url: "https://example.com" })
+browser_fetch_webpage({ url: "https://example.com" })
 ```
 
 This preserves:
@@ -463,7 +463,7 @@ This preserves:
 ## Limitations
 
 1. **Page must be loaded first** - Can't interact with pages that haven't been fetched
-2. **URL must match exactly** - Use the same URL you used with `fetch_webpage`
+2. **URL must match exactly** - Use the same URL you used with `browser_fetch_webpage`
 3. **Element must be visible** - Hidden elements (display:none) can't be clicked
 4. **No iframe support** - Can only interact with main page content
 5. **Single tab per domain** - Multiple windows of same domain share one tab

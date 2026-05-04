@@ -10,7 +10,7 @@ A typical task — "summarize the 6th email in my Gmail inbox" — required 10+ 
 
 ## P0 — Critical
 
-### 1. `execute_javascript` Action
+### 1. `browser_execute_javascript` Action
 
 **The single highest-impact improvement.** A tool that executes arbitrary JavaScript on the current page and returns the result.
 
@@ -39,14 +39,14 @@ document.querySelector('[role="alertdialog"] button')?.click()
 document.querySelector('.a3s.aiL')?.innerText
 ```
 
-**Safety considerations:** See [Design Notes](#design-notes-execute_javascript) below.
+**Safety considerations:** See [Design Notes](#design-notes-browser_execute_javascript) below.
 
 **Estimated effort:** Medium  
 **Impact:** Solves clicks, extraction, modals, navigation — covers ~80% of observed friction.
 
 ---
 
-### 2. JS Click Fallback in `click_element`
+### 2. JS Click Fallback in `browser_click_element`
 
 **Problem:** When `page.click()` (Puppeteer's native click) fails with a protocol timeout — the element is found but the click doesn't complete — the action returns an error. This happened consistently on Gmail.
 
@@ -67,13 +67,13 @@ This bypasses the CDP protocol round-trip that causes timeouts on heavy JS pages
 
 ## P1 — High Value
 
-### 3. `selector` Parameter on `get_current_html`
+### 3. `selector` Parameter on `browser_get_current_html`
 
 **Problem:** Gmail inbox returned 220KB+ of HTML. The email list table was ~20KB. The LLM (or subagent) had to parse the entire page to find the relevant section.
 
-**Proposed:** Add an optional `selector` parameter to `get_current_html` (and `fetch_webpage`):
+**Proposed:** Add an optional `selector` parameter to `browser_get_current_html` (and `browser_fetch_webpage`):
 ```
-get_current_html({ url: "...", selector: "table.F.cf.zt" })
+browser_get_current_html({ url: "...", selector: "table.F.cf.zt" })
 ```
 
 Returns only the HTML subtree matching the selector. If the selector matches multiple elements, return all of them. If no match, return the full page with a note.
@@ -124,9 +124,9 @@ table.F.cf.zt > tbody >
 
 **Problem:** When both CSS selector clicks and text-based clicks fail, there's no fallback. A screenshot clearly shows where an element is, but there's no way to click at a pixel position.
 
-**Proposed:** Add optional `x, y` parameters to `click_element`:
+**Proposed:** Add optional `x, y` parameters to `browser_click_element`:
 ```
-click_element({ url: "...", x: 450, y: 188 })
+browser_click_element({ url: "...", x: 450, y: 188 })
 ```
 
 **Estimated effort:** Low  
@@ -156,15 +156,15 @@ Returns:
 ```
 
 **Estimated effort:** High  
-**Impact:** Powerful for list-heavy pages, but `execute_javascript` covers the same use case.
+**Impact:** Powerful for list-heavy pages, but `browser_execute_javascript` covers the same use case.
 
 ---
 
-## Design Notes: `execute_javascript`
+## Design Notes: `browser_execute_javascript`
 
 ### Safety Model
 
-The `execute_javascript` tool operates within the user's authenticated browser session — the same context as `click_element` or `type_text`. It does **not** introduce new capabilities beyond what existing tools provide (clicking buttons, typing text, reading HTML). It simply makes those operations more efficient and reliable.
+The `browser_execute_javascript` tool operates within the user's authenticated browser session — the same context as `browser_click_element` or `browser_type_text`. It does **not** introduce new capabilities beyond what existing tools provide (clicking buttons, typing text, reading HTML). It simply makes those operations more efficient and reliable.
 
 However, arbitrary code execution requires safeguards:
 
@@ -179,7 +179,7 @@ However, arbitrary code execution requires safeguards:
 ### Proposed Interface
 
 ```
-execute_javascript({
+browser_execute_javascript({
   url: string,           // required — which tab to execute in
   script: string,        // required — JavaScript to execute
   timeout?: number,      // optional — max execution time in ms (default: 30000)
@@ -214,9 +214,9 @@ Use Puppeteer's `page.evaluate()` wrapped with:
 
 | # | Improvement | Priority | Effort | Impact |
 |---|-------------|----------|--------|--------|
-| 1 | `execute_javascript` action | **P0** | Medium | Solves 80%+ of friction |
-| 2 | JS click fallback in `click_element` | **P0** | Low | Fixes click failures on SPAs |
-| 3 | `selector` param on `get_current_html` | P1 | Low | 10x HTML reduction |
+| 1 | `browser_execute_javascript` action | **P0** | Medium | Solves 80%+ of friction |
+| 2 | JS click fallback in `browser_click_element` | **P0** | Low | Fixes click failures on SPAs |
+| 3 | `selector` param on `browser_get_current_html` | P1 | Low | 10x HTML reduction |
 | 4 | `extract_text` action | P1 | Low | Direct text extraction |
 | 5 | `get_page_structure` action | P2 | Medium | Fast DOM understanding |
 | 6 | Coordinate-based click | P2 | Low | Fallback click method |

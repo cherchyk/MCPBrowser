@@ -169,8 +169,8 @@ await test('Should respond to tools/list request', async () => {
     assert.ok(Array.isArray(response.result.tools), 'Tools should be an array');
     assert.ok(response.result.tools.length > 0, 'Should have at least one tool');
     
-    const fetchTool = response.result.tools.find(t => t.name === 'fetch_webpage');
-    assert.ok(fetchTool, 'Should have fetch_webpage tool');
+    const fetchTool = response.result.tools.find(t => t.name === 'browser_fetch_webpage');
+    assert.ok(fetchTool, 'Should have browser_fetch_webpage tool');
     assert.ok(fetchTool.description, 'Tool should have description');
     assert.ok(fetchTool.inputSchema, 'Tool should have input schema');
   } finally {

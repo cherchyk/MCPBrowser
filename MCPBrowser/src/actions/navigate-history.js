@@ -17,7 +17,7 @@ import logger from '../core/logger.js';
 // ============================================================================
 
 /**
- * Response for successful navigate_history operations
+ * Response for successful browser_navigate_history operations
  */
 export class NavigateHistorySuccessResponse extends MCPResponse {
   /**
@@ -69,9 +69,9 @@ export class NavigateHistorySuccessResponse extends MCPResponse {
 
 /** @type {Tool} */
 export const NAVIGATE_HISTORY_TOOL = {
-  name: "navigate_history",
+  name: "browser_navigate_history",
   title: "Navigate Back/Forward",
-  description: "**BROWSER HISTORY NAVIGATION** - Navigate back or forward in browser history on an already-loaded page. Use after clicking links to return to the previous page, or to go forward after going back.\n\n**PREREQUISITE**: Page MUST be loaded with fetch_webpage first. This tool navigates the history of an existing browser tab.",
+  description: "**BROWSER HISTORY NAVIGATION** - Navigate back or forward in browser history on an already-loaded page. Use after clicking links to return to the previous page, or to go forward after going back.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first. This tool navigates the history of an existing browser tab.",
   inputSchema: {
     type: "object",
     properties: {
@@ -126,7 +126,7 @@ export const NAVIGATE_HISTORY_TOOL = {
  * @returns {Promise<MCPResponse>} Navigation result
  */
 export async function navigateHistory({ url, direction = 'back', returnHtml = true, removeUnnecessaryHTML = true }) {
-  logger.info(`navigate_history called: url=${url}, direction=${direction}`);
+  logger.info(`browser_navigate_history called: url=${url}, direction=${direction}`);
 
   if (!url) {
     throw new Error("url parameter is required");
@@ -143,7 +143,7 @@ export async function navigateHistory({ url, direction = 'back', returnHtml = tr
   try {
     await getBrowser();
   } catch (err) {
-    logger.error(`navigate_history: Failed to connect to browser: ${err.message}`);
+    logger.error(`browser_navigate_history: Failed to connect to browser: ${err.message}`);
     return new InformationalResponse(
       `Browser connection failed: ${err.message}`,
       'The browser must be running with remote debugging enabled.',
@@ -160,15 +160,15 @@ export async function navigateHistory({ url, direction = 'back', returnHtml = tr
 
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
-    logger.debug(`navigate_history: ${pageError || 'No page found for ' + hostname}`);
+    logger.debug(`browser_navigate_history: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
       isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
       isConnectionLost
         ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
         : 'The page must be loaded before you can navigate its history.',
       [
-        "Use MCPBrowser's fetch_webpage tool to load the page first",
-        "Then retry MCPBrowser's navigate_history with the same URL"
+        "Use MCPBrowser's browser_fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's browser_navigate_history with the same URL"
       ]
     );
   }
@@ -186,15 +186,15 @@ export async function navigateHistory({ url, direction = 'back', returnHtml = tr
 
     // goBack/goForward return null if there's no history entry
     if (response === null) {
-      logger.info(`navigate_history: No ${direction} history entry available`);
+      logger.info(`browser_navigate_history: No ${direction} history entry available`);
       return new InformationalResponse(
         `No ${direction} history entry available`,
         `The page has no ${direction} history to navigate to. This means you're already at the ${direction === 'back' ? 'first' : 'last'} page in the browsing history for this tab.`,
         [
           direction === 'back'
-            ? "Use MCPBrowser's fetch_webpage to navigate to a different URL"
-            : "Use MCPBrowser's navigate_history with direction='back' to go back instead",
-          "Use MCPBrowser's get_current_html to check the current page content"
+            ? "Use MCPBrowser's browser_fetch_webpage to navigate to a different URL"
+            : "Use MCPBrowser's browser_navigate_history with direction='back' to go back instead",
+          "Use MCPBrowser's browser_get_current_html to check the current page content"
         ]
       );
     }
@@ -207,7 +207,7 @@ export async function navigateHistory({ url, direction = 'back', returnHtml = tr
       if (newHostname !== hostname) {
         domainPages.delete(hostname);
         domainPages.set(newHostname, page);
-        logger.info(`navigate_history: Updated domainPages mapping: ${hostname} → ${newHostname}`);
+        logger.info(`browser_navigate_history: Updated domainPages mapping: ${hostname} → ${newHostname}`);
       }
     } catch {
       // If URL parsing fails, keep existing mapping
@@ -220,7 +220,7 @@ export async function navigateHistory({ url, direction = 'back', returnHtml = tr
       html = await extractAndProcessHtml(page, removeUnnecessaryHTML);
     }
 
-    logger.info(`navigate_history completed: ${direction} from ${previousUrl} to ${currentUrl}`);
+    logger.info(`browser_navigate_history completed: ${direction} from ${previousUrl} to ${currentUrl}`);
 
     return new NavigateHistorySuccessResponse(
       direction,
@@ -228,20 +228,20 @@ export async function navigateHistory({ url, direction = 'back', returnHtml = tr
       currentUrl,
       html,
       [
-        "Use MCPBrowser's navigate_history to go back or forward again",
-        "Use MCPBrowser's click_element to interact with elements on the page",
-        "Use MCPBrowser's get_current_html to re-read the page content",
-        "Use MCPBrowser's fetch_webpage to navigate to a new URL"
+        "Use MCPBrowser's browser_navigate_history to go back or forward again",
+        "Use MCPBrowser's browser_click_element to interact with elements on the page",
+        "Use MCPBrowser's browser_get_current_html to re-read the page content",
+        "Use MCPBrowser's browser_fetch_webpage to navigate to a new URL"
       ]
     );
   } catch (err) {
-    logger.error(`navigate_history failed: ${err.message}`);
+    logger.error(`browser_navigate_history failed: ${err.message}`);
     return new InformationalResponse(
       `Navigation ${direction} failed: ${err.message}`,
       'The browser could not navigate. The page may have been closed or the connection was lost.',
       [
-        "Try MCPBrowser's fetch_webpage to reload the page",
-        "Use MCPBrowser's close_tab and start fresh if needed"
+        "Try MCPBrowser's browser_fetch_webpage to reload the page",
+        "Use MCPBrowser's browser_close_tab and start fresh if needed"
       ]
     );
   }

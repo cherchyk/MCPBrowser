@@ -1,7 +1,7 @@
-# Contract — click_element with JS fallback
+# Contract — browser_click_element with JS fallback
 
 ## Request
-- Existing `click_element` inputs (selector/text/xpath/coordinates, url/tab) remain unchanged.
+- Existing `browser_click_element` inputs (selector/text/xpath/coordinates, url/tab) remain unchanged.
 - No new required fields; fallback is automatic when native click times out after element resolution.
 
 ## Response (success)

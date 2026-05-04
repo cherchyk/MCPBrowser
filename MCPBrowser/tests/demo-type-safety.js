@@ -118,9 +118,9 @@ const validResponse = new FetchPageSuccessResponse(
   'https://example.com',
   '<html><body>Content</body></html>',
   [
-    'Use click_element to interact',
-    'Use type_text to fill forms',
-    'Use close_tab when finished'
+    'Use browser_click_element to interact',
+    'Use browser_type_text to fill forms',
+    'Use browser_close_tab when finished'
   ]
 );
 
@@ -130,9 +130,9 @@ console.log('const response = new FetchPageSuccessResponse(');
 console.log('  "https://example.com",');
 console.log('  "<html><body>Content</body></html>",');
 console.log('  [');
-console.log('    "Use click_element to interact",');
-console.log('    "Use type_text to fill forms",');
-console.log('    "Use close_tab when finished"');
+console.log('    "Use browser_click_element to interact",');
+console.log('    "Use browser_type_text to fill forms",');
+console.log('    "Use browser_close_tab when finished"');
 console.log('  ]');
 console.log(');\n');
 console.log('// Success! All fields validated and correct');
