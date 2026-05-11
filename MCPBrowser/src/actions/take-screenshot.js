@@ -16,7 +16,7 @@ import logger from '../core/logger.js';
 // ============================================================================
 
 /**
- * Response for successful take_screenshot operations
+ * Response for successful browser_take_screenshot operations
  * Returns screenshot as base64-encoded image
  */
 export class TakeScreenshotSuccessResponse extends MCPResponse {
@@ -87,9 +87,9 @@ export class TakeScreenshotSuccessResponse extends MCPResponse {
  * @type {Tool}
  */
 export const TAKE_SCREENSHOT_TOOL = {
-  name: "take_screenshot",
+  name: "browser_take_screenshot",
   title: "Take Screenshot",
-  description: "**VISUAL CAPTURE** - Takes a screenshot of an already-loaded page for visual analysis. Useful when HTML parsing is insufficient or you need to see visual layout, images, charts, or rendered content. Returns a PNG image.\n\n**PREREQUISITE**: Page MUST be loaded with fetch_webpage first. This tool captures the current visual state of the page.",
+  description: "**VISUAL CAPTURE** - Takes a screenshot of an already-loaded page for visual analysis. Useful when HTML parsing is insufficient or you need to see visual layout, images, charts, or rendered content. Returns a PNG image.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first. This tool captures the current visual state of the page.",
   inputSchema: {
     type: "object",
     properties: {
@@ -129,7 +129,7 @@ export const TAKE_SCREENSHOT_TOOL = {
  * @returns {Promise<Object>} Result object with screenshot data
  */
 export async function takeScreenshot({ url, fullPage = false }) {
-  logger.info(`take_screenshot called: url=${url}, fullPage=${fullPage}`);
+  logger.info(`browser_take_screenshot called: url=${url}, fullPage=${fullPage}`);
   
   if (!url) {
     throw new Error("url parameter is required");
@@ -146,7 +146,7 @@ export async function takeScreenshot({ url, fullPage = false }) {
   try {
     await getBrowser();
   } catch (err) {
-    logger.error(`take_screenshot: Failed to connect to browser: ${err.message}`);
+    logger.error(`browser_take_screenshot: Failed to connect to browser: ${err.message}`);
     return new InformationalResponse(
       `Browser connection failed: ${err.message}`,
       'The browser must be running with remote debugging enabled.',
@@ -163,15 +163,15 @@ export async function takeScreenshot({ url, fullPage = false }) {
   
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
-    logger.debug(`take_screenshot: ${pageError || 'No page found for ' + hostname}`);
+    logger.debug(`browser_take_screenshot: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
       isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
       isConnectionLost 
         ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
         : 'The page must be loaded before you can take a screenshot',
       [
-        "Use MCPBrowser's fetch_webpage tool to load the page first",
-        "Then retry MCPBrowser's take_screenshot with the same URL"
+        "Use MCPBrowser's browser_fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's browser_take_screenshot with the same URL"
       ]
     );
   }
@@ -186,27 +186,27 @@ export async function takeScreenshot({ url, fullPage = false }) {
       fullPage: fullPage
     });
     
-    logger.info(`take_screenshot completed: captured from ${currentUrl} (fullPage=${fullPage})`);
+    logger.info(`browser_take_screenshot completed: captured from ${currentUrl} (fullPage=${fullPage})`);
     
     return new TakeScreenshotSuccessResponse(
       currentUrl,
       screenshotBuffer,
       'image/png',
       [
-        "Use MCPBrowser's get_current_html if you need the HTML instead",
-        "Use MCPBrowser's click_element to interact with elements",
-        "Use MCPBrowser's type_text to fill forms",
-        "Use MCPBrowser's close_tab to free resources when done"
+        "Use MCPBrowser's browser_get_current_html if you need the HTML instead",
+        "Use MCPBrowser's browser_click_element to interact with elements",
+        "Use MCPBrowser's browser_type_text to fill forms",
+        "Use MCPBrowser's browser_close_tab to free resources when done"
       ]
     );
   } catch (err) {
-    logger.error(`take_screenshot failed: ${err.message}`);
+    logger.error(`browser_take_screenshot failed: ${err.message}`);
     return new InformationalResponse(
       `Failed to take screenshot: ${err.message}`,
       'Could not capture screenshot from the page. The page may have navigated away or the connection was lost.',
       [
-        "Try MCPBrowser's fetch_webpage to reload the page",
-        "Use MCPBrowser's close_tab and start fresh if needed"
+        "Try MCPBrowser's browser_fetch_webpage to reload the page",
+        "Use MCPBrowser's browser_close_tab and start fresh if needed"
       ]
     );
   }

@@ -9,10 +9,10 @@
 
 ### Session 2026-04-02
 
-- Q: Should plugin tools always appear in the MCP tool listing, or only after detection? → A: Option B with dispatch — two universal tools (`plugin_action`, `plugin_info`) are always visible. Plugin-specific actions are never individually registered. Detection tells the agent which plugin matched; `plugin_info` provides full action catalog on demand; `plugin_action` dispatches to the plugin. Flow: `fetch_webpage` → detection → nextSteps says "Gmail plugin available, use `plugin_info`" → `plugin_info({ plugin: 'gmail' })` → full action catalog → `plugin_action({ plugin: 'gmail', action: 'list_emails', params: { folder: 'inbox' } })`.
+- Q: Should plugin tools always appear in the MCP tool listing, or only after detection? → A: Option B with dispatch — two universal tools (`browser_plugin_action`, `browser_plugin_info`) are always visible. Plugin-specific actions are never individually registered. Detection tells the agent which plugin matched; `browser_plugin_info` provides full action catalog on demand; `browser_plugin_action` dispatches to the plugin. Flow: `browser_fetch_webpage` → detection → nextSteps says "Gmail plugin available, use `browser_plugin_info`" → `browser_plugin_info({ plugin: 'gmail' })` → full action catalog → `browser_plugin_action({ plugin: 'gmail', action: 'list_emails', params: { folder: 'inbox' } })`.
 - Q: Where should the enabled plugins registry be maintained? → A: A dedicated plugin registry file in the MCPBrowser root (e.g., `plugins.json` or `plugin-registry.js`). Not in `server.json` (different purpose) and not auto-discovery (performance concern with many folders).
-- Q: How should plugin site knowledge reach the AI agent? → A: Included in `plugin_info` response alongside the action catalog. Site knowledge is high-level context only (what the plugin can do, target pages, auth flow expectations). Detailed implementation knowledge like DOM selectors and JavaScript is hidden inside plugin action implementations — the agent never sees it.
-- Q: What happens when `plugin_action` is called but the browser is on a different site? → A: Error with guidance — the plugin returns a clear error stating which site it requires and instructs the agent to use `fetch_webpage` to navigate first. No auto-navigation (avoids losing form data or session state on the current page).
+- Q: How should plugin site knowledge reach the AI agent? → A: Included in `browser_plugin_info` response alongside the action catalog. Site knowledge is high-level context only (what the plugin can do, target pages, auth flow expectations). Detailed implementation knowledge like DOM selectors and JavaScript is hidden inside plugin action implementations — the agent never sees it.
+- Q: What happens when `browser_plugin_action` is called but the browser is on a different site? → A: Error with guidance — the plugin returns a clear error stating which site it requires and instructs the agent to use `browser_fetch_webpage` to navigate first. No auto-navigation (avoids losing form data or session state on the current page).
 - Q: How should the system handle plugins built against an older interface version? → A: Version in manifest — each plugin declares the interface version it implements. The core validates compatibility at load time; incompatible plugins are skipped with a warning log. Prevents cryptic runtime errors and makes upgrade paths clear.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -36,19 +36,19 @@ When an AI agent fetches a web page using MCPBrowser, the system automatically d
 
 ### User Story 2 - Plugin Dispatch Tools (Priority: P1)
 
-The system exposes exactly two universal plugin tools — `plugin_action` and `plugin_info` — that are always visible in the MCP tool listing regardless of which plugins are installed. Plugin-specific actions are never individually registered as MCP tools. Instead, each plugin declares its actions internally, and the agent discovers them through detection recommendations and `plugin_info`. The agent then invokes any plugin action through `plugin_action`, which dispatches to the correct plugin via the interface. This keeps the tool list fixed at a constant size even with 50+ plugins installed.
+The system exposes exactly two universal plugin tools — `browser_plugin_action` and `browser_plugin_info` — that are always visible in the MCP tool listing regardless of which plugins are installed. Plugin-specific actions are never individually registered as MCP tools. Instead, each plugin declares its actions internally, and the agent discovers them through detection recommendations and `browser_plugin_info`. The agent then invokes any plugin action through `browser_plugin_action`, which dispatches to the correct plugin via the interface. This keeps the tool list fixed at a constant size even with 50+ plugins installed.
 
 **Why this priority**: Without the dispatch mechanism, tool count would grow linearly with plugins (10 per Gmail + 10 Outlook + 30 PowerBI + 40 Azure = 90 extra tools). The dispatch pair keeps the agent's tool list manageable while providing full access to all plugin capabilities.
 
-**Independent Test**: Can be tested by installing a plugin, calling `plugin_info` to retrieve its action catalog, then calling `plugin_action` to execute an action and verifying the result.
+**Independent Test**: Can be tested by installing a plugin, calling `browser_plugin_info` to retrieve its action catalog, then calling `browser_plugin_action` to execute an action and verifying the result.
 
 **Acceptance Scenarios**:
 
-1. **Given** a Gmail plugin is installed with actions `list_emails`, `read_email`, `compose_email`, **When** the agent requests the list of available MCP tools, **Then** only `plugin_action` and `plugin_info` appear (not individual Gmail actions). The tool count remains constant.
-2. **Given** the agent calls `plugin_info({ plugin: "gmail" })`, **When** the plugin is loaded, **Then** the response lists all available actions with their parameters, types, defaults, and descriptions.
-3. **Given** the agent calls `plugin_action({ plugin: "gmail", action: "list_emails", params: { folder: "inbox", limit: 20 } })`, **When** the plugin executes, **Then** it runs site-specific JavaScript on the active Gmail tab and returns structured email data (sender, subject, date, snippet).
-4. **Given** the agent calls `plugin_action` with a plugin name that is not loaded, **When** the dispatch runs, **Then** it returns a clear error listing available plugins.
-5. **Given** the agent calls `plugin_action` referencing a valid plugin but an invalid action name, **When** the dispatch runs, **Then** it returns a clear error listing valid actions for that plugin.
+1. **Given** a Gmail plugin is installed with actions `list_emails`, `read_email`, `compose_email`, **When** the agent requests the list of available MCP tools, **Then** only `browser_plugin_action` and `browser_plugin_info` appear (not individual Gmail actions). The tool count remains constant.
+2. **Given** the agent calls `browser_plugin_info({ plugin: "gmail" })`, **When** the plugin is loaded, **Then** the response lists all available actions with their parameters, types, defaults, and descriptions.
+3. **Given** the agent calls `browser_plugin_action({ plugin: "gmail", action: "list_emails", params: { folder: "inbox", limit: 20 } })`, **When** the plugin executes, **Then** it runs site-specific JavaScript on the active Gmail tab and returns structured email data (sender, subject, date, snippet).
+4. **Given** the agent calls `browser_plugin_action` with a plugin name that is not loaded, **When** the dispatch runs, **Then** it returns a clear error listing available plugins.
+5. **Given** the agent calls `browser_plugin_action` referencing a valid plugin but an invalid action name, **When** the dispatch runs, **Then** it returns a clear error listing valid actions for that plugin.
 
 ---
 
@@ -71,18 +71,18 @@ The system maintains a registry (an array/list) of enabled plugins. To add a new
 
 ### User Story 4 - Plugin Recommendation in Tool Responses (Priority: P2)
 
-When a standard MCPBrowser tool (fetch_webpage, get_current_html, click_element, etc.) returns a response for a page that matches an installed plugin, the `nextSteps` in the response are augmented with plugin-specific recommendations. These recommendations guide the agent to call `plugin_info` for details and then use `plugin_action` to interact with the site, instead of generic DOM manipulation. Detection provides a summary of the plugin's top actions; `plugin_info` provides the full catalog on demand.
+When a standard MCPBrowser tool (browser_fetch_webpage, browser_get_current_html, browser_click_element, etc.) returns a response for a page that matches an installed plugin, the `nextSteps` in the response are augmented with plugin-specific recommendations. These recommendations guide the agent to call `browser_plugin_info` for details and then use `browser_plugin_action` to interact with the site, instead of generic DOM manipulation. Detection provides a summary of the plugin's top actions; `browser_plugin_info` provides the full catalog on demand.
 
 **Why this priority**: This is the communication channel between the plugin system and the AI agent. It leverages MCPBrowser's existing `nextSteps` pattern to naturally inform the agent about better options available through plugins, and directs the agent through the dispatch flow.
 
-**Independent Test**: Can be tested by fetching a page that matches a plugin and verifying the `nextSteps` array contains plugin-specific guidance referencing `plugin_info` and `plugin_action`.
+**Independent Test**: Can be tested by fetching a page that matches a plugin and verifying the `nextSteps` array contains plugin-specific guidance referencing `browser_plugin_info` and `browser_plugin_action`.
 
 **Acceptance Scenarios**:
 
-1. **Given** a Gmail plugin is installed and the agent has fetched `mail.google.com`, **When** the fetch response is returned, **Then** `nextSteps` includes the plugin name, a summary of top actions (e.g., list_emails, read_email), and guidance to call `plugin_info({ plugin: 'gmail' })` for the full action catalog.
-2. **Given** a PowerBI plugin is installed and the agent fetches a page with embedded PowerBI grids, **When** the response is returned, **Then** `nextSteps` includes guidance to use `plugin_action({ plugin: 'powerbi', action: 'extract_grid' })` for reliable grid data extraction.
-3. **Given** the agent uses `get_current_html` on a page matching a plugin, **When** the response is returned, **Then** the same plugin recommendations appear in `nextSteps`.
-4. **Given** a plugin has 30+ actions (e.g., PowerBI), **When** detection triggers, **Then** `nextSteps` includes only the top 3-5 most relevant actions as a summary, with a pointer to `plugin_info` for the complete list.
+1. **Given** a Gmail plugin is installed and the agent has fetched `mail.google.com`, **When** the fetch response is returned, **Then** `nextSteps` includes the plugin name, a summary of top actions (e.g., list_emails, read_email), and guidance to call `browser_plugin_info({ plugin: 'gmail' })` for the full action catalog.
+2. **Given** a PowerBI plugin is installed and the agent fetches a page with embedded PowerBI grids, **When** the response is returned, **Then** `nextSteps` includes guidance to use `browser_plugin_action({ plugin: 'powerbi', action: 'extract_grid' })` for reliable grid data extraction.
+3. **Given** the agent uses `browser_get_current_html` on a page matching a plugin, **When** the response is returned, **Then** the same plugin recommendations appear in `nextSteps`.
+4. **Given** a plugin has 30+ actions (e.g., PowerBI), **When** detection triggers, **Then** `nextSteps` includes only the top 3-5 most relevant actions as a summary, with a pointer to `browser_plugin_info` for the complete list.
 
 ---
 
@@ -97,23 +97,23 @@ Plugins have access to the active browser page object so they can execute JavaSc
 **Acceptance Scenarios**:
 
 1. **Given** a plugin tool is invoked, **When** the tool implementation needs to interact with the page, **Then** it receives the active browser page object for the matching domain.
-2. **Given** the agent has not yet navigated to the plugin's target page, **When** a plugin tool is called, **Then** the plugin returns an error stating which site it requires, and the agent can then use `fetch_webpage` to navigate there. The plugin itself MUST NOT auto-navigate.
+2. **Given** the agent has not yet navigated to the plugin's target page, **When** a plugin tool is called, **Then** the plugin returns an error stating which site it requires, and the agent can then use `browser_fetch_webpage` to navigate there. The plugin itself MUST NOT auto-navigate.
 3. **Given** a plugin executes JavaScript on the page, **When** the script fails (e.g., element not found), **Then** the error is caught and returned as a structured error response consistent with MCPBrowser's error format.
 
 ---
 
 ### User Story 6 - Plugin Provides High-Level Site Context (Priority: P3)
 
-Each plugin includes high-level context about the target site — what pages it covers, what authentication flow to expect, what capabilities the plugin offers — delivered as part of the `plugin_info` response. This helps the agent plan its workflow (e.g., "I need to authenticate first, then I can list emails"). Detailed implementation knowledge like DOM selectors and JavaScript extraction logic remains hidden inside plugin action implementations; the agent never sees or needs it.
+Each plugin includes high-level context about the target site — what pages it covers, what authentication flow to expect, what capabilities the plugin offers — delivered as part of the `browser_plugin_info` response. This helps the agent plan its workflow (e.g., "I need to authenticate first, then I can list emails"). Detailed implementation knowledge like DOM selectors and JavaScript extraction logic remains hidden inside plugin action implementations; the agent never sees or needs it.
 
 **Why this priority**: While actions provide execution, high-level context helps the agent plan multi-step workflows without trial-and-error. However, since most domain knowledge is encapsulated inside actions, this is lighter-weight than initially scoped.
 
-**Independent Test**: Can be tested by calling `plugin_info` for a plugin and verifying it returns high-level site context (target pages, auth expectations) alongside the action catalog.
+**Independent Test**: Can be tested by calling `browser_plugin_info` for a plugin and verifying it returns high-level site context (target pages, auth expectations) alongside the action catalog.
 
 **Acceptance Scenarios**:
 
-1. **Given** a Gmail plugin is installed, **When** the agent calls `plugin_info({ plugin: "gmail" })`, **Then** the response includes high-level context: target site URL patterns, authentication flow description (e.g., "Google SSO, wait for redirect back to mail.google.com"), and the action catalog.
-2. **Given** an Outlook plugin is installed, **When** the agent calls `plugin_info({ plugin: "outlook" })`, **Then** the response describes Microsoft SSO expectations and available actions — but does not expose CSS selectors, XPath expressions, or internal JavaScript.
+1. **Given** a Gmail plugin is installed, **When** the agent calls `browser_plugin_info({ plugin: "gmail" })`, **Then** the response includes high-level context: target site URL patterns, authentication flow description (e.g., "Google SSO, wait for redirect back to mail.google.com"), and the action catalog.
+2. **Given** an Outlook plugin is installed, **When** the agent calls `browser_plugin_info({ plugin: "outlook" })`, **Then** the response describes Microsoft SSO expectations and available actions — but does not expose CSS selectors, XPath expressions, or internal JavaScript.
 
 ---
 
@@ -123,7 +123,7 @@ Each plugin includes high-level context about the target site — what pages it 
 - What happens when a plugin's JavaScript fails due to the site changing its DOM structure? The plugin tool returns a structured error with the failure details, and the agent can fall back to generic MCPBrowser tools.
 - What happens when a plugin is installed but its target site requires authentication the user hasn't completed? The plugin tool delegates to MCPBrowser's existing authentication flow and informs the agent that authentication is needed first.
 - What happens when the `plugins/` folder contains non-plugin files or folders? The discovery mechanism only loads folders that contain a valid plugin manifest; all others are silently ignored.
-- What happens when a plugin tool is called but the browser tab has navigated away from the plugin's target site? The plugin returns an error stating which site it requires and instructs the agent to use `fetch_webpage` to navigate first. Plugins MUST NOT auto-navigate to avoid losing form data or session state on the current page.
+- What happens when a plugin tool is called but the browser tab has navigated away from the plugin's target site? The plugin returns an error stating which site it requires and instructs the agent to use `browser_fetch_webpage` to navigate first. Plugins MUST NOT auto-navigate to avoid losing form data or session state on the current page.
 
 ## Requirements *(mandatory)*
 
@@ -134,17 +134,17 @@ Each plugin includes high-level context about the target site — what pages it 
 - **FR-002a**: Adding a new plugin MUST require only two actions: (1) creating the plugin folder with interface-compliant files, and (2) adding the plugin to the enabled plugins list. No core source files may be modified.
 - **FR-003**: Each plugin MUST provide a detection function (e.g., `matchesPage(url, html)`) that accepts the current page URL and the page HTML, and returns an object indicating whether the plugin is applicable and optionally a confidence score (see data-model.md MatchResult).
 - **FR-004**: System MUST call each plugin's detection function after page fetch and HTML extraction operations, and include matching plugin recommendations in the response's `nextSteps` array.
-- **FR-005**: System MUST expose exactly two universal plugin tools — `plugin_action` (dispatches to a plugin action) and `plugin_info` (returns a plugin's action catalog). Plugin-specific actions MUST NOT be individually registered as MCP tools.
-- **FR-005a**: `plugin_action` MUST accept plugin name, action name, and action parameters, dispatch to the correct plugin through the interface, and return the result.
-- **FR-005b**: `plugin_info` MUST accept a plugin name and optionally an action name, and return the full action catalog (or single action details) with parameter names, types, defaults, and descriptions, plus high-level site context (target pages, auth flow description). It MUST NOT expose internal implementation details like DOM selectors or JavaScript code.
+- **FR-005**: System MUST expose exactly two universal plugin tools — `browser_plugin_action` (dispatches to a plugin action) and `browser_plugin_info` (returns a plugin's action catalog). Plugin-specific actions MUST NOT be individually registered as MCP tools.
+- **FR-005a**: `browser_plugin_action` MUST accept plugin name, action name, and action parameters, dispatch to the correct plugin through the interface, and return the result.
+- **FR-005b**: `browser_plugin_info` MUST accept a plugin name and optionally an action name, and return the full action catalog (or single action details) with parameter names, types, defaults, and descriptions, plus high-level site context (target pages, auth flow description). It MUST NOT expose internal implementation details like DOM selectors or JavaScript code.
 - **FR-006**: Plugin action implementations MUST receive access to the active browser page object for the relevant domain, using MCPBrowser's existing browser management.
 - **FR-007**: Plugin action implementations MUST return responses that conform to MCPBrowser's existing response class hierarchy (extending MCPResponse or returning ErrorResponse).
 - **FR-008**: System MUST continue to function normally when no plugins are installed (zero plugins is a valid state).
 - **FR-009**: System MUST log a warning and skip any plugin that fails to load (invalid manifest, missing entry point, runtime errors during initialization) without affecting other plugins or core functionality.
 - **FR-010**: Each plugin MUST declare a manifest with at minimum: plugin name, version, description, target site patterns, and plugin interface version. The core MUST validate the declared interface version at load time and skip incompatible plugins with a warning log.
 - **FR-011**: Plugin detection MUST support both URL pattern matching (for site-specific plugins like Gmail) and DOM content detection (for embeddable content plugins like PowerBI grids).
-- **FR-012**: System MUST provide plugin recommendations in responses from all page-content-returning tools (fetch_webpage, get_current_html, execute_javascript, click_element). Recommendations MUST reference `plugin_info` and `plugin_action` as the mechanism, not individual tool names.
-- **FR-013**: Each plugin MUST provide recommended `nextSteps` text entries that summarize its top 3-5 actions and direct the agent to call `plugin_info` for the full catalog and `plugin_action` to execute.
+- **FR-012**: System MUST provide plugin recommendations in responses from all page-content-returning tools (browser_fetch_webpage, browser_get_current_html, browser_execute_javascript, browser_click_element). Recommendations MUST reference `browser_plugin_info` and `browser_plugin_action` as the mechanism, not individual tool names.
+- **FR-013**: Each plugin MUST provide recommended `nextSteps` text entries that summarize its top 3-5 actions and direct the agent to call `browser_plugin_info` for the full catalog and `browser_plugin_action` to execute.
 - **FR-014**: Each plugin MUST use its plugin name as a namespace for action names within the dispatch system to avoid collisions (e.g., plugin "gmail" action "list_emails", plugin "powerbi" action "extract_grid").
 
 ### Key Entities
@@ -153,10 +153,10 @@ Each plugin includes high-level context about the target site — what pages it 
 - **Plugin Registry**: A dedicated configuration file in the MCPBrowser root (separate from `server.json`) listing enabled plugin names. The core reads this at startup to determine which plugins to load. The only place outside a plugin folder that needs to change when adding a new plugin.
 - **Plugin Interface**: The contract that all plugins must implement. Defines the methods the core calls (detection, tool registration, site knowledge). The core never calls any method not defined in this interface.
 - **Plugin Manifest**: A declarative descriptor within each plugin folder that declares the plugin's identity, version, target URL patterns, and entry point. Used for discovery and validation.
-- **Plugin Action**: A named operation provided by a plugin (e.g., "list_emails", "extract_grid"), with a description, parameter schema, and an implementation function that operates on the browser page. Actions are not individually registered as MCP tools; they are invoked through the `plugin_action` dispatch tool.
-- **Dispatch Tools**: The two universal MCP tools (`plugin_action` and `plugin_info`) that serve as the single entry point for all plugin interactions. The MCP tool count remains constant regardless of how many plugins or actions are installed.
-- **Plugin Detection Result**: The outcome of running all plugins' detection functions against a page, containing the list of matching plugins and their recommended next steps (referencing `plugin_info` and `plugin_action`).
-- **Site Knowledge**: High-level context within a plugin describing what pages the plugin covers, authentication flow expectations, and plugin capabilities. Exposed via `plugin_info`. Does not include internal implementation details (DOM selectors, JavaScript) which remain hidden inside action implementations.
+- **Plugin Action**: A named operation provided by a plugin (e.g., "list_emails", "extract_grid"), with a description, parameter schema, and an implementation function that operates on the browser page. Actions are not individually registered as MCP tools; they are invoked through the `browser_plugin_action` dispatch tool.
+- **Dispatch Tools**: The two universal MCP tools (`browser_plugin_action` and `browser_plugin_info`) that serve as the single entry point for all plugin interactions. The MCP tool count remains constant regardless of how many plugins or actions are installed.
+- **Plugin Detection Result**: The outcome of running all plugins' detection functions against a page, containing the list of matching plugins and their recommended next steps (referencing `browser_plugin_info` and `browser_plugin_action`).
+- **Site Knowledge**: High-level context within a plugin describing what pages the plugin covers, authentication flow expectations, and plugin capabilities. Exposed via `browser_plugin_info`. Does not include internal implementation details (DOM selectors, JavaScript) which remain hidden inside action implementations.
 
 ## Success Criteria *(mandatory)*
 

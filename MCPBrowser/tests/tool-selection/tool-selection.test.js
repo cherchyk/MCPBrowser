@@ -41,8 +41,8 @@ function simulateToolSelection(tools, userRequest, context = null) {
     const desc = tool.description.toLowerCase();
     let score = 0;
     
-    // Domain pattern matching for fetch_webpage
-    if (tool.name === 'fetch_webpage') {
+    // Domain pattern matching for browser_fetch_webpage
+    if (tool.name === 'browser_fetch_webpage') {
       const patterns = [
         '.microsoft.com', '.corp.', '.internal.', 'eng.ms', 
         '.azure.', '.office.', 'sso', 'oauth', 'saml', 'captcha'
@@ -76,7 +76,7 @@ function simulateToolSelection(tools, userRequest, context = null) {
     }
     
     // Click element detection
-    if (tool.name === 'click_element') {
+    if (tool.name === 'browser_click_element') {
       if (/\b(click|press|tap|submit)\b/.test(request)) {
         score += 40;
       }
@@ -94,7 +94,7 @@ function simulateToolSelection(tools, userRequest, context = null) {
     }
     
     // Type text detection
-    if (tool.name === 'type_text') {
+    if (tool.name === 'browser_type_text') {
       if (/\b(fill|type|enter)\b/.test(request)) {
         score += 40;
       }
@@ -112,7 +112,7 @@ function simulateToolSelection(tools, userRequest, context = null) {
     }
     
     // Get current HTML detection
-    if (tool.name === 'get_current_html') {
+    if (tool.name === 'browser_get_current_html') {
       if (/\b(what does|what is|check|current|page state|say now|after)\b/.test(request)) {
         score += 40;
       }
@@ -126,7 +126,7 @@ function simulateToolSelection(tools, userRequest, context = null) {
     }
 
     // Execute JavaScript detection
-    if (tool.name === 'execute_javascript') {
+    if (tool.name === 'browser_execute_javascript') {
       if (/\b(run|execute|eval|evaluate)\b/.test(request) && /\b(js|javascript|script)\b/.test(request)) {
         score += 50;
       }
@@ -143,7 +143,7 @@ function simulateToolSelection(tools, userRequest, context = null) {
     }
     
     // Close tab detection
-    if (tool.name === 'close_tab') {
+    if (tool.name === 'browser_close_tab') {
       if (/\b(close)\b/.test(request) && /\b(tab|browser)\b/.test(request)) {
         score += 60;
       } else if (/\b(clear session|end session)\b/.test(request)) {
@@ -155,7 +155,7 @@ function simulateToolSelection(tools, userRequest, context = null) {
     scores[tool.name] = score;
   });
   
-  // Return tool with highest score (prefer earlier tools on ties — fetch_webpage is a safe default)
+  // Return tool with highest score (prefer earlier tools on ties — browser_fetch_webpage is a safe default)
   const selectedTool = Object.entries(scores).reduce((a, b) => a[1] >= b[1] ? a : b)[0];
   return selectedTool;
 }
@@ -191,7 +191,7 @@ function runScenario(scenario, tools, version) {
         // Subsequent steps - parse based on expected action
         const expectedTool = scenario.expectedToolSequence[i];
         
-        if (expectedTool === 'type_text') {
+        if (expectedTool === 'browser_type_text') {
           // Look for typing-related keywords
           if (requestContext.includes('username') && i === 1) {
             stepRequest = 'fill in username field with value';
@@ -200,7 +200,7 @@ function runScenario(scenario, tools, version) {
           } else if (requestContext.includes('fill')) {
             stepRequest = 'type into input field';
           }
-        } else if (expectedTool === 'click_element') {
+        } else if (expectedTool === 'browser_click_element') {
           // Look for clicking-related keywords
           if (requestContext.includes('submit')) {
             stepRequest = 'click the submit button';
@@ -215,8 +215,8 @@ function runScenario(scenario, tools, version) {
       const selected = simulateToolSelection(tools, stepRequest, context);
       selectedSequence.push(selected);
       
-      // Update context if fetch_webpage was selected
-      if (selected === 'fetch_webpage') {
+      // Update context if browser_fetch_webpage was selected
+      if (selected === 'browser_fetch_webpage') {
         context = { pageLoaded: true };
       }
     }

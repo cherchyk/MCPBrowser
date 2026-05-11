@@ -69,7 +69,7 @@ export function getActions() {
 
         // Return MCPResponse-compatible result
         return new PluginActionResponse(items, [
-          "Call plugin_action with action 'read_item' to read a specific item"
+          "Call browser_plugin_action with action 'read_item' to read a specific item"
         ]);
       }
     }
@@ -112,10 +112,10 @@ Add your plugin name to `MCPBrowser/plugins.json`:
 Restart the MCPBrowser server. Your plugin is now loaded.
 
 **Verify via agent**:
-1. Call `plugin_info({ plugin: "my-site" })` → should return your action catalog
-2. Navigate to `mysite.example.com` using `fetch_webpage`
+1. Call `browser_plugin_info({ plugin: "my-site" })` → should return your action catalog
+2. Navigate to `mysite.example.com` using `browser_fetch_webpage`
 3. The response `nextSteps` should recommend your plugin
-4. Call `plugin_action({ plugin: "my-site", action: "list_items", params: { limit: 5 } })`
+4. Call `browser_plugin_action({ plugin: "my-site", action: "list_items", params: { limit: 5 } })`
 
 ## Key Rules
 

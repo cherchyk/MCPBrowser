@@ -31,14 +31,14 @@
 **Independent Test**: Run script on inbox page to return first 10 rows and open a row; verify JSON payload, metadata, timeout/cap handling.
 
 ### Tests for User Story 1 (write first)
-- [X] T006 [P] [US1] Add success/DOM/metadata coverage for execute_javascript in MCPBrowser/tests/actions/browser.execute-javascript.test.js.
-- [X] T007 [P] [US1] Add timeout/error/truncation coverage for execute_javascript in MCPBrowser/tests/actions/browser.execute-javascript.test.js.
-- [X] T008 [P] [US1] Add tool-selection expectations for execute_javascript outputs in MCPBrowser/tests/tool-selection/tool-selection-tests.json.
+- [X] T006 [P] [US1] Add success/DOM/metadata coverage for browser_execute_javascript in MCPBrowser/tests/actions/browser.execute-javascript.test.js.
+- [X] T007 [P] [US1] Add timeout/error/truncation coverage for browser_execute_javascript in MCPBrowser/tests/actions/browser.execute-javascript.test.js.
+- [X] T008 [P] [US1] Add tool-selection expectations for browser_execute_javascript outputs in MCPBrowser/tests/tool-selection/tool-selection-tests.json.
 
 ### Implementation for User Story 1
-- [X] T009 [US1] Implement execute_javascript action with timeout, serialization, truncation, and urlChanged detection in MCPBrowser/src/actions/execute-javascript.js.
-- [X] T010 [US1] Register execute_javascript command and response wiring (EULA gate, structured output) in MCPBrowser/src/mcp-browser.js using core helpers.
-- [X] T017 [US1] Run planned execute_javascript tests: node tests/actions/browser.execute-javascript.test.js and node tests/run-unit.js chrome; proceed only if green.
+- [X] T009 [US1] Implement browser_execute_javascript action with timeout, serialization, truncation, and urlChanged detection in MCPBrowser/src/actions/execute-javascript.js.
+- [X] T010 [US1] Register browser_execute_javascript command and response wiring (EULA gate, structured output) in MCPBrowser/src/mcp-browser.js using core helpers.
+- [X] T017 [US1] Run planned browser_execute_javascript tests: node tests/actions/browser.execute-javascript.test.js and node tests/run-unit.js chrome; proceed only if green.
 
 **Checkpoint**: User Story 1 independently testable.
 

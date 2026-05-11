@@ -16,7 +16,7 @@ import logger from '../core/logger.js';
 // ============================================================================
 
 /**
- * Response for successful type_text operations
+ * Response for successful browser_type_text operations
  */
 export class TypeTextSuccessResponse extends MCPResponse {
   /**
@@ -64,9 +64,9 @@ export class TypeTextSuccessResponse extends MCPResponse {
  * @type {Tool}
  */
 export const TYPE_TEXT_TOOL = {
-  name: "type_text",
+  name: "browser_type_text",
   title: "Type Text",
-  description: "**BROWSER INTERACTION** - Types text into multiple input fields on browser-loaded pages in a single call. Use this for filling forms, entering search queries, or any text input on the page.\n\nWorks with input fields, textareas, and other editable elements. Supports filling multiple fields at once for efficient form filling.\n\n**PREREQUISITE**: Page MUST be loaded with fetch_webpage first. This tool operates on an already-loaded page in the browser.",
+  description: "**BROWSER INTERACTION** - Types text into multiple input fields on browser-loaded pages in a single call. Use this for filling forms, entering search queries, or any text input on the page.\n\nWorks with input fields, textareas, and other editable elements. Supports filling multiple fields at once for efficient form filling.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first. This tool operates on an already-loaded page in the browser.",
   inputSchema: {
     type: "object",
     properties: {
@@ -137,7 +137,7 @@ const TYPE_DELAY_MS = 10;
  */
 export async function typeText({ url, fields, returnHtml = true, removeUnnecessaryHTML = true, postTypeWait = 1000 }) {
   const startTime = Date.now();
-  logger.info(`type_text called: ${fields?.length || 0} fields, url=${url}`);
+  logger.info(`browser_type_text called: ${fields?.length || 0} fields, url=${url}`);
   
   if (!url) {
     throw new Error("url parameter is required");
@@ -169,7 +169,7 @@ export async function typeText({ url, fields, returnHtml = true, removeUnnecessa
   try {
     await getBrowser();
   } catch (err) {
-    logger.error(`type_text: Failed to connect to browser: ${err.message}`);
+    logger.error(`browser_type_text: Failed to connect to browser: ${err.message}`);
     return new InformationalResponse(
       `Browser connection failed: ${err.message}`,
       'The browser must be running with remote debugging enabled.',
@@ -186,15 +186,15 @@ export async function typeText({ url, fields, returnHtml = true, removeUnnecessa
   
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
-    logger.debug(`type_text: ${pageError || 'No page found for ' + hostname}`);
+    logger.debug(`browser_type_text: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
       isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
       isConnectionLost 
         ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
         : 'The page must be loaded before you can type text into elements',
       [
-        "Use MCPBrowser's fetch_webpage tool to load the page first",
-        "Then retry MCPBrowser's type_text with the same URL"
+        "Use MCPBrowser's browser_fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's browser_type_text with the same URL"
       ]
     );
   }
@@ -239,20 +239,20 @@ export async function typeText({ url, fields, returnHtml = true, removeUnnecessa
     const html = returnHtml ? await extractAndProcessHtml(page, removeUnnecessaryHTML) : null;
     const nextSteps = returnHtml
       ? [
-          "Use MCPBrowser's type_text to fill additional fields",
-          "Use MCPBrowser's click_element to submit the form or navigate",
-          "Use MCPBrowser's get_current_html to check for validation messages",
-          "Use MCPBrowser's take_screenshot if form has visual feedback or validation that's hard to parse from HTML",
-          "Use MCPBrowser's close_tab when finished"
+          "Use MCPBrowser's browser_type_text to fill additional fields",
+          "Use MCPBrowser's browser_click_element to submit the form or navigate",
+          "Use MCPBrowser's browser_get_current_html to check for validation messages",
+          "Use MCPBrowser's browser_take_screenshot if form has visual feedback or validation that's hard to parse from HTML",
+          "Use MCPBrowser's browser_close_tab when finished"
         ]
       : [
-          "Use MCPBrowser's get_current_html to see updated page state",
-          "Use MCPBrowser's take_screenshot if the page has visual feedback that's hard to parse",
-          "Use MCPBrowser's type_text for additional fields or MCPBrowser's click_element to submit",
-          "Use MCPBrowser's close_tab when finished"
+          "Use MCPBrowser's browser_get_current_html to see updated page state",
+          "Use MCPBrowser's browser_take_screenshot if the page has visual feedback that's hard to parse",
+          "Use MCPBrowser's browser_type_text for additional fields or MCPBrowser's browser_click_element to submit",
+          "Use MCPBrowser's browser_close_tab when finished"
         ];
     
-    logger.info(`type_text completed: typed into ${fieldsSummary}${returnHtml ? '' : ' (no HTML)'}`);
+    logger.info(`browser_type_text completed: typed into ${fieldsSummary}${returnHtml ? '' : ' (no HTML)'}`);
     
     return new TypeTextSuccessResponse(currentUrl, `Typed text into: ${fieldsSummary}`, html, nextSteps);
   } catch (err) {
@@ -272,29 +272,29 @@ export async function typeText({ url, fields, returnHtml = true, removeUnnecessa
     if (isNotFound) {
       reason = `Selector not found: "${currentSelector}". The element may not exist on the page or have a different selector.`;
       nextSteps = [
-        "Use MCPBrowser's get_current_html to find the correct selector",
-        "Use MCPBrowser's take_screenshot to visually inspect the form",
+        "Use MCPBrowser's browser_get_current_html to find the correct selector",
+        "Use MCPBrowser's browser_take_screenshot to visually inspect the form",
         "Check for typos in the selector or try a simpler selector (e.g., 'input[type=\"text\"]')",
         "The element may load dynamically - try increasing waitForElementTimeout"
       ];
     } else if (isNotVisible) {
       reason = `Element "${currentSelector}" exists but is not visible. It may be hidden, collapsed, or off-screen.`;
       nextSteps = [
-        "Use MCPBrowser's take_screenshot to see the page state",
-        "Use MCPBrowser's click_element to expand/show the form section first",
-        "Use MCPBrowser's scroll_page to bring the element into view"
+        "Use MCPBrowser's browser_take_screenshot to see the page state",
+        "Use MCPBrowser's browser_click_element to expand/show the form section first",
+        "Use MCPBrowser's browser_scroll_page to bring the element into view"
       ];
     } else if (isDetached) {
       reason = `Element "${currentSelector}" was removed from the page during interaction. The page may have reloaded or updated.`;
       nextSteps = [
-        "Use MCPBrowser's get_current_html to check current page state",
-        "Retry the type_text call - the page may have stabilized"
+        "Use MCPBrowser's browser_get_current_html to check current page state",
+        "Retry the browser_type_text call - the page may have stabilized"
       ];
     } else {
       reason = `Failed to interact with "${currentSelector}": ${errorMsg}`;
       nextSteps = [
-        "Use MCPBrowser's get_current_html to verify page state",
-        "Use MCPBrowser's take_screenshot to see what's on the page visually",
+        "Use MCPBrowser's browser_get_current_html to verify page state",
+        "Use MCPBrowser's browser_take_screenshot to see what's on the page visually",
         "The element may be disabled or read-only"
       ];
     }
@@ -307,7 +307,7 @@ export async function typeText({ url, fields, returnHtml = true, removeUnnecessa
       progressInfo = `Failed on field ${failedFieldNum} of ${totalFields}. Successfully filled ${filledSelectors.length} field(s): ${filledSelectors.join(', ')}. Do NOT re-type these fields.`;
     }
     
-    logger.error(`type_text failed on field ${failedFieldNum}/${totalFields} (${currentSelector}): ${errorMsg}`);
+    logger.error(`browser_type_text failed on field ${failedFieldNum}/${totalFields} (${currentSelector}): ${errorMsg}`);
     
     return new InformationalResponse(
       `${progressInfo}`,

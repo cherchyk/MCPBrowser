@@ -38,7 +38,7 @@ This returns a JSON array of items, each with:
 
 By title keyword:
 ```bash
-gh project item-list 2 --owner cherchyk --format json --limit 50 | jq '.items[] | select(.title | test("navigate_history"; "i"))'
+gh project item-list 2 --owner cherchyk --format json --limit 50 | jq '.items[] | select(.title | test("browser_navigate_history"; "i"))'
 ```
 
 By project board URL `itemId`:
@@ -48,7 +48,7 @@ The `itemId` in URLs like `?itemId=171559730` maps to the `id` field in the JSON
 
 Branch names follow the pattern `feature/<number>-<short_name>`. The number is **not** a GitHub issue number — it's a project board sequence. Match by the `<short_name>` portion against item titles.
 
-Example: branch `feature/9-navigate_history` → search for items with title containing "navigate_history".
+Example: branch `feature/9-browser_navigate_history` → search for items with title containing "browser_navigate_history".
 
 ## Work Item Structure
 

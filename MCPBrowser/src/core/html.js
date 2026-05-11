@@ -70,8 +70,9 @@ export function cleanHtml(html) {
   // Remove event handler attributes (onclick, onload, etc.)
   cleaned = cleaned.replace(/\s+on[a-z]+\s*=\s*["'][^"']*["']/gi, '');
   
-  // Remove role attributes
-  cleaned = cleaned.replace(/\s+role=["'][^"']*["']/gi, '');
+  // Keep role attributes — they're semantically valuable for LLM understanding
+  // and enable stable selectors like [role="main"], [role="navigation"]
+  // cleaned = cleaned.replace(/\s+role=["'][^"']*["']/gi, '');
   
   // Remove aria-* attributes
   cleaned = cleaned.replace(/\s+aria-[a-z0-9-]+=["'][^"']*["']/gi, '');

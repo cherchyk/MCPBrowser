@@ -475,22 +475,51 @@ async function waitForNavigationToSettle(page) {
  * settle and retries once.
  * @param {Page} page - The Puppeteer page instance
  * @param {boolean} removeUnnecessaryHTML - Whether to clean the HTML
+ * @param {string|null} [selector=null] - CSS selector to extract a DOM subtree instead of full page
  * @returns {Promise<string>} The processed HTML
  */
-export async function extractAndProcessHtml(page, removeUnnecessaryHTML) {
+export async function extractAndProcessHtml(page, removeUnnecessaryHTML, selector = null) {
   let html;
+
+  const extractFn = selector
+    ? (sel) => {
+        const els = document.querySelectorAll(sel);
+        if (!els.length) return null;
+        return Array.from(els).map(el => el.outerHTML).join('\n');
+      }
+    : () => document.documentElement?.outerHTML || "";
+
+  const extractArg = selector || undefined;
+
   try {
-    html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+    html = await page.evaluate(extractFn, extractArg);
   } catch (err) {
     if (isNavigationError(err)) {
       logger.debug('Late navigation during HTML extraction, waiting for settle...');
       await waitForNavigationToSettle(page);
       // Re-run page readiness — the new page may be a SPA that needs rendering time
       await waitForPageReady(page);
-      html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+      html = await page.evaluate(extractFn, extractArg);
     } else {
       throw err;
     }
+  }
+
+  // If selector matched nothing, fall back to full page with a note
+  if (selector && html === null) {
+    logger.debug(`Selector "${selector}" matched no elements, falling back to full page`);
+    try {
+      html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+    } catch (err) {
+      if (isNavigationError(err)) {
+        await waitForNavigationToSettle(page);
+        await waitForPageReady(page);
+        html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+      } else {
+        throw err;
+      }
+    }
+    html = `<!-- selector "${selector}" matched no elements; returning full page -->\n` + html;
   }
   
   let processedHtml;
@@ -499,6 +528,13 @@ export async function extractAndProcessHtml(page, removeUnnecessaryHTML) {
     processedHtml = enrichHtml(cleaned, page.url());
   } else {
     processedHtml = enrichHtml(html, page.url());
+  }
+  
+  // Warn when response is very large — the agent should use the selector parameter
+  // to scope extraction to a DOM subtree instead of fetching the entire page.
+  const htmlByteLength = new TextEncoder().encode(processedHtml).length;
+  if (htmlByteLength > 500_000) {
+    logger.warn(`Large HTML response (${(htmlByteLength / 1024).toFixed(0)}KB). Consider using the "selector" parameter to extract a specific DOM subtree instead of the full page.`);
   }
   
   return processedHtml;

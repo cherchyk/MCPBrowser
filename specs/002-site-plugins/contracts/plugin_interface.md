@@ -75,7 +75,7 @@ Returns the complete list of actions this plugin provides.
 
 ### `getInfo()` (function)
 
-Returns high-level plugin context for the AI agent. Called by `plugin_info` tool.
+Returns high-level plugin context for the AI agent. Called by `browser_plugin_info` tool.
 
 **Parameters**: None
 

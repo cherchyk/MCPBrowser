@@ -1,5 +1,5 @@
 /**
- * Tests for plugin-info.js — the plugin_info MCP tool.
+ * Tests for plugin-info.js — the browser_plugin_info MCP tool.
  * Covers: list all plugins, plugin detail, action detail, errors, site context.
  */
 
@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const registryPath = join(__dirname, '../../src/plugins.json');
 
-console.log('🧪 Testing plugin_info tool');
+console.log('🧪 Testing browser_plugin_info tool');
 console.log();
 
 let passed = 0;
@@ -51,12 +51,12 @@ function withRegistry(data, fn) {
 await withRegistry({ enabled: ["_example"] }, async () => { await loadPlugins(); });
 
 // ============================================================================
-// T016: plugin_info tests (US2)
+// T016: browser_plugin_info tests (US2)
 // ============================================================================
 
 console.log('--- List All Plugins ---');
 
-test('[US2] plugin_info: no params lists all plugins', () => {
+test('[US2] browser_plugin_info: no params lists all plugins', () => {
   const result = pluginInfo({});
   assert.ok(result instanceof PluginListResponse);
   assert.ok(Array.isArray(result.plugins));
@@ -67,16 +67,16 @@ test('[US2] plugin_info: no params lists all plugins', () => {
   assert.ok(result.plugins[0].actionCount > 0);
 });
 
-test('[US2] plugin_info: list all has nextSteps', () => {
+test('[US2] browser_plugin_info: list all has nextSteps', () => {
   const result = pluginInfo({});
   assert.ok(Array.isArray(result.nextSteps));
   assert.ok(result.nextSteps.length > 0);
-  assert.ok(result.nextSteps[0].includes('plugin_info'));
+  assert.ok(result.nextSteps[0].includes('browser_plugin_info'));
 });
 
 console.log('\n--- Plugin Detail ---');
 
-test('[US2] plugin_info: valid plugin returns action catalog + site context', () => {
+test('[US2] browser_plugin_info: valid plugin returns action catalog + site context', () => {
   const result = pluginInfo({ plugin: '_example' });
   assert.ok(result instanceof PluginInfoResponse);
   const mcpFormat = result.toMcpFormat();
@@ -97,15 +97,15 @@ test('[US2] plugin_info: valid plugin returns action catalog + site context', ()
   }
 });
 
-test('[US2] plugin_info: plugin detail has nextSteps guiding to plugin_action', () => {
+test('[US2] browser_plugin_info: plugin detail has nextSteps guiding to browser_plugin_action', () => {
   const result = pluginInfo({ plugin: '_example' });
   const joined = result.nextSteps.join(' ');
-  assert.ok(joined.includes('plugin_action'), 'nextSteps should reference plugin_action');
+  assert.ok(joined.includes('browser_plugin_action'), 'nextSteps should reference browser_plugin_action');
 });
 
 console.log('\n--- Action Detail ---');
 
-test('[US2] plugin_info: valid plugin + action returns single action details', () => {
+test('[US2] browser_plugin_info: valid plugin + action returns single action details', () => {
   const result = pluginInfo({ plugin: '_example', action: 'list_items' });
   assert.ok(result instanceof PluginActionDetailResponse);
   assert.strictEqual(result.plugin, '_example');
@@ -114,7 +114,7 @@ test('[US2] plugin_info: valid plugin + action returns single action details', (
   assert.ok(Array.isArray(result.action.params));
 });
 
-test('[US2] plugin_info: unknown action returns ErrorResponse', () => {
+test('[US2] browser_plugin_info: unknown action returns ErrorResponse', () => {
   const result = pluginInfo({ plugin: '_example', action: 'nonexistent_action' });
   assert.ok(result instanceof ErrorResponse);
   const mcpFormat = result.toMcpFormat();
@@ -125,7 +125,7 @@ test('[US2] plugin_info: unknown action returns ErrorResponse', () => {
 
 console.log('\n--- Error Cases ---');
 
-test('[US2] plugin_info: unknown plugin returns ErrorResponse', () => {
+test('[US2] browser_plugin_info: unknown plugin returns ErrorResponse', () => {
   const result = pluginInfo({ plugin: 'nonexistent_plugin' });
   assert.ok(result instanceof ErrorResponse);
   const mcpFormat = result.toMcpFormat();
@@ -139,7 +139,7 @@ test('[US2] plugin_info: unknown plugin returns ErrorResponse', () => {
 // ============================================================================
 console.log('\n--- Site Context (T034, US6) ---');
 
-test('[US6] plugin_info: includes targetPages and authFlow', () => {
+test('[US6] browser_plugin_info: includes targetPages and authFlow', () => {
   const result = pluginInfo({ plugin: '_example' });
   const info = result.pluginInfo;
   assert.ok(Array.isArray(info.targetPages), 'Should have targetPages');
@@ -147,7 +147,7 @@ test('[US6] plugin_info: includes targetPages and authFlow', () => {
   assert.ok(typeof info.authFlow === 'string' || info.authFlow === undefined, 'authFlow should be string or absent');
 });
 
-test('[US6] plugin_info: does NOT expose CSS selectors or JS code', () => {
+test('[US6] browser_plugin_info: does NOT expose CSS selectors or JS code', () => {
   const result = pluginInfo({ plugin: '_example' });
   const json = JSON.stringify(result.toMcpFormat());
   // Check for common CSS selector patterns

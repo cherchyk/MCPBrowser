@@ -1,4 +1,4 @@
-# Contract: `plugin_info` MCP Tool
+# Contract: `browser_plugin_info` MCP Tool
 
 **Feature**: 002-site-plugins
 
@@ -6,9 +6,9 @@
 
 ```javascript
 {
-  name: "plugin_info",
+  name: "browser_plugin_info",
   title: "Plugin Info",
-  description: "Get information about an installed site plugin — its available actions, parameters, and site context. Call this after a plugin is detected (recommended in nextSteps) to discover what actions you can perform via plugin_action. You can also call with no arguments to list all loaded plugins.",
+  description: "Get information about an installed site plugin — its available actions, parameters, and site context. Call this after a plugin is detected (recommended in nextSteps) to discover what actions you can perform via browser_plugin_action. You can also call with no arguments to list all loaded plugins.",
   inputSchema: {
     type: "object",
     properties: {
@@ -51,8 +51,8 @@ Returns summary of all loaded plugins.
     { name: "outlook", description: "Outlook automation", actionCount: 8 }
   ],
   nextSteps: [
-    "Call plugin_info({ plugin: 'gmail' }) to see Gmail's available actions",
-    "Call plugin_info({ plugin: 'outlook' }) to see Outlook's available actions"
+    "Call browser_plugin_info({ plugin: 'gmail' }) to see Gmail's available actions",
+    "Call browser_plugin_info({ plugin: 'outlook' }) to see Outlook's available actions"
   ]
 }
 ```
@@ -85,8 +85,8 @@ Returns full action catalog + high-level site context.
     }
   ],
   nextSteps: [
-    "Use plugin_action({ plugin: 'gmail', action: 'list_emails' }) to list inbox emails",
-    "Use fetch_webpage to navigate to mail.google.com first if not already there"
+    "Use browser_plugin_action({ plugin: 'gmail', action: 'list_emails' }) to list inbox emails",
+    "Use browser_fetch_webpage to navigate to mail.google.com first if not already there"
   ]
 }
 ```
@@ -107,7 +107,7 @@ Returns details for a single action.
     ]
   },
   nextSteps: [
-    "Call plugin_action({ plugin: 'gmail', action: 'list_emails', params: { folder: 'inbox', limit: 10 } })"
+    "Call browser_plugin_action({ plugin: 'gmail', action: 'list_emails', params: { folder: 'inbox', limit: 10 } })"
   ]
 }
 ```

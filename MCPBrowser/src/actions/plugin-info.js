@@ -1,7 +1,7 @@
 /**
  * plugin-info.js — MCP tool that returns information about installed plugins,
  * their available actions, parameters, and high-level site context.
- * Part of the plugin dispatch pair (plugin_info + plugin_action).
+ * Part of the plugin dispatch pair (browser_plugin_info + browser_plugin_action).
  */
 
 import { MCPResponse, ErrorResponse } from '../core/responses.js';
@@ -53,9 +53,9 @@ export class PluginActionDetailResponse extends MCPResponse {
 
 /** @type {Tool} */
 export const PLUGIN_INFO_TOOL = {
-  name: "plugin_info",
+  name: "browser_plugin_info",
   title: "Plugin Info",
-  description: "Get information about an installed site plugin — its available actions, parameters, and site context. Call this after a plugin is detected (recommended in nextSteps) to discover what actions you can perform via plugin_action. You can also call with no arguments to list all loaded plugins.",
+  description: "Get information about an installed site plugin — its available actions, parameters, and site context. Call this after a plugin is detected (recommended in nextSteps) to discover what actions you can perform via browser_plugin_action. You can also call with no arguments to list all loaded plugins.",
   inputSchema: {
     type: "object",
     properties: {
@@ -96,7 +96,7 @@ export const PLUGIN_INFO_TOOL = {
  * @returns {MCPResponse}
  */
 export function pluginInfo({ plugin, action } = {}) {
-  logger.info(`plugin_info called: plugin=${plugin || '(all)'} action=${action || '(all)'}`);
+  logger.info(`browser_plugin_info called: plugin=${plugin || '(all)'} action=${action || '(all)'}`);
 
   const loadedPlugins = getLoadedPlugins();
 
@@ -112,7 +112,7 @@ export function pluginInfo({ plugin, action } = {}) {
     }
 
     const nextSteps = plugins.length > 0
-      ? plugins.map(p => `Call plugin_info({ plugin: '${p.name}' }) to see ${p.name}'s available actions`)
+      ? plugins.map(p => `Call browser_plugin_info({ plugin: '${p.name}' }) to see ${p.name}'s available actions`)
       : ["No plugins are currently loaded. Add plugin names to plugins.json and restart the server."];
 
     return new PluginListResponse(plugins, nextSteps);
@@ -125,7 +125,7 @@ export function pluginInfo({ plugin, action } = {}) {
     return new ErrorResponse(
       `Unknown plugin: '${plugin}'. Available plugins: ${available}`,
       loadedPlugins.size > 0
-        ? [`Call plugin_info() with no arguments to list all plugins`]
+        ? [`Call browser_plugin_info() with no arguments to list all plugins`]
         : ["No plugins are currently loaded. Add plugin names to plugins.json and restart the server."]
     );
   }
@@ -138,14 +138,14 @@ export function pluginInfo({ plugin, action } = {}) {
       const validActions = actions.map(a => a.name).join(', ');
       return new ErrorResponse(
         `Unknown action '${action}' for plugin '${plugin}'. Available actions: ${validActions}`,
-        [`Call plugin_info({ plugin: '${plugin}' }) to see all available actions`]
+        [`Call browser_plugin_info({ plugin: '${plugin}' }) to see all available actions`]
       );
     }
 
     return new PluginActionDetailResponse(
       plugin,
       { name: actionDef.name, description: actionDef.description, params: actionDef.params },
-      [`Call plugin_action({ plugin: '${plugin}', action: '${action}', params: { ... } })`]
+      [`Call browser_plugin_action({ plugin: '${plugin}', action: '${action}', params: { ... } })`]
     );
   }
 
@@ -161,9 +161,9 @@ export function pluginInfo({ plugin, action } = {}) {
 
   const nextSteps = [
     ...(info.actions || []).slice(0, 3).map(a =>
-      `Use plugin_action({ plugin: '${plugin}', action: '${a.name}' }) to ${a.description.toLowerCase()}`
+      `Use browser_plugin_action({ plugin: '${plugin}', action: '${a.name}' }) to ${a.description.toLowerCase()}`
     ),
-    "Use fetch_webpage to navigate to the target site first if not already there"
+    "Use browser_fetch_webpage to navigate to the target site first if not already there"
   ];
 
   return new PluginInfoResponse(pluginDetail, nextSteps);

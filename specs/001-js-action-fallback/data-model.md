@@ -26,7 +26,7 @@
 - `targetInfo` (object, optional): Selector/text/xpath/handle metadata used to locate the element (no PII, redacted as needed).
 
 ## Relationships
-- `Action Response` embeds `Click Attempt` details when the action is `click_element`.
+- `Action Response` embeds `Click Attempt` details when the action is `browser_click_element`.
 - `Action Request` maps 1:1 to `Action Response`; metadata (timings, urlChanged, truncated) accompanies every response for observability.
 
 ## Validation Rules

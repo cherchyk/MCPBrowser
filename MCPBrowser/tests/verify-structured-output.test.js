@@ -107,8 +107,8 @@ async function callMcpTool(toolName, args) {
 // Structured Output Format Tests
 // ============================================================================
 
-await test('fetch_webpage success should have MCP-compliant structure', async () => {
-  const result = await callMcpTool('fetch_webpage', { url: 'https://example.com' });
+await test('browser_fetch_webpage success should have MCP-compliant structure', async () => {
+  const result = await callMcpTool('browser_fetch_webpage', { url: 'https://example.com' });
   
   // Check required fields
   assert.ok(result.content, 'Should have content field');
@@ -137,8 +137,8 @@ await test('fetch_webpage success should have MCP-compliant structure', async ()
   console.log(`   Structured data keys: ${Object.keys(result.structuredContent).join(', ')}`);
 });
 
-await test('click_element for non-loaded page should have MCP-compliant informational structure', async () => {
-  const result = await callMcpTool('click_element', { url: 'https://nonexistent-domain-12345.com', selector: '#test' });
+await test('browser_click_element for non-loaded page should have MCP-compliant informational structure', async () => {
+  const result = await callMcpTool('browser_click_element', { url: 'https://nonexistent-domain-12345.com', selector: '#test' });
   
   // Check required fields
   assert.ok(result.content, 'Should have content field');
@@ -152,21 +152,18 @@ await test('click_element for non-loaded page should have MCP-compliant informat
   // InformationalResponse should NOT be an error (not red in UI)
   assert.strictEqual(result.isError, false, 'isError should be false for informational responses (not red)');
   
-  // InformationalResponse SHOULD have structuredContent (unlike ErrorResponse)
-  assert.ok(result.structuredContent, 'InformationalResponse should have structuredContent');
-  assert.strictEqual(result.structuredContent.status, 'action_required', 'Should have action_required status');
-  assert.ok(Array.isArray(result.structuredContent.nextSteps), 'Should have nextSteps array');
+  // InformationalResponse omits structuredContent to avoid schema violations
+  assert.strictEqual(result.structuredContent, undefined, 'InformationalResponse should NOT have structuredContent');
   
   console.log(`   Error text: ${contentItem.text}`);
 });
 
-await test('close_tab should return properly formatted response', async () => {
-  const result = await callMcpTool('close_tab', { url: 'https://example.com' });
+await test('browser_close_tab should return properly formatted response', async () => {
+  const result = await callMcpTool('browser_close_tab', { url: 'https://example.com' });
   
   // Check basic structure
   assert.ok(result.content, 'Should have content field');
   assert.ok(result.hasOwnProperty('isError'), 'Should have isError field');
-  assert.ok(result.structuredContent, 'Should have structuredContent field');
   
   // Check content is human-readable
   const contentItem = result.content[0];
@@ -174,16 +171,19 @@ await test('close_tab should return properly formatted response', async () => {
   assert.ok(typeof contentItem.text === 'string', 'Text should be a string');
   assert.ok(contentItem.text.length > 0, 'Text should not be empty');
   
-  // Structured content should match action result (no success field)
-  assert.strictEqual(typeof result.structuredContent, 'object', 'structuredContent should be an object');
-  assert.ok(result.structuredContent.message, 'structuredContent should have message field');
-  assert.ok(result.structuredContent.hostname, 'structuredContent should have hostname field');
+  // browser_close_tab may return InformationalResponse (no page open) or success response
+  // InformationalResponse won't have structuredContent; success will
+  if (result.structuredContent) {
+    assert.strictEqual(typeof result.structuredContent, 'object', 'structuredContent should be an object');
+    assert.ok(result.structuredContent.message, 'structuredContent should have message field');
+    assert.ok(result.structuredContent.hostname, 'structuredContent should have hostname field');
+  }
   
   console.log(`   Response: ${contentItem.text}`);
 });
 
 await test('Response should NOT have raw JSON.stringify in text field', async () => {
-  const result = await callMcpTool('fetch_webpage', { url: 'https://example.com' });
+  const result = await callMcpTool('browser_fetch_webpage', { url: 'https://example.com' });
   
   const contentItem = result.content[0];
   
@@ -196,7 +196,7 @@ await test('Response should NOT have raw JSON.stringify in text field', async ()
 });
 
 await test('All fields should be properly typed', async () => {
-  const result = await callMcpTool('fetch_webpage', { url: 'https://example.com' });
+  const result = await callMcpTool('browser_fetch_webpage', { url: 'https://example.com' });
   
   // Type checks
   assert.strictEqual(typeof result.isError, 'boolean', 'isError should be boolean');

@@ -1,5 +1,7 @@
 /**
  * Logger - Emits to stderr and, when available, via MCP logging notifications.
+ * Also sends MCP progress notifications (notifications/progress) when a
+ * progressToken is active, so agents see real-time status during tool execution.
  * Stderr stays the primary sink to avoid interfering with MCP stdout traffic.
  */
 
@@ -7,6 +9,10 @@ const PREFIX = '[MCPBrowser]';
 
 // Optional MCP server reference for notifications/message logs.
 let mcpServer = null;
+
+// MCP progress tracking — set per-request by the request handler.
+let _progressToken = null;
+let _progressStep = 0;
 
 // Optional stdout mirroring (off by default to avoid corrupting MCP stdout).
 // Auto-enable during tests so test runners capture output.
@@ -32,6 +38,25 @@ function setConsoleOutput(enabled = true) {
   consoleOutputEnabled = !!enabled;
 }
 
+/**
+ * Set the MCP progress token for the current request.
+ * While set, every logger.info() call also sends a notifications/progress
+ * message so the agent sees real-time status during tool execution.
+ * @param {string|number|null|undefined} token - progressToken from request._meta
+ */
+function setProgressToken(token) {
+  _progressToken = token ?? null;
+  _progressStep = 0;
+}
+
+/**
+ * Clear the progress token after the request completes.
+ */
+function clearProgressToken() {
+  _progressToken = null;
+  _progressStep = 0;
+}
+
 async function notifyAgent(level, data) {
   if (!mcpServer?.sendLoggingMessage) return;
   try {
@@ -41,6 +66,28 @@ async function notifyAgent(level, data) {
   } catch {
     // Silently drop — this is expected during startup before the MCP
     // transport handshake completes. Stderr already has the message.
+  }
+}
+
+/**
+ * Send an MCP progress notification if a progressToken is active.
+ * Called automatically from info-level log messages.
+ * @param {string} message - Human-readable progress message
+ */
+async function sendProgress(message) {
+  if (!_progressToken || !mcpServer) return;
+  _progressStep++;
+  try {
+    await mcpServer.notification({
+      method: 'notifications/progress',
+      params: {
+        progressToken: _progressToken,
+        progress: _progressStep,
+        message
+      }
+    });
+  } catch {
+    // Fire and forget — don't break the action if progress fails
   }
 }
 
@@ -55,6 +102,8 @@ function emit(level, message, symbol = '') {
 
 function info(message) {
   emit('info', message);
+  // Also send as MCP progress notification when token is active
+  void sendProgress(message);
 }
 
 function warn(message) {
@@ -69,6 +118,6 @@ function debug(message) {
   emit('debug', message, '🔍');
 }
 
-export const logger = { info, warn, error, debug, attachServer, setConsoleOutput };
-export { attachServer, setConsoleOutput };
+export const logger = { info, warn, error, debug, attachServer, setConsoleOutput, setProgressToken, clearProgressToken };
+export { attachServer, setConsoleOutput, setProgressToken, clearProgressToken };
 export default logger;

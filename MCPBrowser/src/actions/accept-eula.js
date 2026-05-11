@@ -154,8 +154,8 @@ export async function handleAcceptEula(args) {
     return new EulaAcceptedResponse(
       EULA_URL,
       [
-        'Use fetch_webpage to navigate to a URL',
-        'Use get_current_html to see the current page content'
+        'Use browser_fetch_webpage to navigate to a URL',
+        'Use browser_get_current_html to see the current page content'
       ]
     );
   }
@@ -180,9 +180,9 @@ export async function handleAcceptEula(args) {
   return new EulaAcceptedResponse(
     EULA_URL,
     [
-      'Use fetch_webpage to navigate to a URL',
-      'Use click_element to interact with page elements',
-      'Use type_text to enter text into forms'
+      'Use browser_fetch_webpage to navigate to a URL',
+      'Use browser_click_element to interact with page elements',
+      'Use browser_type_text to enter text into forms'
     ]
   );
 }

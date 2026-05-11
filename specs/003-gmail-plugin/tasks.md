@@ -54,11 +54,11 @@
 
 **Goal**: Navigate to a Gmail folder via URL hash (T1) and extract structured email list data using T3+T4 selectors.
 
-**Independent Test**: Call `plugin_action({ plugin: "gmail", action: "list_emails" })` on Gmail and verify structured EmailSummary[] returned.
+**Independent Test**: Call `browser_plugin_action({ plugin: "gmail", action: "list_emails" })` on Gmail and verify structured EmailSummary[] returned.
 
 ### Tests for US1 (MANDATORY)
 
-- [X] T010 [P] [US1] Create unit test `MCPBrowser/tests/plugins/gmail/list-emails.test.js` testing: URL hash navigation to `#inbox`, `#sent`, `#drafts`, `#trash`, `#spam`, `#label/LabelName` with account index preserved (FR-020); email row extraction from fixture HTML matching data-model EmailSummary fields (index, id, sender, senderEmail, subject, snippet, date, isUnread); limit parameter respected; error when not on Gmail page with fetch_webpage guidance; nextSteps match contracts/gmail_actions.md
+- [X] T010 [P] [US1] Create unit test `MCPBrowser/tests/plugins/gmail/list-emails.test.js` testing: URL hash navigation to `#inbox`, `#sent`, `#drafts`, `#trash`, `#spam`, `#label/LabelName` with account index preserved (FR-020); email row extraction from fixture HTML matching data-model EmailSummary fields (index, id, sender, senderEmail, subject, snippet, date, isUnread); limit parameter respected; error when not on Gmail page with browser_fetch_webpage guidance; nextSteps match contracts/gmail_actions.md
 
 ### Implementation for US1
 

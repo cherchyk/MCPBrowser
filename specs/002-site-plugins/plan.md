@@ -5,7 +5,7 @@
 
 ## Summary
 
-Add a plugin mechanism to MCPBrowser that enables site-specific automation for UI-heavy websites (Gmail, Outlook, PowerBI, AWS, Azure). Plugins conform to a standard interface, are loaded from a dedicated registry file at startup, and expose their actions through two universal dispatch tools (`plugin_action` and `plugin_info`) rather than individual MCP tool registrations. Detection runs against loaded plugins after page fetches, augmenting `nextSteps` with plugin recommendations.
+Add a plugin mechanism to MCPBrowser that enables site-specific automation for UI-heavy websites (Gmail, Outlook, PowerBI, AWS, Azure). Plugins conform to a standard interface, are loaded from a dedicated registry file at startup, and expose their actions through two universal dispatch tools (`browser_plugin_action` and `browser_plugin_info`) rather than individual MCP tool registrations. Detection runs against loaded plugins after page fetches, augmenting `nextSteps` with plugin recommendations.
 
 ## Technical Context
 
@@ -26,7 +26,7 @@ Add a plugin mechanism to MCPBrowser that enables site-specific automation for U
 | Principle | Status | Evidence |
 |-----------|--------|----------|
 | I. User-Safe Browser Mediation | PASS | Plugins reuse existing browser sessions via page object; no new credential handling. Plugin actions are explicit agent-initiated calls, not automatic. |
-| II. Deterministic MCP Tool Contracts | PASS | Two new tools (`plugin_action`, `plugin_info`) with stable input/output schemas. Plugin interface version in manifest enables contract evolution. |
+| II. Deterministic MCP Tool Contracts | PASS | Two new tools (`browser_plugin_action`, `browser_plugin_info`) with stable input/output schemas. Plugin interface version in manifest enables contract evolution. |
 | III. Test-First Coverage | PASS | Test plan below enumerates unit tests for loader, detection, dispatch, and response integration. Tests run before implementation is considered complete. |
 | IV. Observability & Diagnostics | PASS | Plugin loader logs warnings for skip/failure. Dispatch tools log plugin name + action for traceability. Uses existing logger infrastructure. |
 | V. Intent-Explicit Documentation | PASS | Each new file declares purpose. Plugin interface documented in contracts/. quickstart.md provides developer guide. |
@@ -46,8 +46,8 @@ specs/002-site-plugins/
 ├── quickstart.md        # Phase 1: Plugin developer guide
 ├── contracts/           # Phase 1: Interface contracts
 │   ├── plugin_interface.md
-│   ├── plugin_action_tool.md
-│   └── plugin_info_tool.md
+│   ├── browser_plugin_action_tool.md
+│   └── browser_plugin_info_tool.md
 └── tasks.md             # Phase 2 output (NOT created by plan)
 ```
 
@@ -59,8 +59,8 @@ MCPBrowser/
 ├── src/
 │   ├── mcp-browser.js              # MODIFIED: integrate plugin loader + dispatch tools
 │   ├── actions/
-│   │   ├── plugin-action.js        # NEW: plugin_action dispatch tool
-│   │   ├── plugin-info.js          # NEW: plugin_info tool
+│   │   ├── plugin-action.js        # NEW: browser_plugin_action dispatch tool
+│   │   ├── plugin-info.js          # NEW: browser_plugin_info tool
 │   │   ├── fetch-page.js           # MODIFIED: add detection hook after HTML extraction
 │   │   ├── get-current-html.js     # MODIFIED: add detection hook
 │   │   ├── click-element.js        # MODIFIED: add detection hook
@@ -117,7 +117,7 @@ No constitution violations. Table not needed.
 
 | Test | What It Tests |
 |------|---------------|
-| Add entries to `tests/tool-selection/tool-selection-tests.json` | Agent selects `plugin_action` / `plugin_info` for plugin-related queries |
+| Add entries to `tests/tool-selection/tool-selection-tests.json` | Agent selects `browser_plugin_action` / `browser_plugin_info` for plugin-related queries |
 
 ### Existing Test Regression
 

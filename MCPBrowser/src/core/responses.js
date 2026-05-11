@@ -128,6 +128,23 @@ export class InformationalResponse extends MCPResponse {
     }
     return summary;
   }
+
+  /**
+   * Informational responses omit structuredContent to avoid schema violations.
+   * Their fields (message, reason, status) don't match tool-specific outputSchemas.
+   * @returns {Object} MCP-compliant response with text content only
+   */
+  toMcpFormat() {
+    return {
+      content: [
+        {
+          type: "text",
+          text: this.getTextSummary()
+        }
+      ],
+      isError: false
+    };
+  }
 }
 
 /**
@@ -171,7 +188,7 @@ function getHttpStatusNextSteps(statusCode, url) {
     return [
       'Authentication may be required - try logging in first',
       'Check if you have permission to access this resource',
-      "Use MCPBrowser's fetch_webpage to navigate to the login page first"
+      "Use MCPBrowser's browser_fetch_webpage to navigate to the login page first"
     ];
   }
   
@@ -187,14 +204,14 @@ function getHttpStatusNextSteps(statusCode, url) {
     return [
       'Rate limit exceeded - wait a few minutes before retrying',
       'Reduce request frequency',
-      "Call MCPBrowser's fetch_webpage again after waiting"
+      "Call MCPBrowser's browser_fetch_webpage again after waiting"
     ];
   }
   
   if (statusCode >= 500 && statusCode < 600) {
     return [
       'The server is experiencing issues',
-      "Wait a moment and try again with MCPBrowser's fetch_webpage",
+      "Wait a moment and try again with MCPBrowser's browser_fetch_webpage",
       'Check if the service has a status page for outages'
     ];
   }
@@ -202,7 +219,7 @@ function getHttpStatusNextSteps(statusCode, url) {
   return [
     ...baseSteps,
     'Try again later if this is a temporary issue',
-    "Call MCPBrowser's fetch_webpage to retry the request"
+    "Call MCPBrowser's browser_fetch_webpage to retry the request"
   ];
 }
 
@@ -271,6 +288,23 @@ export class HttpStatusResponse extends MCPResponse {
       summary += `\n\nSuggested actions:\n${this.nextSteps.map(s => `- ${s}`).join('\n')}`;
     }
     return summary;
+  }
+
+  /**
+   * HTTP status responses omit structuredContent to avoid schema violations.
+   * Their fields (url, statusCode, etc.) don't match tool-specific outputSchemas.
+   * @returns {Object} MCP-compliant response with text content only
+   */
+  toMcpFormat() {
+    return {
+      content: [
+        {
+          type: "text",
+          text: this.getTextSummary()
+        }
+      ],
+      isError: false
+    };
   }
 }
 

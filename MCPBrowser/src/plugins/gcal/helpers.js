@@ -235,7 +235,7 @@ export async function checkPrecondition(page, requirement) {
         return {
           met: false,
           error: 'Google Calendar is not the active page.',
-          suggestion: "Use fetch_webpage({ url: 'https://calendar.google.com' }) to navigate to Google Calendar first."
+          suggestion: "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to navigate to Google Calendar first."
         };
       }
       return { met: true };
@@ -247,7 +247,7 @@ export async function checkPrecondition(page, requirement) {
         return {
           met: false,
           error: 'Google Calendar is not ready.',
-          suggestion: "Use fetch_webpage({ url: 'https://calendar.google.com' }) to navigate to Google Calendar."
+          suggestion: "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to navigate to Google Calendar."
         };
       }
       return { met: true };

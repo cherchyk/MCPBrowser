@@ -19,7 +19,7 @@ export const EXECUTION_RESULT_MAX_BYTES = 100_000;
  */
 
 /**
- * Structured response for execute_javascript action
+ * Structured response for browser_execute_javascript action
  */
 export class ExecuteJavascriptResponse extends MCPResponse {
   constructor({ result, type, executionTimeMs, truncated = false, urlChanged = false, currentUrl = '', error = null, nextSteps = [], recommendedPlugins = [] }) {
@@ -57,7 +57,7 @@ export class ExecuteJavascriptResponse extends MCPResponse {
 }
 
 export const EXECUTE_JAVASCRIPT_TOOL = {
-  name: 'execute_javascript',
+  name: 'browser_execute_javascript',
   title: 'Execute JavaScript',
   description: '**BROWSER INTERACTION** - Executes a JavaScript snippet in the active page and returns the result with metadata (execution time, truncation, navigation detection). Use for structured extraction or UI actions that are unreliable via protocol clicks.',
   inputSchema: {
@@ -81,7 +81,12 @@ export const EXECUTE_JAVASCRIPT_TOOL = {
       urlChanged: { type: 'boolean', description: 'True if page URL changed during execution' },
       currentUrl: { type: 'string', description: 'URL after execution' },
       nextSteps: { type: 'array', items: { type: 'string' } },
-      error: { type: ['object', 'null'], description: 'Error object when script throws or times out' }
+      error: { type: ['object', 'null'], description: 'Error object when script throws or times out' },
+      recommendedPlugins: {
+        type: 'array',
+        items: { type: 'object' },
+        description: 'Detected site-specific plugins available for this domain'
+      }
     },
     required: ['type', 'executionTimeMs', 'truncated', 'urlChanged', 'currentUrl', 'nextSteps'],
     additionalProperties: false
@@ -98,7 +103,7 @@ function buildErrorResponse(message, reason, nextSteps) {
 }
 
 export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIMEOUT_DEFAULT_MS, returnType = 'json' }) {
-  logger.info(`execute_javascript called: ${url}`);
+  logger.info(`browser_execute_javascript called: ${url}`);
 
   if (!url) throw new Error('url parameter is required');
   if (!script || typeof script !== 'string' || !script.trim()) throw new Error('script parameter is required');
@@ -113,7 +118,7 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
   try {
     await getBrowser();
   } catch (err) {
-    logger.error(`execute_javascript: Failed to connect to browser: ${err.message}`);
+    logger.error(`browser_execute_javascript: Failed to connect to browser: ${err.message}`);
     return buildErrorResponse(
       `Browser connection failed: ${err.message}`,
       'The browser must be running with remote debugging enabled.',
@@ -128,15 +133,15 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
   const { page, error: pageError } = await getValidatedPage(hostname);
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
-    logger.debug(`execute_javascript: ${pageError || 'No page found for ' + hostname}`);
+    logger.debug(`browser_execute_javascript: ${pageError || 'No page found for ' + hostname}`);
     return buildErrorResponse(
       isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
       isConnectionLost
         ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
         : 'The page must be loaded before you can run scripts on it.',
       [
-        "Use MCPBrowser's fetch_webpage tool to load the page first",
-        "Then retry MCPBrowser's execute_javascript with the same URL"
+        "Use MCPBrowser's browser_fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's browser_execute_javascript with the same URL"
       ]
     );
   }
@@ -204,6 +209,24 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
   }
   const urlChanged = currentUrl !== beforeUrl;
 
+  // Detect CSP block or silent evaluation failure:
+  // When page.evaluate() is blocked by CSP, Puppeteer returns undefined (not an error).
+  // Distinguish this from a script that intentionally returns nothing.
+  if (evalResult === undefined || evalResult === null) {
+    return new ExecuteJavascriptResponse({
+      result: null,
+      type: 'undefined',
+      executionTimeMs,
+      truncated: false,
+      urlChanged,
+      currentUrl,
+      error: {
+        name: 'EvaluationEmpty',
+        message: 'Script evaluation returned no result. Possible causes: page Content Security Policy (CSP) blocked evaluation, the script has no return value, or the page context is sandboxed. Try browser_take_screenshot to verify the page is loaded, or use a simpler expression like "document.title" to test page accessibility.'
+      }
+    });
+  }
+
   if (evalResult?.error) {
     return new ExecuteJavascriptResponse({
       result: null,
@@ -227,7 +250,7 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
     currentUrl,
     nextSteps: [
       ...getPluginNextSteps(currentUrl, ''),
-      'Use click_element or type_text for follow-up actions',
+      'Use browser_click_element or browser_type_text for follow-up actions',
       'Inspect urlChanged to decide if navigation occurred',
       serialization.truncated ? 'Narrow your selector or reduce returned fields to avoid truncation' : 'Proceed with the returned data'
     ],
@@ -243,7 +266,7 @@ export async function executeJavascriptWithReady(params) {
       if (page) await waitForPageReady(page, { afterInteraction: true });
     }
   } catch (err) {
-    logger.debug(`execute_javascript post-wait skipped: ${err.message}`);
+    logger.debug(`browser_execute_javascript post-wait skipped: ${err.message}`);
   }
   return response;
 }

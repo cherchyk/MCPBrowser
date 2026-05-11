@@ -27,7 +27,7 @@
 
 ## Assumptions
 
-- The plugin system from feature 002-site-plugins is implemented and available (plugin loader, registry, detection, `plugin_action`/`plugin_info` dispatch tools).
+- The plugin system from feature 002-site-plugins is implemented and available (plugin loader, registry, detection, `browser_plugin_action`/`browser_plugin_info` dispatch tools).
 - The user is already authenticated into Gmail in the browser session managed by MCPBrowser before invoking plugin actions. The plugin does not handle Google account login.
 - Gmail is accessed via the standard web interface at `mail.google.com` (not the basic HTML version or third-party clients).
 - The plugin targets the default Gmail inbox layout (default, comfortable, or compact density). Split-pane or other experimental layouts are out of scope for v1.
@@ -44,14 +44,14 @@ An AI agent navigates to Gmail and asks the plugin to list emails in the inbox (
 
 **Why this priority**: Listing emails is the foundational read operation. Every other Gmail workflow (reading, replying, organizing) starts with knowing what emails exist. This also validates that the plugin's Gmail-specific selectors and detection work correctly end-to-end.
 
-**Independent Test**: Navigate MCPBrowser to `mail.google.com`, invoke `plugin_action({ plugin: "gmail", action: "list_emails" })`, and verify structured email data is returned with sender, subject, date, and snippet for each visible email.
+**Independent Test**: Navigate MCPBrowser to `mail.google.com`, invoke `browser_plugin_action({ plugin: "gmail", action: "list_emails" })`, and verify structured email data is returned with sender, subject, date, and snippet for each visible email.
 
 **Acceptance Scenarios**:
 
 1. **Given** the browser is on the Gmail inbox with multiple emails, **When** the agent calls `list_emails` with no parameters, **Then** the plugin returns up to 25 emails (default limit) with sender, subject, date, snippet, and read/unread status for each.
 2. **Given** the browser is on Gmail, **When** the agent calls `list_emails` with `{ folder: "sent" }`, **Then** the plugin navigates to the Sent folder and returns emails from that folder.
 3. **Given** the browser is on Gmail, **When** the agent calls `list_emails` with `{ limit: 5 }`, **Then** exactly 5 or fewer emails are returned.
-4. **Given** the browser is on a page that is not Gmail, **When** the agent calls `list_emails`, **Then** the plugin returns an error stating Gmail must be the active page and suggesting `fetch_webpage` to navigate there first.
+4. **Given** the browser is on a page that is not Gmail, **When** the agent calls `list_emails`, **Then** the plugin returns an error stating Gmail must be the active page and suggesting `browser_fetch_webpage` to navigate there first.
 
 ---
 
@@ -61,7 +61,7 @@ The agent selects an email from the list (or specifies one by subject/position) 
 
 **Why this priority**: Reading email content is the core value proposition — the agent cannot summarize, analyze, or respond to emails without being able to read them. Combined with list_emails, this completes the essential read path.
 
-**Independent Test**: After listing emails, invoke `plugin_action({ plugin: "gmail", action: "read_email", params: { index: 0 } })` and verify the full email body, sender, recipients, date, and attachment info are returned.
+**Independent Test**: After listing emails, invoke `browser_plugin_action({ plugin: "gmail", action: "read_email", params: { index: 0 } })` and verify the full email body, sender, recipients, date, and attachment info are returned.
 
 **Acceptance Scenarios**:
 
@@ -77,7 +77,7 @@ The agent asks the plugin to search Gmail for specific emails using Gmail's sear
 
 **Why this priority**: Search is essential for any realistic email workflow. Users rarely want to scan the entire inbox; they need to find specific emails by sender, subject, date, or keywords. Gmail's search is powerful and the plugin should leverage it fully.
 
-**Independent Test**: Invoke `plugin_action({ plugin: "gmail", action: "search_emails", params: { query: "from:someone@example.com" } })` and verify matching emails are returned in the same structured format as `list_emails`.
+**Independent Test**: Invoke `browser_plugin_action({ plugin: "gmail", action: "search_emails", params: { query: "from:someone@example.com" } })` and verify matching emails are returned in the same structured format as `list_emails`.
 
 **Acceptance Scenarios**:
 
@@ -93,7 +93,7 @@ The agent asks the plugin to compose and send a new email. The plugin opens Gmai
 
 **Why this priority**: Composing email is the primary write operation. While reading is more common for AI agents, the ability to draft and send emails on behalf of the user is a high-value automation. It's P2 because read-path actions must work first.
 
-**Independent Test**: Invoke `plugin_action({ plugin: "gmail", action: "compose_email", params: { to: "test@example.com", subject: "Hello", body: "Test message" } })` and verify the compose window is populated with the correct fields.
+**Independent Test**: Invoke `browser_plugin_action({ plugin: "gmail", action: "compose_email", params: { to: "test@example.com", subject: "Hello", body: "Test message" } })` and verify the compose window is populated with the correct fields.
 
 **Acceptance Scenarios**:
 
@@ -110,7 +110,7 @@ The agent is viewing an email thread and asks the plugin to reply. The plugin cl
 
 **Why this priority**: Replying is the second most common write operation after composing, and a natural follow-up to reading an email. Combined with read_email, this enables full conversational email workflows.
 
-**Independent Test**: After reading an email, invoke `plugin_action({ plugin: "gmail", action: "reply_email", params: { body: "Thanks, noted." } })` and verify the reply window is populated and optionally sent.
+**Independent Test**: After reading an email, invoke `browser_plugin_action({ plugin: "gmail", action: "reply_email", params: { body: "Thanks, noted." } })` and verify the reply window is populated and optionally sent.
 
 **Acceptance Scenarios**:
 
@@ -126,7 +126,7 @@ The agent asks the plugin to perform organizational or forwarding actions on ema
 
 **Why this priority**: Forwarding and organization actions complete the email management lifecycle but are lower priority than reading, searching, and composing. They're valuable for delegation workflows (forward) and inbox-zero workflows (archive, label, delete).
 
-**Independent Test**: After reading an email, invoke `plugin_action({ plugin: "gmail", action: "forward_email", params: { to: "colleague@example.com" } })` and verify the forward compose window is populated with the original message and the new recipient.
+**Independent Test**: After reading an email, invoke `browser_plugin_action({ plugin: "gmail", action: "forward_email", params: { to: "colleague@example.com" } })` and verify the forward compose window is populated with the original message and the new recipient.
 
 **Acceptance Scenarios**:
 
@@ -145,7 +145,7 @@ The agent asks the plugin to toggle the read/unread status of an email from the 
 
 **Why this priority**: A convenience action for inbox management. Lower priority than core read/write/search operations.
 
-**Independent Test**: Invoke `plugin_action({ plugin: "gmail", action: "mark_read", params: { index: 0 } })` on an unread email and verify its visual status changes.
+**Independent Test**: Invoke `browser_plugin_action({ plugin: "gmail", action: "mark_read", params: { index: 0 } })` on an unread email and verify its visual status changes.
 
 **Acceptance Scenarios**:
 

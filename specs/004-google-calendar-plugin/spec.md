@@ -10,14 +10,14 @@
 ### Session 2026-04-06
 
 - Q: What should the default limit be when `list_events` is called without a `limit` parameter? → A: 25 events — matches the Gmail plugin's `list_emails` default of 25; large enough for a full week of meetings, small enough to keep AI context windows manageable.
-- Q: What is the canonical plugin name used in the manifest and all `plugin_action`/`plugin_info` calls? → A: `gcal` — short, unambiguous, and consistent with the abbreviated naming convention.
+- Q: What is the canonical plugin name used in the manifest and all `browser_plugin_action`/`browser_plugin_info` calls? → A: `gcal` — short, unambiguous, and consistent with the abbreviated naming convention.
 - Q: What happens when the calendar view changes between `list_events` and a subsequent index-targeted action (e.g., `edit_event`)? → A: Re-detect from current DOM — if the view or visible events have changed since the last `list_events` call, index-targeted actions must re-scan visible events and return an error if the target index is out of range, suggesting the agent call `list_events` again. Same stateless pattern as the Gmail plugin.
 - Q: When `list_events` is called with no `view` or `date` parameter, should the plugin use the currently-displayed view or switch to a specific default? → A: Use the currently-displayed view — respect whatever view the user is already looking at (day, week, month, schedule) and extract events from it without forcing a view switch.
 - Q: Should the plugin declare explicit cross-plugin interaction patterns with the Gmail plugin (e.g., "schedule a meeting from this email")? → A: No cross-plugin coupling in v1 — plugins are independent; the AI agent orchestrates multi-plugin workflows. The architecture does not preclude future cross-plugin helpers.
 
 ## Assumptions
 
-- The plugin system from feature 002-site-plugins is implemented and available (plugin loader, registry, detection, `plugin_action`/`plugin_info` dispatch tools).
+- The plugin system from feature 002-site-plugins is implemented and available (plugin loader, registry, detection, `browser_plugin_action`/`browser_plugin_info` dispatch tools).
 - The user is already authenticated into a Google account in the browser session managed by MCPBrowser before invoking plugin actions. The plugin does not handle Google account login.
 - Google Calendar is accessed via the standard web interface at `calendar.google.com` (not embedded calendar widgets or third-party clients).
 - The plugin targets the default Google Calendar layout (day, week, month, schedule views). Custom or workspace-specific layouts are out of scope for v1.
@@ -36,14 +36,14 @@ An AI agent navigates to Google Calendar and asks the plugin to list events for 
 
 **Why this priority**: Listing events is the foundational read operation. Every calendar workflow — checking availability, scheduling, rescheduling — starts with knowing what events already exist. This validates that the plugin's detection, navigation, and extraction work end-to-end.
 
-**Independent Test**: Navigate MCPBrowser to `calendar.google.com`, invoke `plugin_action({ plugin: "gcal", action: "list_events" })`, and verify structured event data is returned with title, date/time, location, and calendar name for each visible event.
+**Independent Test**: Navigate MCPBrowser to `calendar.google.com`, invoke `browser_plugin_action({ plugin: "gcal", action: "list_events" })`, and verify structured event data is returned with title, date/time, location, and calendar name for each visible event.
 
 **Acceptance Scenarios**:
 
 1. **Given** the browser is on Google Calendar showing today's schedule, **When** the agent calls `list_events` with no parameters, **Then** the plugin returns up to 25 events (default limit) visible in the current view with title, start time, end time, location (if set), calendar name, and all-day flag for each.
 2. **Given** the browser is on Google Calendar, **When** the agent calls `list_events` with `{ date: "2026-04-10" }`, **Then** the plugin navigates to April 10, 2026 and returns events for that day.
 3. **Given** the browser is on Google Calendar, **When** the agent calls `list_events` with `{ view: "week" }`, **Then** the plugin switches to week view and returns all events for the current week.
-4. **Given** the browser is on a page that is not Google Calendar, **When** the agent calls `list_events`, **Then** the plugin returns an error stating Google Calendar must be the active page and suggests `fetch_webpage` to navigate there first.
+4. **Given** the browser is on a page that is not Google Calendar, **When** the agent calls `list_events`, **Then** the plugin returns an error stating Google Calendar must be the active page and suggests `browser_fetch_webpage` to navigate there first.
 5. **Given** the agent calls `list_events` for a day with no events, **Then** an empty list is returned with a message confirming the date and that no events are scheduled.
 
 ---
@@ -54,7 +54,7 @@ The agent selects an event from the list (or specifies one by index) and asks th
 
 **Why this priority**: Reading full event details is the core value proposition — the agent cannot summarize meetings, prepare agendas, or understand scheduling conflicts without seeing complete event data. Combined with list_events, this completes the essential read path.
 
-**Independent Test**: After listing events, invoke `plugin_action({ plugin: "gcal", action: "read_event", params: { index: 0 } })` and verify the full event details are returned.
+**Independent Test**: After listing events, invoke `browser_plugin_action({ plugin: "gcal", action: "read_event", params: { index: 0 } })` and verify the full event details are returned.
 
 **Acceptance Scenarios**:
 
@@ -71,7 +71,7 @@ The agent asks the plugin to create a new calendar event. The plugin opens the e
 
 **Why this priority**: Creating events is the primary write operation and the highest-value action for an AI scheduling assistant. Agents need to create events from natural-language instructions, email content, or conversational context. This is P1 because calendar creation is a core differentiator for an AI agent.
 
-**Independent Test**: Invoke `plugin_action({ plugin: "gcal", action: "create_event", params: { title: "Team Standup", date: "2026-04-07", startTime: "09:00", endTime: "09:30" } })` and verify the event creation form is populated with the correct fields.
+**Independent Test**: Invoke `browser_plugin_action({ plugin: "gcal", action: "create_event", params: { title: "Team Standup", date: "2026-04-07", startTime: "09:00", endTime: "09:30" } })` and verify the event creation form is populated with the correct fields.
 
 **Acceptance Scenarios**:
 
@@ -89,7 +89,7 @@ The agent asks the plugin to search Google Calendar for events matching a query.
 
 **Why this priority**: Search enables agents to find specific meetings ("when is my next dentist appointment?", "find all 1:1s with Alice") without scanning through dates manually. It's P2 because list_events with specific dates covers many use cases, but search is essential for keyword-based lookups.
 
-**Independent Test**: Invoke `plugin_action({ plugin: "gcal", action: "search_events", params: { query: "standup" } })` and verify matching events are returned in the same structured format as `list_events`.
+**Independent Test**: Invoke `browser_plugin_action({ plugin: "gcal", action: "search_events", params: { query: "standup" } })` and verify matching events are returned in the same structured format as `list_events`.
 
 **Acceptance Scenarios**:
 
@@ -105,7 +105,7 @@ The agent asks the plugin to modify an existing event — change its time, title
 
 **Why this priority**: Rescheduling and updating events is a common AI-assistant workflow ("move my 2pm to 3pm", "add Alice to the meeting"). It's P2 because creating and reading events must work first.
 
-**Independent Test**: After reading an event, invoke `plugin_action({ plugin: "gcal", action: "edit_event", params: { index: 0, startTime: "15:00", endTime: "16:00", save: true } })` and verify the event's time is updated.
+**Independent Test**: After reading an event, invoke `browser_plugin_action({ plugin: "gcal", action: "edit_event", params: { index: 0, startTime: "15:00", endTime: "16:00", save: true } })` and verify the event's time is updated.
 
 **Acceptance Scenarios**:
 
@@ -122,7 +122,7 @@ The agent asks the plugin to respond to a calendar invitation — accept, declin
 
 **Why this priority**: RSVP is a key scheduling workflow for AI agents managing a user's calendar ("accept the meeting with Alice", "decline the Friday social"). It's P2 because it requires the read path (list + read) to identify the event first.
 
-**Independent Test**: After reading an event with an invitation, invoke `plugin_action({ plugin: "gcal", action: "rsvp_event", params: { index: 0, response: "accept" } })` and verify the RSVP status is updated.
+**Independent Test**: After reading an event with an invitation, invoke `browser_plugin_action({ plugin: "gcal", action: "rsvp_event", params: { index: 0, response: "accept" } })` and verify the RSVP status is updated.
 
 **Acceptance Scenarios**:
 
@@ -139,7 +139,7 @@ The agent asks the plugin to delete a calendar event. The plugin opens the event
 
 **Why this priority**: Deleting events is a lower-frequency action compared to creating, reading, and editing. It completes the CRUD lifecycle but is not commonly the primary AI agent task.
 
-**Independent Test**: After listing events, invoke `plugin_action({ plugin: "gcal", action: "delete_event", params: { index: 0 } })` and verify the event is removed.
+**Independent Test**: After listing events, invoke `browser_plugin_action({ plugin: "gcal", action: "delete_event", params: { index: 0 } })` and verify the event is removed.
 
 **Acceptance Scenarios**:
 
@@ -155,7 +155,7 @@ The agent asks the plugin to check whether a time slot is free or busy on the us
 
 **Why this priority**: Availability checking is a convenience built on top of `list_events` — the agent could manually list events and check for overlaps, but a dedicated action simplifies multi-step scheduling workflows. It's P3 because it can be composed from P1 actions.
 
-**Independent Test**: Invoke `plugin_action({ plugin: "gcal", action: "check_availability", params: { date: "2026-04-07", startTime: "14:00", endTime: "15:00" } })` and verify a free/busy response is returned.
+**Independent Test**: Invoke `browser_plugin_action({ plugin: "gcal", action: "check_availability", params: { date: "2026-04-07", startTime: "14:00", endTime: "15:00" } })` and verify a free/busy response is returned.
 
 **Acceptance Scenarios**:
 

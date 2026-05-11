@@ -29,15 +29,15 @@ Restart MCPBrowser. The plugin loader will load `plugins/gmail/index.js` and log
 ### 1. Navigate to Gmail
 
 ```
-fetch_webpage({ url: "https://mail.google.com" })
+browser_fetch_webpage({ url: "https://mail.google.com" })
 ```
 
-Response includes plugin detection: `"Gmail plugin available — use plugin_info for actions"`
+Response includes plugin detection: `"Gmail plugin available — use browser_plugin_info for actions"`
 
 ### 2. Discover Available Actions
 
 ```
-plugin_info({ plugin: "gmail" })
+browser_plugin_info({ plugin: "gmail" })
 ```
 
 Returns all 11 actions with their parameters.
@@ -45,7 +45,7 @@ Returns all 11 actions with their parameters.
 ### 3. List Inbox Emails
 
 ```
-plugin_action({ plugin: "gmail", action: "list_emails" })
+browser_plugin_action({ plugin: "gmail", action: "list_emails" })
 ```
 
 Navigates to `#inbox` via URL hash (Tier 1). Returns up to 25 emails with sender, subject, date, snippet, and read/unread status.
@@ -53,7 +53,7 @@ Navigates to `#inbox` via URL hash (Tier 1). Returns up to 25 emails with sender
 ### 4. Read an Email
 
 ```
-plugin_action({ plugin: "gmail", action: "read_email", params: { index: 0 } })
+browser_plugin_action({ plugin: "gmail", action: "read_email", params: { index: 0 } })
 ```
 
 Opens the first email (via URL hash navigation to thread, or keyboard `o`). Returns the full thread with messages, recipients, and attachments.
@@ -61,7 +61,7 @@ Opens the first email (via URL hash navigation to thread, or keyboard `o`). Retu
 ### 5. Reply to the Email
 
 ```
-plugin_action({ plugin: "gmail", action: "reply_email", params: { body: "Thanks, I'll review this." } })
+browser_plugin_action({ plugin: "gmail", action: "reply_email", params: { body: "Thanks, I'll review this." } })
 ```
 
 Pre-checks that a thread is open (via URL hash). Presses `r` keyboard shortcut (Tier 2) to open reply. Fills body via `aria-label="Message Body"` (Tier 3). Leaves as draft. Add `send: true` to send via `Ctrl+Enter`.
@@ -69,7 +69,7 @@ Pre-checks that a thread is open (via URL hash). Presses `r` keyboard shortcut (
 ### 6. Search for Specific Emails
 
 ```
-plugin_action({ plugin: "gmail", action: "search_emails", params: { query: "from:boss@company.com has:attachment" } })
+browser_plugin_action({ plugin: "gmail", action: "search_emails", params: { query: "from:boss@company.com has:attachment" } })
 ```
 
 Navigates to `#search/from:boss@company.com+has:attachment` via URL hash (Tier 1). Extracts results using same data extraction as `list_emails`.

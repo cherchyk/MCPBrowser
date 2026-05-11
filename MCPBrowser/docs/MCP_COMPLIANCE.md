@@ -27,11 +27,11 @@ Per the MCP spec, each tool definition must include:
 
 All 5 tools conform to the specification:
 
-### 1. fetch_webpage ✅
+### 1. browser_fetch_webpage ✅
 
 ```javascript
 {
-  name: "fetch_webpage",
+  name: "browser_fetch_webpage",
   title: "Fetch Web Page",
   description: "...",
   inputSchema: {
@@ -53,11 +53,11 @@ All 5 tools conform to the specification:
 - ✅ InputSchema: Valid JSON Schema with required fields
 - ✅ OutputSchema: Uses oneOf for success/error variants
 
-### 2. click_element ✅
+### 2. browser_click_element ✅
 
 ```javascript
 {
-  name: "click_element",
+  name: "browser_click_element",
   title: "Click Element",
   description: "...",
   inputSchema: {
@@ -79,11 +79,11 @@ All 5 tools conform to the specification:
 - ✅ InputSchema: Clear parameter definitions
 - ✅ OutputSchema: Documented return structure
 
-### 3. type_text ✅
+### 3. browser_type_text ✅
 
 ```javascript
 {
-  name: "type_text",
+  name: "browser_type_text",
   title: "Type Text",
   description: "...",
   inputSchema: {
@@ -105,11 +105,11 @@ All 5 tools conform to the specification:
 - ✅ InputSchema: All parameters documented
 - ✅ OutputSchema: Success/error variants defined
 
-### 4. close_tab ✅
+### 4. browser_close_tab ✅
 
 ```javascript
 {
-  name: "close_tab",
+  name: "browser_close_tab",
   title: "Close Tab",
   description: "...",
   inputSchema: {
@@ -131,11 +131,11 @@ All 5 tools conform to the specification:
 - ✅ InputSchema: Simple, well-defined
 - ✅ OutputSchema: Proper structure
 
-### 5. get_current_html ✅
+### 5. browser_get_current_html ✅
 
 ```javascript
 {
-  name: "get_current_html",
+  name: "browser_get_current_html",
   title: "Get Current HTML",
   description: "...",
   inputSchema: {
@@ -153,7 +153,7 @@ All 5 tools conform to the specification:
 **Compliance:**
 - ✅ Name: Valid format
 - ✅ Title: Clear purpose
-- ✅ Description: Distinguishes from fetch_webpage
+- ✅ Description: Distinguishes from browser_fetch_webpage
 - ✅ InputSchema: Well-structured
 - ✅ OutputSchema: Consistent pattern
 
@@ -168,11 +168,11 @@ Per spec requirements:
 - ✅ No spaces/special chars: Compliant
 
 **Tool Names:**
-- `fetch_webpage`
-- `click_element`
-- `type_text`
-- `close_tab`
-- `get_current_html`
+- `browser_fetch_webpage`
+- `browser_click_element`
+- `browser_type_text`
+- `browser_close_tab`
+- `browser_get_current_html`
 
 ## Input Schema Standards ✅
 
@@ -240,7 +240,7 @@ Implements both error types per spec:
   structuredContent: {
     success: false,
     message: "No open page found...",
-    nextSteps: ["Use fetch_webpage to load the page first"]
+    nextSteps: ["Use browser_fetch_webpage to load the page first"]
   }
 }
 ```
@@ -267,7 +267,7 @@ Following MCP security recommendations:
 ### Before (Non-Compliant)
 ```javascript
 {
-  name: "close_tab",
+  name: "browser_close_tab",
   description: "...",
   inputSchema: { ... },
   outputSchema: { ... },
@@ -280,7 +280,7 @@ Following MCP security recommendations:
 ### After (Compliant)
 ```javascript
 {
-  name: "close_tab",
+  name: "browser_close_tab",
   title: "Close Tab",  // ✅ Title at top level
   description: "...",
   inputSchema: { ... },

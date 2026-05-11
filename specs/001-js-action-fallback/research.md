@@ -12,7 +12,7 @@
 - Rationale: Avoids oversized LLM payloads (Gmail inbox 220KB) while still returning meaningful structured data.
 - Alternatives considered: No cap rejected (PII risk + latency); smaller cap (20KB) rejected to preserve small lists.
 
-3) Serialization strategy for `execute_javascript`
+3) Serialization strategy for `browser_execute_javascript`
 - Decision: Use `page.evaluate` return value serialization with guards: primitives direct; plain objects/arrays via JSON-safe clone; DOM nodes converted to `outerHTML`; errors captured with message + stack; strip functions/symbols.
 - Rationale: Keeps deterministic, MCP-safe payloads; avoids circular references and unsupported types.
 - Alternatives considered: `JSON.stringify` on raw value (fails on DOM/Map/Set) or full structured clone (heavier, unnecessary for contract).

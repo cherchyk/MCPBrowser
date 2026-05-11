@@ -16,7 +16,7 @@ import logger from '../core/logger.js';
 // ============================================================================
 
 /**
- * Response for successful scroll_page operations
+ * Response for successful browser_scroll_page operations
  * Returns scroll result with new scroll position
  */
 export class ScrollPageSuccessResponse extends MCPResponse {
@@ -92,9 +92,9 @@ export class ScrollPageSuccessResponse extends MCPResponse {
  * @type {Tool}
  */
 export const SCROLL_PAGE_TOOL = {
-  name: "scroll_page",
+  name: "browser_scroll_page",
   title: "Scroll Page",
-  description: "**PAGE NAVIGATION** - Scrolls within an already-loaded page. Use before take_screenshot to capture different parts of the page, or to bring elements into view before interaction.\n\n**PREREQUISITE**: Page MUST be loaded with fetch_webpage first.\n\n**SCROLL MODES**:\n- By direction: Scroll up/down/left/right by pixel amount\n- To element: Scroll until a specific element is visible\n- To position: Scroll to absolute coordinates",
+  description: "**PAGE NAVIGATION** - Scrolls within an already-loaded page. Use before browser_take_screenshot to capture different parts of the page, or to bring elements into view before interaction.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first.\n\n**SCROLL MODES**:\n- By direction: Scroll up/down/left/right by pixel amount\n- To element: Scroll until a specific element is visible\n- To position: Scroll to absolute coordinates",
   inputSchema: {
     type: "object",
     properties: {
@@ -166,7 +166,7 @@ export const SCROLL_PAGE_TOOL = {
  * @returns {Promise<Object>} Result object with scroll position data
  */
 export async function scrollPage({ url, direction, amount = 500, selector, x, y }) {
-  logger.info(`scroll_page called: url=${url}, direction=${direction}, amount=${amount}, selector=${selector}, x=${x}, y=${y}`);
+  logger.info(`browser_scroll_page called: url=${url}, direction=${direction}, amount=${amount}, selector=${selector}, x=${x}, y=${y}`);
   
   if (!url) {
     throw new Error("url parameter is required");
@@ -183,7 +183,7 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
   try {
     await getBrowser();
   } catch (err) {
-    logger.error(`scroll_page: Failed to connect to browser: ${err.message}`);
+    logger.error(`browser_scroll_page: Failed to connect to browser: ${err.message}`);
     return new InformationalResponse(
       `Browser connection failed: ${err.message}`,
       'The browser must be running with remote debugging enabled.',
@@ -200,15 +200,15 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
   
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
-    logger.debug(`scroll_page: ${pageError || 'No page found for ' + hostname}`);
+    logger.debug(`browser_scroll_page: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
       isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
       isConnectionLost 
         ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
         : 'The page must be loaded before you can scroll',
       [
-        "Use MCPBrowser's fetch_webpage tool to load the page first",
-        "Then retry MCPBrowser's scroll_page with the same URL"
+        "Use MCPBrowser's browser_fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's browser_scroll_page with the same URL"
       ]
     );
   }
@@ -219,7 +219,7 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
     // Determine scroll mode and execute
     if (selector) {
       // Scroll to element mode
-      logger.debug(`scroll_page: Scrolling to element: ${selector}`);
+      logger.debug(`browser_scroll_page: Scrolling to element: ${selector}`);
       
       const elementExists = await page.$(selector);
       if (!elementExists) {
@@ -227,7 +227,7 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
           `Element not found: ${selector}`,
           'The specified CSS selector did not match any element on the page.',
           [
-            "Use MCPBrowser's get_current_html to inspect the page structure",
+            "Use MCPBrowser's browser_get_current_html to inspect the page structure",
             "Verify the CSS selector is correct",
             "Try a different selector"
           ]
@@ -243,7 +243,7 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
       
     } else if (typeof x === 'number' && typeof y === 'number') {
       // Absolute position mode
-      logger.debug(`scroll_page: Scrolling to absolute position: (${x}, ${y})`);
+      logger.debug(`browser_scroll_page: Scrolling to absolute position: (${x}, ${y})`);
       
       await page.evaluate(({ scrollX, scrollY }) => {
         window.scrollTo(scrollX, scrollY);
@@ -251,7 +251,7 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
       
     } else if (direction) {
       // Directional scroll mode
-      logger.debug(`scroll_page: Scrolling ${direction} by ${amount}px`);
+      logger.debug(`browser_scroll_page: Scrolling ${direction} by ${amount}px`);
       
       const scrollDeltas = {
         up: { x: 0, y: -amount },
@@ -271,7 +271,7 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
       
     } else {
       // No scroll parameters provided - just return current position
-      logger.debug(`scroll_page: No scroll action specified, returning current position`);
+      logger.debug(`browser_scroll_page: No scroll action specified, returning current position`);
     }
     
     // Small delay to let scroll complete
@@ -287,7 +287,7 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
       viewportHeight: window.innerHeight
     }));
     
-    logger.info(`scroll_page completed: position=(${scrollInfo.scrollX}, ${scrollInfo.scrollY}), page=(${scrollInfo.pageWidth}x${scrollInfo.pageHeight})`);
+    logger.info(`browser_scroll_page completed: position=(${scrollInfo.scrollX}, ${scrollInfo.scrollY}), page=(${scrollInfo.pageWidth}x${scrollInfo.pageHeight})`);
     
     return new ScrollPageSuccessResponse(
       currentUrl,
@@ -298,20 +298,20 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y 
       scrollInfo.viewportWidth,
       scrollInfo.viewportHeight,
       [
-        "Use MCPBrowser's take_screenshot to capture the current view",
-        "Use MCPBrowser's scroll_page again to navigate further",
-        "Use MCPBrowser's click_element to interact with visible elements",
-        "Use MCPBrowser's get_current_html to get the page content"
+        "Use MCPBrowser's browser_take_screenshot to capture the current view",
+        "Use MCPBrowser's browser_scroll_page again to navigate further",
+        "Use MCPBrowser's browser_click_element to interact with visible elements",
+        "Use MCPBrowser's browser_get_current_html to get the page content"
       ]
     );
   } catch (err) {
-    logger.error(`scroll_page failed: ${err.message}`);
+    logger.error(`browser_scroll_page failed: ${err.message}`);
     return new InformationalResponse(
       `Failed to scroll page: ${err.message}`,
       'Could not scroll the page. The page may have navigated away or the connection was lost.',
       [
-        "Try MCPBrowser's fetch_webpage to reload the page",
-        "Use MCPBrowser's close_tab and start fresh if needed"
+        "Try MCPBrowser's browser_fetch_webpage to reload the page",
+        "Use MCPBrowser's browser_close_tab and start fresh if needed"
       ]
     );
   }

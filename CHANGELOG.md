@@ -12,13 +12,13 @@ All notable changes to the MCPBrowser project (both the MCP server and VS Code e
 - 🏷️ **Updated metadata**: Extension displayName, description, and keywords now mention Kiro, Antigravity, and Open VSX
 
 ### MCP Server
-- ⚠️ **BREAKING CHANGE: `type_text` API redesigned**: Now accepts a `fields` array to fill multiple form fields in a single call
+- ⚠️ **BREAKING CHANGE: `browser_type_text` API redesigned**: Now accepts a `fields` array to fill multiple form fields in a single call
   - Removed `selector`, `text`, `clear`, `waitForElementTimeout` top-level parameters
   - New `fields` array parameter with each field containing: `selector`, `text`, `clear` (optional), `waitForElementTimeout` (optional)
   - Removed `typeDelay` parameter (now hardcoded to 10ms for reliability)
   - Improved error handling: shows which field failed (X of Y), which fields succeeded, and "Do NOT re-type" guidance for agents
-- 📜 **New `scroll_page` tool**: Scroll within pages by direction/amount, to element, or to absolute position
-  - Use before `take_screenshot` to capture different parts of the page
+- 📜 **New `browser_scroll_page` tool**: Scroll within pages by direction/amount, to element, or to absolute position
+  - Use before `browser_take_screenshot` to capture different parts of the page
   - Returns current scroll position, page dimensions, and viewport size
 
 ## [0.3.4] - 2026-01-02
@@ -69,9 +69,9 @@ All notable changes to the MCPBrowser project (both the MCP server and VS Code e
 ## [0.2.36] - 2025-12-29
 
 ### MCP Server
-- ✨ **Interactive features**: `click_element`, `type_text`, `get_current_html`, `close_tab`
+- ✨ **Interactive features**: `browser_click_element`, `browser_type_text`, `browser_get_current_html`, `browser_close_tab`
 - 🏗️ **Architecture refactor**: Modular structure with separate core/ and actions/ directories
-- ⚡ **Performance**: `get_current_html` - 10-50x faster HTML extraction without page reload
+- ⚡ **Performance**: `browser_get_current_html` - 10-50x faster HTML extraction without page reload
 - 🧪 **Test infrastructure**: Separated unit (158 tests, CI-safe) and integration tests (37 tests)
 - 🔧 **Test runner**: `npm test` runs all, `npm run test:ci` for CI/CD (no browser)
 - 📦 **Codebase**: Refactored from monolithic to clean modular architecture

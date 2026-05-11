@@ -1,6 +1,6 @@
 {
   "name": "mcpbrowser",
-"version": "0.3.37",
+  "version": "0.3.46",
   "mcpName": "io.github.cherchyk/mcpbrowser",
   "type": "module",
   "description": "MCP browser server - fetch web pages using real Chrome/Edge/Brave browser. Handles authentication, SSO, CAPTCHAs, and anti-bot protection. Browser automation for AI assistants.",
@@ -12,6 +12,7 @@
     "mcp": "node src/mcp-browser.js",
     "test": "node tests/run-all.js",
     "test:unit": "node tests/run-unit.js",
+    "test:cli": "node tests/cli.test.js",
     "test:descriptions": "node tests/tool-selection/run-tool-selection-tests.js"
   },
   "keywords": [
