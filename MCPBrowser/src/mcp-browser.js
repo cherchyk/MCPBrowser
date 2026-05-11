@@ -32,6 +32,7 @@ import { takeScreenshot, TAKE_SCREENSHOT_TOOL } from './actions/take-screenshot.
 import { scrollPage, SCROLL_PAGE_TOOL } from './actions/scroll-page.js';
 import { executeJavascript, EXECUTE_JAVASCRIPT_TOOL } from './actions/execute-javascript.js';
 import { navigateHistory, NAVIGATE_HISTORY_TOOL } from './actions/navigate-history.js';
+import { detectForms, DETECT_FORMS_TOOL } from './actions/detect-forms.js';
 
 // Import plugin dispatch tools
 import { pluginAction, PLUGIN_ACTION_TOOL } from './actions/plugin-action.js';
@@ -80,6 +81,7 @@ async function main() {
     TAKE_SCREENSHOT_TOOL,
     SCROLL_PAGE_TOOL,
     NAVIGATE_HISTORY_TOOL,
+    DETECT_FORMS_TOOL,
     PLUGIN_INFO_TOOL,
     PLUGIN_ACTION_TOOL
   ];
@@ -144,6 +146,10 @@ async function main() {
 
         case "browser_navigate_history":
           result = await navigateHistory(safeArgs);
+          break;
+
+        case "browser_detect_forms":
+          result = await detectForms(safeArgs);
           break;
 
         case "browser_plugin_info":
@@ -213,6 +219,7 @@ export {
   takeScreenshot,
   scrollPage,
   navigateHistory,
+  detectForms,
   handleAcceptEula,
   // CLI exports
   isCliMode,

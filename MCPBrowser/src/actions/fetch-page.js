@@ -9,6 +9,7 @@ import { isLikelyAuthUrl, waitForAuth } from '../core/auth.js';
 import { MCPResponse, ErrorResponse, HttpStatusResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
+import { scanPageForms } from './detect-forms.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -27,8 +28,9 @@ export class FetchPageSuccessResponse extends MCPResponse {
    * @param {string} html - Page HTML content
    * @param {string[]} nextSteps - Suggested next actions
    * @param {Array} [recommendedPlugins] - Detected plugin metadata
+   * @param {Object} [formData] - Detected forms data
    */
-  constructor(currentUrl, html, nextSteps, recommendedPlugins = []) {
+  constructor(currentUrl, html, nextSteps, recommendedPlugins = [], formData = null) {
     super(nextSteps);
     
     if (typeof currentUrl !== 'string') {
@@ -41,13 +43,19 @@ export class FetchPageSuccessResponse extends MCPResponse {
     this.currentUrl = currentUrl;
     this.html = html;
     this.recommendedPlugins = recommendedPlugins;
+    this.forms = formData?.forms || [];
+    this.orphanedFields = formData?.orphanedFields || [];
+    this.totalFieldCount = formData?.totalFieldCount || 0;
   }
 
   _getAdditionalFields() {
     return {
       currentUrl: this.currentUrl,
       html: this.html,
-      recommendedPlugins: this.recommendedPlugins
+      recommendedPlugins: this.recommendedPlugins,
+      forms: this.forms,
+      orphanedFields: this.orphanedFields,
+      totalFieldCount: this.totalFieldCount
     };
   }
 
@@ -78,7 +86,8 @@ export const FETCH_WEBPAGE_TOOL = {
       },
       removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
       selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Use to scope extraction and reduce response size (e.g., 'main', '[role=\"main\"]', 'body > div:first-child'). If no elements match, falls back to full page with a note." },
-      postLoadWait: { type: "number", description: "Additional milliseconds to wait after page load before extracting HTML. Use for pages that need extra time to render. Default: 0 (no extra wait, SPA detection handles most cases automatically).", default: 0 }
+      postLoadWait: { type: "number", description: "Additional milliseconds to wait after page load before extracting HTML. Use for pages that need extra time to render. Default: 0 (no extra wait, SPA detection handles most cases automatically).", default: 0 },
+      detectForms: { type: "boolean", description: "Scan page for forms and return structured form data (fields, selectors, submit buttons, orphaned inputs). Set to true when you need to fill or interact with forms.", default: false }
     },
     required: ["url"],
     additionalProperties: false
@@ -88,6 +97,9 @@ export const FETCH_WEBPAGE_TOOL = {
     properties: {
       currentUrl: { type: "string", description: "Final URL after any redirects" },
       html: { type: "string", description: "Page HTML content" },
+      forms: { type: "array", items: { type: "object" }, description: "Detected forms with fields, selectors, and metadata" },
+      orphanedFields: { type: "array", items: { type: "object" }, description: "Input/select/textarea elements not inside any <form>" },
+      totalFieldCount: { type: "number", description: "Total number of form fields found on the page" },
       nextSteps: { 
         type: "array", 
         items: { type: "string" },
@@ -123,7 +135,7 @@ export const FETCH_WEBPAGE_TOOL = {
  * @param {number} [params.postLoadWait=0] - Additional milliseconds to wait after page load before extracting HTML
  * @returns {Promise<Object>} Result object with success status, URL, HTML content, or error details
  */
-export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = true, selector = null, postLoadWait = 0 }) {
+export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = true, selector = null, postLoadWait = 0, detectForms = false }) {
   logger.info(`browser_fetch_webpage called: url=${url}`);
   
   // Handle missing URL with environment variable fallback
@@ -151,7 +163,7 @@ export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = tru
 
   // Queue this request - processed sequentially, one at a time
   return queueRequest(async () => {
-    return await doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait });
+    return await doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait, detectForms });
   });
 }
 
@@ -159,7 +171,7 @@ export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = tru
  * Internal function that does the actual page fetching.
  * Called by the queue processor - only one runs at a time.
  */
-async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait }) {
+async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait, detectForms }) {
   const originalHostname = new URL(url).hostname;
 
   // Ensure browser connection
@@ -218,6 +230,16 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, post
     // Extract and process HTML
     const processedHtml = await extractAndProcessHtml(page, removeUnnecessaryHTML, selector);
     
+    // Scan for forms when requested (lightweight, ~50-100ms)
+    let formData = null;
+    if (detectForms) {
+      try {
+        formData = await scanPageForms(page);
+      } catch (err) {
+        logger.debug(`Form scan failed (non-fatal): ${err.message}`);
+      }
+    }
+    
     logger.info(`browser_fetch_webpage completed: ${page.url()}`);
     
     // Check for non-2xx HTTP status codes
@@ -237,7 +259,8 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, post
         "Use MCPBrowser's browser_take_screenshot if page has charts, images, or complex visual layout that's hard to understand from HTML",
         "Use MCPBrowser's browser_close_tab when finished to free browser resources"
       ],
-      getRecommendedPlugins(page.url(), processedHtml)
+      getRecommendedPlugins(page.url(), processedHtml),
+      formData
     );
   } catch (err) {
     logger.error(`browser_fetch_webpage failed: ${err.message || String(err)}`);

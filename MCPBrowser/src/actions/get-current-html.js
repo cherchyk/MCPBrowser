@@ -7,6 +7,7 @@ import { extractAndProcessHtml } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
+import { scanPageForms } from './detect-forms.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -25,8 +26,9 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
    * @param {string} html - Page HTML content
    * @param {string[]} nextSteps - Suggested next actions
    * @param {Array} [recommendedPlugins] - Detected plugin metadata
+   * @param {Object} [formData] - Detected forms data
    */
-  constructor(currentUrl, html, nextSteps, recommendedPlugins = []) {
+  constructor(currentUrl, html, nextSteps, recommendedPlugins = [], formData = null) {
     super(nextSteps);
     
     if (typeof currentUrl !== 'string') {
@@ -39,13 +41,19 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
     this.currentUrl = currentUrl;
     this.html = html;
     this.recommendedPlugins = recommendedPlugins;
+    this.forms = formData?.forms || [];
+    this.orphanedFields = formData?.orphanedFields || [];
+    this.totalFieldCount = formData?.totalFieldCount || 0;
   }
 
   _getAdditionalFields() {
     return {
       currentUrl: this.currentUrl,
       html: this.html,
-      recommendedPlugins: this.recommendedPlugins
+      recommendedPlugins: this.recommendedPlugins,
+      forms: this.forms,
+      orphanedFields: this.orphanedFields,
+      totalFieldCount: this.totalFieldCount
     };
   }
 
@@ -70,7 +78,8 @@ export const GET_CURRENT_HTML_TOOL = {
     properties: {
       url: { type: "string", description: "The URL of the page (must match a previously fetched page)" },
       removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
-      selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Use to scope extraction and reduce response size (e.g., 'main', '[role=\"main\"]', 'body > div:first-child'). If no elements match, falls back to full page with a note." }
+      selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Use to scope extraction and reduce response size (e.g., 'main', '[role=\"main\"]', 'body > div:first-child'). If no elements match, falls back to full page with a note." },
+      detectForms: { type: "boolean", description: "Scan page for forms and return structured form data (fields, selectors, submit buttons, orphaned inputs). Set to true when you need to fill or interact with forms.", default: false }
     },
     required: ["url"],
     additionalProperties: false
@@ -80,6 +89,9 @@ export const GET_CURRENT_HTML_TOOL = {
     properties: {
       currentUrl: { type: "string", description: "Current page URL" },
       html: { type: "string", description: "Page HTML content" },
+      forms: { type: "array", items: { type: "object" }, description: "Detected forms with fields, selectors, and metadata" },
+      orphanedFields: { type: "array", items: { type: "object" }, description: "Input/select/textarea elements not inside any <form>" },
+      totalFieldCount: { type: "number", description: "Total number of form fields found on the page" },
       nextSteps: { 
         type: "array", 
         items: { type: "string" },
@@ -108,7 +120,7 @@ export const GET_CURRENT_HTML_TOOL = {
  * @param {boolean} [params.removeUnnecessaryHTML=true] - Whether to clean HTML
  * @returns {Promise<Object>} Result object with current HTML
  */
-export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, selector = null }) {
+export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, selector = null, detectForms = false }) {
   const startTime = Date.now();
   logger.info(`browser_get_current_html called: url=${url}${selector ? ` selector=${selector}` : ''}`);
   
@@ -161,6 +173,16 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, select
     const currentUrl = page.url();
     const html = await extractAndProcessHtml(page, removeUnnecessaryHTML, selector);
     
+    // Scan for forms when requested (lightweight, ~50-100ms)
+    let formData = null;
+    if (detectForms) {
+      try {
+        formData = await scanPageForms(page);
+      } catch (err) {
+        logger.debug(`Form scan failed (non-fatal): ${err.message}`);
+      }
+    }
+    
     // Detect empty/near-empty HTML extraction (e.g., CSP blocking page.evaluate)
     if (!html || html.trim().length < 100) {
       logger.warn(`browser_get_current_html: HTML extraction returned empty/minimal content from ${currentUrl} (${html ? html.trim().length : 0} chars)`);
@@ -188,7 +210,8 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, select
         "Use MCPBrowser's browser_take_screenshot if page layout or visual content is hard to understand from HTML",
         "Use MCPBrowser's browser_close_tab to free resources when done"
       ],
-      getRecommendedPlugins(currentUrl, html)
+      getRecommendedPlugins(currentUrl, html),
+      formData
     );
   } catch (err) {
     logger.error(`browser_get_current_html failed: ${err.message}`);
