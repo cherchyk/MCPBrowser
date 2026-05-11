@@ -9,7 +9,7 @@
 
 > 💡 **Why MCPBrowser over Puppeteer/Playwright MCP servers?** Puppeteer and Playwright are browser automation libraries — their MCP servers give agents raw, low-level browser commands. MCPBrowser uses Puppeteer under the hood and was built specifically for AI agents, adding an intelligence layer that handles the hard parts automatically.
 >
-> The agent gets clean HTML (90% smaller), automatic SPA detection (React, Vue, Angular), authentication flow handling (SSO, redirects, multi-step login), form discovery with multi-field filling, structured responses with next-step guidance, domain-based tab reuse, and instant DOM re-extraction without page reloads. [See full comparison below.](#why-mcpbrowser-over-puppeteerplaywright-mcp-servers)
+> The agent gets clean HTML (90% smaller), automatic SPA detection (React, Vue, Angular), authentication flow handling (SSO, redirects, multi-step login), form discovery with multi-field filling, structured responses with next-step guidance, domain-based tab reuse, and instant DOM re-extraction without page reloads. Each MCPBrowser tool call replaces 5-8 raw browser automation calls — a typical 4-step workflow in MCPBrowser would take 20+ calls with Puppeteer/Playwright MCP, saving tokens and making the agent significantly faster. [See full comparison below.](#why-mcpbrowser-over-puppeteerplaywright-mcp-servers)
 
 **MCPBrowser is an MCP browser server that gives AI assistants the ability to browse web pages using a real Chrome, Edge, or Brave browser.** This browser-based MCP server fetches any web page — especially those protected by authentication, CAPTCHAs, anti-bot protection, or requiring JavaScript rendering. Uses your real browser for web automation so you can log in normally, then automatically extracts content. Works with corporate SSO, login forms, Cloudflare, and JavaScript-heavy sites (SPAs, dashboards).
 
@@ -39,6 +39,7 @@ Puppeteer and Playwright are browser automation libraries — their MCP servers 
 | **DOM re-extraction** | `browser_get_current_html` — instant, no reload (10-50x faster) | Must re-fetch full page |
 | **Plugin system** | Detects known sites by URL/DOM patterns, offers site-specific actions with confidence scoring | N/A |
 | **Built for** | AI agents | Browser test automation |
+| **Agent efficiency** | 1 tool call replaces 5-8 raw browser calls — a 4-step login flow takes 4 calls instead of 20+, saving tokens and round-trips | Each step (navigate, wait, query, type, click) is a separate call |
 
 ## Contents
 
