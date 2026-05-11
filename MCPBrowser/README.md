@@ -7,6 +7,10 @@
 
 > ⚠️ **Security Notice:** MCPBrowser extracts webpage content and provides it to your AI agent (e.g., GitHub Copilot, Claude, Kiro, Antigravity), which then sends it to the LLM provider it uses (e.g., Anthropic, OpenAI, GitHub) for processing. Make sure you trust both your agent and the LLM provider — especially when accessing pages with sensitive or private data.
 
+> 💡 **Why MCPBrowser over Puppeteer/Playwright MCP servers?** Puppeteer and Playwright are browser automation libraries — their MCP servers give agents raw, low-level browser commands. MCPBrowser uses Puppeteer under the hood and was built specifically for AI agents, adding an intelligence layer that handles the hard parts automatically.
+>
+> The agent gets clean HTML (90% smaller), automatic SPA detection (React, Vue, Angular), authentication flow handling (SSO, redirects, multi-step login), form discovery with multi-field filling, structured responses with next-step guidance, domain-based tab reuse, and instant DOM re-extraction without page reloads. Each MCPBrowser tool call replaces 5-8 raw browser automation calls — a typical 4-step workflow in MCPBrowser would take 20+ calls with Puppeteer/Playwright MCP, saving tokens and making the agent significantly faster. [See full comparison below.](#why-mcpbrowser-over-puppeteerplaywright-mcp-servers)
+
 **MCPBrowser is an MCP browser server that gives AI assistants the ability to browse web pages using a real Chrome, Edge, or Brave browser.** This browser-based MCP server fetches any web page — especially those protected by authentication, CAPTCHAs, anti-bot protection, or requiring JavaScript rendering. Uses your real browser for web automation so you can log in normally, then automatically extracts content. Works with corporate SSO, login forms, Cloudflare, and JavaScript-heavy sites (SPAs, dashboards).
 
 This is an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server using [stdio transport](https://modelcontextprotocol.io/docs/concepts/transports#stdio). Your AI assistant uses this web browser MCP server when standard HTTP requests fail — pages requiring authentication, CAPTCHA protection, or heavy JavaScript (SPAs). Once connected, the browser MCP server can navigate through websites, interact with elements, and send HTML back to the AI assistant. This gives your AI the ability to browse the web just like you do.
@@ -20,9 +24,26 @@ Example workflow for AI assistant to use MCPBrowser
 4. browser_get_current_html → Extract the content after login
 ```
 
+## Why MCPBrowser over Puppeteer/Playwright MCP servers?
+
+Puppeteer and Playwright are browser automation libraries — their MCP servers expose low-level browser commands and the agent has to handle SPAs, auth flows, messy HTML, and edge cases on its own. **MCPBrowser was built specifically for AI agents.** It uses Puppeteer under the hood and adds an intelligence layer so the agent can focus on the task instead of fighting the browser.
+
+| | MCPBrowser | Puppeteer/Playwright MCP |
+|---|---|---|
+| **HTML output** | Clean, LLM-optimized (~90% smaller) — strips scripts, styles, SVGs, tracking attrs, converts relative URLs | Raw DOM |
+| **SPA support** | Auto-detects React, Vue, Angular, Svelte, Next.js, Nuxt — applies framework-aware wait strategies | Agent must configure waits manually |
+| **Authentication** | Detects login pages, SSO redirects, multi-step auth — follows redirect chains, two-phase timeouts (5s SSO → 20min manual) | Agent must script each auth step |
+| **Form interaction** | `browser_detect_forms` discovers all fields, labels, constraints; `browser_type_text` fills multiple fields at once | One field at a time, manual selectors |
+| **Response format** | Typed, structured with `nextSteps` guidance — soft vs hard failure distinction with recovery actions | Raw results, generic errors |
+| **Tab management** | Domain-pooled — reuses tabs, survives browser reconnection | New context per request |
+| **DOM re-extraction** | `browser_get_current_html` — instant, no reload (10-50x faster) | Must re-fetch full page |
+| **Plugin system** | Detects known sites by URL/DOM patterns, offers site-specific actions with confidence scoring | N/A |
+| **Built for** | AI agents | Browser test automation |
+| **Agent efficiency** | 1 tool call replaces 5-8 raw browser calls — a 4-step login flow takes 4 calls instead of 20+, saving tokens and round-trips | Each step (navigate, wait, query, type, click) is a separate call |
 
 ## Contents
 
+- [Why MCPBrowser over Puppeteer/Playwright MCP servers?](#why-mcpbrowser-over-puppeteerplaywright-mcp-servers)
 - [Requirements](#requirements)
 - [Installation](#installation)
   - [VS Code Extension](#option-1-vs-code-extension)
