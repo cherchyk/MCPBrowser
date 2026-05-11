@@ -72,9 +72,9 @@ export class DetectFormsResponse extends MCPResponse {
  * @type {Tool}
  */
 export const DETECT_FORMS_TOOL = {
-  name: "detect_forms",
+  name: "browser_detect_forms",
   title: "Detect Forms",
-  description: "**AUTO FORM DISCOVERY** - Scans the current page and returns structured JSON of all forms: fields (name, type, required, placeholder, current value, validation constraints), submit buttons, and orphaned inputs not inside any <form> (common in SPAs). Use this BEFORE filling forms to understand what fields exist and how to interact with them.\n\n**PREREQUISITE**: Page MUST be loaded with fetch_webpage first.",
+  description: "**AUTO FORM DISCOVERY** - Scans the current page and returns structured JSON of all forms: fields (name, type, required, placeholder, current value, validation constraints), submit buttons, and orphaned inputs not inside any <form> (common in SPAs). Use this BEFORE filling forms to understand what fields exist and how to interact with them.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first.",
   inputSchema: {
     type: "object",
     properties: {
@@ -162,7 +162,7 @@ export const DETECT_FORMS_TOOL = {
  * @param {boolean} includeHidden - Whether to include hidden fields
  * @returns {Object} Raw form data
  */
-function buildScanFunction(includeHidden) {
+function buildScanFunction() {
   return (includeHidden) => {
     /**
      * Build a CSS selector for an element
@@ -353,7 +353,7 @@ function buildScanFunction(includeHidden) {
  * @returns {Promise<{forms: Array, orphanedFields: Array, totalFieldCount: number}>}
  */
 export async function scanPageForms(page, includeHidden = false) {
-  const scanFn = buildScanFunction(includeHidden);
+  const scanFn = buildScanFunction();
   return await page.evaluate(scanFn, includeHidden);
 }
 
@@ -369,7 +369,7 @@ export async function scanPageForms(page, includeHidden = false) {
  * @returns {Promise<DetectFormsResponse|InformationalResponse>}
  */
 export async function detectForms({ url, includeHidden = false }) {
-  logger.info(`detect_forms called: url=${url}, includeHidden=${includeHidden}`);
+  logger.info(`browser_detect_forms called: url=${url}, includeHidden=${includeHidden}`);
 
   if (!url) {
     throw new Error("url parameter is required");
@@ -386,7 +386,7 @@ export async function detectForms({ url, includeHidden = false }) {
   try {
     await getBrowser();
   } catch (err) {
-    logger.error(`detect_forms: Failed to connect to browser: ${err.message}`);
+    logger.error(`browser_detect_forms: Failed to connect to browser: ${err.message}`);
     return new InformationalResponse(
       `Browser connection failed: ${err.message}`,
       'The browser must be running with remote debugging enabled.',
@@ -403,15 +403,15 @@ export async function detectForms({ url, includeHidden = false }) {
 
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
-    logger.debug(`detect_forms: ${pageError || 'No page found for ' + hostname}`);
+    logger.debug(`browser_detect_forms: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
       isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
       isConnectionLost
         ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
         : 'The page must be loaded before you can detect forms',
       [
-        "Use MCPBrowser's fetch_webpage tool to load the page first",
-        "Then retry MCPBrowser's detect_forms with the same URL"
+        "Use MCPBrowser's browser_fetch_webpage tool to load the page first",
+        "Then retry MCPBrowser's browser_detect_forms with the same URL"
       ]
     );
   }
@@ -422,7 +422,7 @@ export async function detectForms({ url, includeHidden = false }) {
     // Build summary
     const summary = buildSummary(raw.forms, raw.orphanedFields, raw.totalFieldCount);
 
-    logger.info(`detect_forms completed: ${summary}`);
+    logger.info(`browser_detect_forms completed: ${summary}`);
 
     // Build next steps based on discovered forms
     const nextSteps = buildNextSteps(raw.forms, raw.orphanedFields);
@@ -435,13 +435,13 @@ export async function detectForms({ url, includeHidden = false }) {
       nextSteps
     });
   } catch (err) {
-    logger.error(`detect_forms failed: ${err.message}`);
+    logger.error(`browser_detect_forms failed: ${err.message}`);
     return new InformationalResponse(
       `Failed to detect forms: ${err.message}`,
       'Could not scan the page for forms. The page may have navigated away or the connection was lost.',
       [
-        "Try MCPBrowser's fetch_webpage to reload the page",
-        "Use MCPBrowser's close_tab and start fresh if needed"
+        "Try MCPBrowser's browser_fetch_webpage to reload the page",
+        "Use MCPBrowser's browser_close_tab and start fresh if needed"
       ]
     );
   }
@@ -484,19 +484,19 @@ function buildNextSteps(forms, orphanedFields) {
     const primaryForm = forms[0];
     if (primaryForm.fields.length > 0) {
       const firstField = primaryForm.fields[0];
-      steps.push(`Use MCPBrowser's type_text to fill form fields (e.g., selector: '${firstField.selector}')`);
+      steps.push(`Use MCPBrowser's browser_type_text to fill form fields (e.g., selector: '${firstField.selector}')`);
     }
     if (primaryForm.submitButton) {
-      steps.push(`Use MCPBrowser's click_element to submit the form (selector: '${primaryForm.submitButton.selector}')`);
+      steps.push(`Use MCPBrowser's browser_click_element to submit the form (selector: '${primaryForm.submitButton.selector}')`);
     }
   }
 
   if (orphanedFields.length > 0) {
-    steps.push("Use MCPBrowser's type_text for orphaned fields (SPA inputs not inside a <form>)");
+    steps.push("Use MCPBrowser's browser_type_text for orphaned fields (SPA inputs not inside a <form>)");
   }
 
-  steps.push("Use MCPBrowser's take_screenshot if form layout is unclear from the data");
-  steps.push("Use MCPBrowser's get_current_html to see full page HTML");
+  steps.push("Use MCPBrowser's browser_take_screenshot if form layout is unclear from the data");
+  steps.push("Use MCPBrowser's browser_get_current_html to see full page HTML");
 
   return steps;
 }

@@ -78,7 +78,8 @@ export const GET_CURRENT_HTML_TOOL = {
     properties: {
       url: { type: "string", description: "The URL of the page (must match a previously fetched page)" },
       removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
-      selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Use to scope extraction and reduce response size (e.g., 'main', '[role=\"main\"]', 'body > div:first-child'). If no elements match, falls back to full page with a note." }
+      selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Use to scope extraction and reduce response size (e.g., 'main', '[role=\"main\"]', 'body > div:first-child'). If no elements match, falls back to full page with a note." },
+      detectForms: { type: "boolean", description: "Scan page for forms and return structured form data (fields, selectors, submit buttons, orphaned inputs). Set to true when you need to fill or interact with forms.", default: false }
     },
     required: ["url"],
     additionalProperties: false
@@ -102,7 +103,7 @@ export const GET_CURRENT_HTML_TOOL = {
         description: "Detected site-specific plugins available for this domain"
       }
     },
-    required: ["currentUrl", "html", "forms", "orphanedFields", "totalFieldCount", "nextSteps"],
+    required: ["currentUrl", "html", "nextSteps"],
     additionalProperties: false
   }
 };
@@ -119,7 +120,7 @@ export const GET_CURRENT_HTML_TOOL = {
  * @param {boolean} [params.removeUnnecessaryHTML=true] - Whether to clean HTML
  * @returns {Promise<Object>} Result object with current HTML
  */
-export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, selector = null }) {
+export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, selector = null, detectForms = false }) {
   const startTime = Date.now();
   logger.info(`browser_get_current_html called: url=${url}${selector ? ` selector=${selector}` : ''}`);
   
@@ -172,12 +173,14 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, select
     const currentUrl = page.url();
     const html = await extractAndProcessHtml(page, removeUnnecessaryHTML, selector);
     
-    // Scan for forms (lightweight, ~50-100ms)
+    // Scan for forms when requested (lightweight, ~50-100ms)
     let formData = null;
-    try {
-      formData = await scanPageForms(page);
-    } catch (err) {
-      logger.debug(`Form scan failed (non-fatal): ${err.message}`);
+    if (detectForms) {
+      try {
+        formData = await scanPageForms(page);
+      } catch (err) {
+        logger.debug(`Form scan failed (non-fatal): ${err.message}`);
+      }
     }
     
     // Detect empty/near-empty HTML extraction (e.g., CSP blocking page.evaluate)

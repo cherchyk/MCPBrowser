@@ -86,7 +86,8 @@ export const FETCH_WEBPAGE_TOOL = {
       },
       removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
       selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Use to scope extraction and reduce response size (e.g., 'main', '[role=\"main\"]', 'body > div:first-child'). If no elements match, falls back to full page with a note." },
-      postLoadWait: { type: "number", description: "Additional milliseconds to wait after page load before extracting HTML. Use for pages that need extra time to render. Default: 0 (no extra wait, SPA detection handles most cases automatically).", default: 0 }
+      postLoadWait: { type: "number", description: "Additional milliseconds to wait after page load before extracting HTML. Use for pages that need extra time to render. Default: 0 (no extra wait, SPA detection handles most cases automatically).", default: 0 },
+      detectForms: { type: "boolean", description: "Scan page for forms and return structured form data (fields, selectors, submit buttons, orphaned inputs). Set to true when you need to fill or interact with forms.", default: false }
     },
     required: ["url"],
     additionalProperties: false
@@ -110,7 +111,7 @@ export const FETCH_WEBPAGE_TOOL = {
         description: "Detected site-specific plugins available for this domain"
       }
     },
-    required: ["currentUrl", "html", "forms", "orphanedFields", "totalFieldCount", "nextSteps"],
+    required: ["currentUrl", "html", "nextSteps"],
     additionalProperties: false
   }
 };
@@ -134,7 +135,7 @@ export const FETCH_WEBPAGE_TOOL = {
  * @param {number} [params.postLoadWait=0] - Additional milliseconds to wait after page load before extracting HTML
  * @returns {Promise<Object>} Result object with success status, URL, HTML content, or error details
  */
-export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = true, selector = null, postLoadWait = 0 }) {
+export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = true, selector = null, postLoadWait = 0, detectForms = false }) {
   logger.info(`browser_fetch_webpage called: url=${url}`);
   
   // Handle missing URL with environment variable fallback
@@ -162,7 +163,7 @@ export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = tru
 
   // Queue this request - processed sequentially, one at a time
   return queueRequest(async () => {
-    return await doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait });
+    return await doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait, detectForms });
   });
 }
 
@@ -170,7 +171,7 @@ export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = tru
  * Internal function that does the actual page fetching.
  * Called by the queue processor - only one runs at a time.
  */
-async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait }) {
+async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait, detectForms }) {
   const originalHostname = new URL(url).hostname;
 
   // Ensure browser connection
@@ -229,12 +230,14 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, post
     // Extract and process HTML
     const processedHtml = await extractAndProcessHtml(page, removeUnnecessaryHTML, selector);
     
-    // Scan for forms (lightweight, ~50-100ms)
+    // Scan for forms when requested (lightweight, ~50-100ms)
     let formData = null;
-    try {
-      formData = await scanPageForms(page);
-    } catch (err) {
-      logger.debug(`Form scan failed (non-fatal): ${err.message}`);
+    if (detectForms) {
+      try {
+        formData = await scanPageForms(page);
+      } catch (err) {
+        logger.debug(`Form scan failed (non-fatal): ${err.message}`);
+      }
     }
     
     logger.info(`browser_fetch_webpage completed: ${page.url()}`);

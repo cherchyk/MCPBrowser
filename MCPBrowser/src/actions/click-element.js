@@ -98,7 +98,8 @@ export const CLICK_ELEMENT_TOOL = {
       waitForElementTimeout: { type: "number", description: "Maximum time to wait for element in milliseconds", default: 1000 },
       returnHtml: { type: "boolean", description: "Whether to wait for stability and return HTML after clicking. Set to false for fast form interactions (checkboxes, radio buttons).", default: true },
       removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%. Only used when returnHtml is true.", default: true },
-      postClickWait: { type: "number", description: "Milliseconds to wait after click for SPAs to render dynamic content.", default: 1000 }
+      postClickWait: { type: "number", description: "Milliseconds to wait after click for SPAs to render dynamic content.", default: 1000 },
+      detectForms: { type: "boolean", description: "Scan page for forms after click and return structured form data (fields, selectors, submit buttons, orphaned inputs). Only applies when returnHtml=true. Set to true when you need to fill or interact with forms after clicking.", default: false }
     },
     required: ["url"],
     additionalProperties: false,
@@ -156,7 +157,7 @@ export const CLICK_ELEMENT_TOOL = {
         description: "Detected site-specific plugins available for this domain"
       }
     },
-    required: ["status", "fallbackUsed", "nativeAttempt", "currentUrl", "message", "html", "forms", "orphanedFields", "totalFieldCount", "nextSteps"],
+    required: ["status", "fallbackUsed", "nativeAttempt", "currentUrl", "message", "html", "nextSteps"],
     additionalProperties: false
   }
 };
@@ -191,7 +192,7 @@ export const CLICK_ELEMENT_TOOL = {
  *   returnHtml: false 
  * });
  */
-export async function clickElement({ url, selector, text, waitForElementTimeout = 30000, returnHtml = true, removeUnnecessaryHTML = true, postClickWait = 1000 }) {
+export async function clickElement({ url, selector, text, waitForElementTimeout = 30000, returnHtml = true, removeUnnecessaryHTML = true, postClickWait = 1000, detectForms = false }) {
   logger.info(`browser_click_element called: ${selector || `text="${text}"`}`);
   
   if (!url) {
@@ -338,9 +339,9 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     const currentUrl = page.url();
     const html = finalStatus === 'success' && returnHtml ? await extractAndProcessHtml(page, removeUnnecessaryHTML) : null;
 
-    // Scan for forms when returning HTML (lightweight, ~50-100ms)
+    // Scan for forms when requested and returning HTML (lightweight, ~50-100ms)
     let formData = null;
-    if (finalStatus === 'success' && returnHtml) {
+    if (detectForms && finalStatus === 'success' && returnHtml) {
       try {
         formData = await scanPageForms(page);
       } catch (err) {

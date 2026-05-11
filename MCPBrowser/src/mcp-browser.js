@@ -148,7 +148,7 @@ async function main() {
           result = await navigateHistory(safeArgs);
           break;
 
-        case "detect_forms":
+        case "browser_detect_forms":
           result = await detectForms(safeArgs);
           break;
 
