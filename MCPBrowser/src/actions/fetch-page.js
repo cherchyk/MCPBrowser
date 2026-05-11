@@ -77,6 +77,7 @@ export const FETCH_WEBPAGE_TOOL = {
         enum: ["", "chrome", "edge"]
       },
       removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
+      selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Use to scope extraction and reduce response size (e.g., 'main', '[role=\"main\"]', 'body > div:first-child'). If no elements match, falls back to full page with a note." },
       postLoadWait: { type: "number", description: "Additional milliseconds to wait after page load before extracting HTML. Use for pages that need extra time to render. Default: 0 (no extra wait, SPA detection handles most cases automatically).", default: 0 }
     },
     required: ["url"],
@@ -122,7 +123,7 @@ export const FETCH_WEBPAGE_TOOL = {
  * @param {number} [params.postLoadWait=0] - Additional milliseconds to wait after page load before extracting HTML
  * @returns {Promise<Object>} Result object with success status, URL, HTML content, or error details
  */
-export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = true, postLoadWait = 0 }) {
+export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = true, selector = null, postLoadWait = 0 }) {
   logger.info(`browser_fetch_webpage called: url=${url}`);
   
   // Handle missing URL with environment variable fallback
@@ -150,7 +151,7 @@ export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = tru
 
   // Queue this request - processed sequentially, one at a time
   return queueRequest(async () => {
-    return await doFetchPage({ url, browser, removeUnnecessaryHTML, postLoadWait });
+    return await doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait });
   });
 }
 
@@ -158,7 +159,7 @@ export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = tru
  * Internal function that does the actual page fetching.
  * Called by the queue processor - only one runs at a time.
  */
-async function doFetchPage({ url, browser, removeUnnecessaryHTML, postLoadWait }) {
+async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait }) {
   const originalHostname = new URL(url).hostname;
 
   // Ensure browser connection
@@ -215,7 +216,7 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, postLoadWait }
     }
     
     // Extract and process HTML
-    const processedHtml = await extractAndProcessHtml(page, removeUnnecessaryHTML);
+    const processedHtml = await extractAndProcessHtml(page, removeUnnecessaryHTML, selector);
     
     logger.info(`browser_fetch_webpage completed: ${page.url()}`);
     

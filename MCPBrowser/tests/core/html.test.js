@@ -238,11 +238,11 @@ test('Should remove link tags', () => {
   assert(!result.includes('<link'), 'Should remove link tags');
 });
 
-// Test 24: Remove role attributes
-test('Should remove role attributes', () => {
+// Test 24: Preserve role attributes (semantically valuable for LLM understanding)
+test('Should preserve role attributes', () => {
   const html = '<nav role="navigation">Menu</nav>';
   const result = prepareHtml(html, 'https://example.com');
-  assert(!result.includes('role='), 'Should remove role attribute');
+  assert(result.includes('role="navigation"'), 'Should preserve role attribute');
   assert(result.includes('Menu'), 'Should preserve content');
 });
 
@@ -304,7 +304,7 @@ test('Should handle HTML with all types of removals', () => {
   // Should remove style and event attributes
   assert(!result.includes('style="color: blue"'), 'Should remove inline style values');
   assert(!result.includes('onclick='), 'Should remove onclick');
-  assert(!result.includes('role='), 'Should remove role');
+  assert(result.includes('role='), 'Should preserve role (semantically valuable)');
   assert(!result.includes('aria-'), 'Should remove aria');
   
   // Should remove non-content elements

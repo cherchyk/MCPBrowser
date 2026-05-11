@@ -209,6 +209,24 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
   }
   const urlChanged = currentUrl !== beforeUrl;
 
+  // Detect CSP block or silent evaluation failure:
+  // When page.evaluate() is blocked by CSP, Puppeteer returns undefined (not an error).
+  // Distinguish this from a script that intentionally returns nothing.
+  if (evalResult === undefined || evalResult === null) {
+    return new ExecuteJavascriptResponse({
+      result: null,
+      type: 'undefined',
+      executionTimeMs,
+      truncated: false,
+      urlChanged,
+      currentUrl,
+      error: {
+        name: 'EvaluationEmpty',
+        message: 'Script evaluation returned no result. Possible causes: page Content Security Policy (CSP) blocked evaluation, the script has no return value, or the page context is sandboxed. Try browser_take_screenshot to verify the page is loaded, or use a simpler expression like "document.title" to test page accessibility.'
+      }
+    });
+  }
+
   if (evalResult?.error) {
     return new ExecuteJavascriptResponse({
       result: null,
