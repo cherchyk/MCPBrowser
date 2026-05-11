@@ -69,7 +69,8 @@ export const GET_CURRENT_HTML_TOOL = {
     type: "object",
     properties: {
       url: { type: "string", description: "The URL of the page (must match a previously fetched page)" },
-      removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true }
+      removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
+      selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Use to scope extraction and reduce response size (e.g., 'main', '[role=\"main\"]', 'body > div:first-child'). If no elements match, falls back to full page with a note." }
     },
     required: ["url"],
     additionalProperties: false
@@ -107,9 +108,9 @@ export const GET_CURRENT_HTML_TOOL = {
  * @param {boolean} [params.removeUnnecessaryHTML=true] - Whether to clean HTML
  * @returns {Promise<Object>} Result object with current HTML
  */
-export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
+export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, selector = null }) {
   const startTime = Date.now();
-  logger.info(`browser_get_current_html called: url=${url}`);
+  logger.info(`browser_get_current_html called: url=${url}${selector ? ` selector=${selector}` : ''}`);
   
   if (!url) {
     throw new Error("url parameter is required");
@@ -158,7 +159,22 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true }) {
 
   try {
     const currentUrl = page.url();
-    const html = await extractAndProcessHtml(page, removeUnnecessaryHTML);
+    const html = await extractAndProcessHtml(page, removeUnnecessaryHTML, selector);
+    
+    // Detect empty/near-empty HTML extraction (e.g., CSP blocking page.evaluate)
+    if (!html || html.trim().length < 100) {
+      logger.warn(`browser_get_current_html: HTML extraction returned empty/minimal content from ${currentUrl} (${html ? html.trim().length : 0} chars)`);
+      return new InformationalResponse(
+        `HTML extraction returned empty content from ${currentUrl}`,
+        'The page may be blocking evaluation via Content Security Policy (CSP), the page has not fully rendered, or the page uses a sandboxed context that prevents DOM reading.',
+        [
+          "Use MCPBrowser's browser_take_screenshot to verify the page is visually loaded",
+          "Use MCPBrowser's browser_execute_javascript with a simple script like 'document.title' to test page accessibility",
+          "Try MCPBrowser's browser_fetch_webpage to reload the page",
+          "Wait and retry — the page may still be rendering"
+        ]
+      );
+    }
     
     logger.info(`browser_get_current_html completed: got HTML from ${currentUrl}`);
     
