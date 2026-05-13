@@ -88,7 +88,7 @@ export class ClickWithFallbackResponse extends MCPResponse {
 export const CLICK_ELEMENT_TOOL = {
   name: "browser_click_element",
   title: "Click Element",
-  description: "**BROWSER INTERACTION** - Clicks elements on browser-loaded pages. Use this for navigation (clicking links/buttons), form submission, and any user interaction that requires clicking.\n\nWorks with any clickable element including buttons, links, or elements with onclick handlers. Can target by CSS selector or text content. Waits for page stability and returns updated HTML by default.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first. This tool operates on an already-loaded page in the browser.",
+  description: "Click buttons, links, or any element on a browser-loaded page. Use when: you need to navigate a website, submit a form, press a button, follow a link, or interact with any clickable UI element. Targets by CSS selector or visible text. Returns updated page HTML after click. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.",
   inputSchema: {
     type: "object",
     properties: {

@@ -61,7 +61,7 @@ async function main() {
   const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8'));
   
   const server = new Server(
-    { name: "MCP Browser", version: packageJson.version },
+    { name: "MCPBrowser", version: packageJson.version },
     { capabilities: { tools: {}, logging: {} } }
   );
 

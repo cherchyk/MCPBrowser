@@ -89,7 +89,7 @@ export class TakeScreenshotSuccessResponse extends MCPResponse {
 export const TAKE_SCREENSHOT_TOOL = {
   name: "browser_take_screenshot",
   title: "Take Screenshot",
-  description: "**VISUAL CAPTURE** - Takes a screenshot of an already-loaded page for visual analysis. Useful when HTML parsing is insufficient or you need to see visual layout, images, charts, or rendered content. Returns a PNG image.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first. This tool captures the current visual state of the page.",
+  description: "Capture a screenshot of a browser-loaded page as PNG. Use when: you need to see what a page looks like, analyze visual layout, view charts/images/graphs, debug UI issues, or when HTML alone is insufficient to understand the page content. Returns base64-encoded PNG. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.",
   inputSchema: {
     type: "object",
     properties: {

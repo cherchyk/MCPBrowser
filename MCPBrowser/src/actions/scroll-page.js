@@ -94,7 +94,7 @@ export class ScrollPageSuccessResponse extends MCPResponse {
 export const SCROLL_PAGE_TOOL = {
   name: "browser_scroll_page",
   title: "Scroll Page",
-  description: "**PAGE NAVIGATION** - Scrolls within an already-loaded page. Use before browser_take_screenshot to capture different parts of the page, or to bring elements into view before interaction.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first.\n\n**SCROLL MODES**:\n- By direction: Scroll up/down/left/right by pixel amount\n- To element: Scroll until a specific element is visible\n- To position: Scroll to absolute coordinates",
+  description: "Scroll within a browser-loaded page. Use when: you need to see more content below the fold, bring an element into view before clicking, scroll to a specific section, or navigate long pages. Supports scroll by direction, to a CSS selector, or to absolute coordinates. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.",
   inputSchema: {
     type: "object",
     properties: {

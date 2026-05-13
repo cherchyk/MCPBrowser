@@ -59,7 +59,7 @@ export class ExecuteJavascriptResponse extends MCPResponse {
 export const EXECUTE_JAVASCRIPT_TOOL = {
   name: 'browser_execute_javascript',
   title: 'Execute JavaScript',
-  description: '**BROWSER INTERACTION** - Executes a JavaScript snippet in the active page and returns the result with metadata (execution time, truncation, navigation detection). Use for structured extraction or UI actions that are unreliable via protocol clicks.',
+  description: 'Run JavaScript on a browser-loaded page and get the result. Use when: you need to extract structured data from a page, manipulate the DOM, read page state, run custom queries on page content, or perform UI actions that CSS selectors cannot reach. Returns the script result as JSON, text, or void. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.',
   inputSchema: {
     type: 'object',
     properties: {

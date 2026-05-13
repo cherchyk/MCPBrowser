@@ -71,7 +71,7 @@ export class NavigateHistorySuccessResponse extends MCPResponse {
 export const NAVIGATE_HISTORY_TOOL = {
   name: "browser_navigate_history",
   title: "Navigate Back/Forward",
-  description: "**BROWSER HISTORY NAVIGATION** - Navigate back or forward in browser history on an already-loaded page. Use after clicking links to return to the previous page, or to go forward after going back.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first. This tool navigates the history of an existing browser tab.",
+  description: "Go back or forward in browser history. Use when: you clicked a link and need to return to the previous page, or want to go forward after going back. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.",
   inputSchema: {
     type: "object",
     properties: {
