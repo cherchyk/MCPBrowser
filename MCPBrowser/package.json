@@ -1,6 +1,6 @@
 {
   "name": "mcpbrowser",
-  "version": "0.3.53",
+  "version": "0.3.54",
   "mcpName": "io.github.cherchyk/mcpbrowser",
   "type": "module",
   "description": "MCP browser server — loads and interacts with web pages using the user's Chromium-based browser with full JavaScript execution. Handles authentication, SSO, and anti-bot protection automatically via the user's existing browser session.",
