@@ -7,7 +7,7 @@
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { ListToolsRequestSchema, CallToolRequestSchema, ListPromptsRequestSchema, GetPromptRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
@@ -38,6 +38,9 @@ import { detectForms, DETECT_FORMS_TOOL } from './actions/detect-forms.js';
 import { pluginAction, PLUGIN_ACTION_TOOL } from './actions/plugin-action.js';
 import { pluginInfo, PLUGIN_INFO_TOOL } from './actions/plugin-info.js';
 
+// Import prompt definitions
+import { PROMPTS, getPromptMessages } from './core/prompts.js';
+
 // Import functions for testing exports
 import { getBrowser, closeBrowser } from './core/browser.js';
 import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml } from './core/page.js';
@@ -62,7 +65,10 @@ async function main() {
   
   const server = new Server(
     { name: "MCPBrowser", version: packageJson.version },
-    { capabilities: { tools: {}, logging: {} } }
+    {
+      capabilities: { tools: {}, logging: {}, prompts: {} },
+      instructions: "Browser automation server using the user's existing browser session (cookies and auth intact). Workflow: browser_fetch_webpage → browser_take_screenshot (visual content) or browser_get_current_html (re-read after interaction) → browser_click_element / browser_type_text (interact) → browser_close_tab (cleanup). All tools except browser_fetch_webpage and browser_plugin_info require a page loaded first. One tab per domain — same-domain navigations reuse the existing tab. Requests are queued and processed sequentially. Maximum one browser connection at a time. Pages loaded via browser_fetch_webpage persist until browser_close_tab is called or the server shuts down. Screenshots return base64 PNG — prefer browser_get_current_html for text extraction. browser_execute_javascript runs in the page context with access to the full DOM and JavaScript APIs. If plugins are loaded, browser_plugin_info provides site-specific optimized actions for known sites. If authentication is required, the user must complete login in the browser window, then retry the same URL."
+    }
   );
 
   // Wire server to logger so logs flow to agent via notifications/message.
@@ -101,6 +107,14 @@ async function main() {
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
+
+  // --- Prompts handlers ---
+  server.setRequestHandler(ListPromptsRequestSchema, async () => ({ prompts: PROMPTS }));
+
+  server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+    return getPromptMessages(name, args);
+  });
 
   server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     const { name, arguments: args } = request.params;

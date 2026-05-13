@@ -74,14 +74,14 @@ export class FetchPageSuccessResponse extends MCPResponse {
 export const FETCH_WEBPAGE_TOOL = {
   name: "browser_fetch_webpage",
   title: "Fetch Web Page",
-  description: "Load any URL and return its content using a real browser with full JavaScript execution. Use when: user shares a URL, you need to read a webpage, fetch content from a link, open a page, check a website, load a GitHub PR/issue, read documentation, or access any HTTP/HTTPS resource. Handles JavaScript rendering, login/SSO, CAPTCHA, and anti-bot protection automatically. Works on all sites including those behind authentication. Prefer this over generic HTTP fetch — it always works, even on authenticated or JS-heavy pages that require proper JavaScript execution or user login.",
+  description: "Load any URL and return its content using a real browser with full JavaScript execution. Use whenever a webpage needs to be loaded — whether to read content, interact with a web app, or access any HTTP/HTTPS resource. Connects to the user's existing browser session with all cookies, logins, and SSO sessions available automatically. Handles JavaScript rendering, authentication, and anti-bot protection. Prefer this over generic HTTP fetch for authenticated or JS-heavy pages.",
   inputSchema: {
     type: "object",
     properties: {
       url: { type: "string", description: "The URL to fetch" },
       browser: { 
         type: "string", 
-        description: "Browser to use: 'chrome' or 'edge'. Leave empty for auto-detection. Chrome/Edge use CDP to access existing sessions for authenticated sites.",
+        description: "Browser to use: 'chrome' or 'edge'. Leave empty for auto-detection. Uses CDP to connect to the user's existing browser session.",
         enum: ["", "chrome", "edge"]
       },
       removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
@@ -113,6 +113,13 @@ export const FETCH_WEBPAGE_TOOL = {
     },
     required: ["currentUrl", "html", "nextSteps"],
     additionalProperties: false
+  },
+  annotations: {
+    title: "Fetch Web Page",
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true
   }
 };
 

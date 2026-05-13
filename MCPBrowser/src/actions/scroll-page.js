@@ -146,6 +146,13 @@ export const SCROLL_PAGE_TOOL = {
     },
     required: ["currentUrl", "scrollX", "scrollY", "pageWidth", "pageHeight", "viewportWidth", "viewportHeight", "nextSteps"],
     additionalProperties: false
+  },
+  annotations: {
+    title: "Scroll Page",
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false
   }
 };
 

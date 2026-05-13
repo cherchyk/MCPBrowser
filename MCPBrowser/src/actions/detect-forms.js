@@ -149,6 +149,13 @@ export const DETECT_FORMS_TOOL = {
     },
     required: ["forms", "orphanedFields", "totalFieldCount", "summary", "nextSteps"],
     additionalProperties: false
+  },
+  annotations: {
+    title: "Detect Forms",
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false
   }
 };
 

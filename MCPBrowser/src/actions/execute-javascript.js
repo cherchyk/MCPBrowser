@@ -90,6 +90,13 @@ export const EXECUTE_JAVASCRIPT_TOOL = {
     },
     required: ['type', 'executionTimeMs', 'truncated', 'urlChanged', 'currentUrl', 'nextSteps'],
     additionalProperties: false
+  },
+  annotations: {
+    title: 'Execute JavaScript',
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: true
   }
 };
 

@@ -105,6 +105,13 @@ export const GET_CURRENT_HTML_TOOL = {
     },
     required: ["currentUrl", "html", "nextSteps"],
     additionalProperties: false
+  },
+  annotations: {
+    title: "Get Current HTML",
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false
   }
 };
 

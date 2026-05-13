@@ -159,6 +159,13 @@ export const CLICK_ELEMENT_TOOL = {
     },
     required: ["status", "fallbackUsed", "nativeAttempt", "currentUrl", "message", "html", "nextSteps"],
     additionalProperties: false
+  },
+  annotations: {
+    title: "Click Element",
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true
   }
 };
 
