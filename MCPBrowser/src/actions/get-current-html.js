@@ -72,7 +72,7 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
 export const GET_CURRENT_HTML_TOOL = {
   name: "browser_get_current_html",
   title: "Get Current HTML",
-  description: "**BROWSER STATE EXTRACTION** - Retrieves current HTML from an already-loaded page WITHOUT navigating/reloading. Use this to check page state after interactions (click, type) or to re-examine the current page. Much faster than browser_fetch_webpage since it only extracts HTML from the current page state.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first. This tool reads from an already-loaded page in the browser.",
+  description: "Re-read HTML from an already-loaded page without reloading it. Use when: you need to check page state after a click or form fill, re-extract content from the current page, or get updated HTML after dynamic changes. Much faster than browser_fetch_webpage since it skips navigation. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.",
   inputSchema: {
     type: "object",
     properties: {

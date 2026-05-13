@@ -38,17 +38,17 @@ export class PluginActionSuccessResponse extends MCPResponse {
 export const PLUGIN_ACTION_TOOL = {
   name: "browser_plugin_action",
   title: "Plugin Action",
-  description: "Execute a site-specific plugin action. Use browser_plugin_info first to discover available actions and their parameters. Plugins provide specialized automation for UI-heavy websites like Gmail, Outlook, PowerBI, AWS, and Azure — faster and more reliable than generic DOM interaction.",
+  description: "Execute a site-specific plugin action. Call browser_plugin_info first to discover available plugins and their actions.",
   inputSchema: {
     type: "object",
     properties: {
       plugin: {
         type: "string",
-        description: "Plugin name (e.g., 'gmail', 'outlook', 'powerbi')"
+        description: "Plugin name (use browser_plugin_info to list available plugins)"
       },
       action: {
         type: "string",
-        description: "Action name within the plugin (e.g., 'list_emails', 'extract_grid')"
+        description: "Action name within the plugin (use browser_plugin_info to discover available actions)"
       },
       params: {
         type: "object",

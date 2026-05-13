@@ -538,6 +538,103 @@ describe('Extension Tests', () => {
         });
     });
 
+    describe('getSafeVersion', () => {
+        it('should return valid semver version from context', () => {
+            const mockContext = {
+                extension: { packageJSON: { version: '0.3.49' } }
+            };
+            assert.strictEqual(extension.getSafeVersion(mockContext), '0.3.49');
+        });
+
+        it('should return "latest" when version is missing', () => {
+            assert.strictEqual(extension.getSafeVersion({}), 'latest');
+            assert.strictEqual(extension.getSafeVersion(null), 'latest');
+            assert.strictEqual(extension.getSafeVersion(undefined), 'latest');
+        });
+
+        it('should return "latest" when version is not a string', () => {
+            const mockContext = {
+                extension: { packageJSON: { version: 123 } }
+            };
+            assert.strictEqual(extension.getSafeVersion(mockContext), 'latest');
+        });
+
+        it('should return "latest" for malicious version strings', () => {
+            const tests = [
+                '1.0.0; rm -rf /',
+                '1.0.0 && echo pwned',
+                '$(whoami)',
+                '1.0.0`id`',
+                '../../../etc/passwd',
+                '1.0.0|cat /etc/passwd',
+                '',
+            ];
+            for (const bad of tests) {
+                const ctx = { extension: { packageJSON: { version: bad } } };
+                assert.strictEqual(extension.getSafeVersion(ctx), 'latest',
+                    `Should reject: "${bad}"`);
+            }
+        });
+
+        it('should accept valid semver with prerelease', () => {
+            const ctx = { extension: { packageJSON: { version: '1.0.0-beta.1' } } };
+            assert.strictEqual(extension.getSafeVersion(ctx), '1.0.0-beta.1');
+        });
+
+        it('should return "latest" when extension property is missing', () => {
+            assert.strictEqual(extension.getSafeVersion({ extension: null }), 'latest');
+            assert.strictEqual(extension.getSafeVersion({ extension: {} }), 'latest');
+            assert.strictEqual(extension.getSafeVersion({ extension: { packageJSON: {} } }), 'latest');
+        });
+    });
+
+    describe('installMcpBrowser', () => {
+        it('should use version from context in install command', async () => {
+            processStub.platform = 'win32';
+            global.process = Object.assign({}, process, processStub);
+            execPromiseStub.resolves({ stdout: 'installed' });
+            vscodeStub.window.showInformationMessage.resolves();
+
+            const mockContext = {
+                extension: { packageJSON: { version: '0.3.49' } }
+            };
+
+            const result = await extension.installMcpBrowser(mockContext);
+
+            assert.strictEqual(result, true);
+            assert(execPromiseStub.calledWith('npm install -g mcpbrowser@0.3.49'));
+        });
+
+        it('should fall back to latest when context has invalid version', async () => {
+            processStub.platform = 'win32';
+            global.process = Object.assign({}, process, processStub);
+            execPromiseStub.resolves({ stdout: 'installed' });
+            vscodeStub.window.showInformationMessage.resolves();
+
+            const result = await extension.installMcpBrowser({});
+
+            assert.strictEqual(result, true);
+            assert(execPromiseStub.calledWith('npm install -g mcpbrowser@latest'));
+        });
+
+        it('should return false on installation error', async () => {
+            processStub.platform = 'win32';
+            global.process = Object.assign({}, process, processStub);
+            execPromiseStub.rejects(new Error('Installation failed'));
+            vscodeStub.window.showInformationMessage.resolves();
+            vscodeStub.window.showErrorMessage.resolves();
+
+            const mockContext = {
+                extension: { packageJSON: { version: '1.0.0' } }
+            };
+
+            const result = await extension.installMcpBrowser(mockContext);
+
+            assert.strictEqual(result, false);
+            assert(vscodeStub.window.showErrorMessage.called);
+        });
+    });
+
     describe('checkMcpBrowserInstalled', () => {
         it('should return true when package is globally installed', async () => {
             // Mock exec to return mcpbrowser in output

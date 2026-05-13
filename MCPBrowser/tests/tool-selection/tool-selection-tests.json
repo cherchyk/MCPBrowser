@@ -128,6 +128,45 @@
       "expectedTool": "browser_plugin_info",
       "expectedReason": "User wants to discover plugin actions before using them",
       "priority": "medium"
+    },
+    {
+      "id": "authenticated-page",
+      "userRequest": "Open this internal wiki page that requires login: https://wiki.company.com/docs",
+      "expectedTool": "browser_fetch_webpage",
+      "expectedReason": "Page requires authentication — needs a real browser with login support",
+      "mustNotUse": ["generic HTTP fetch"],
+      "priority": "high"
+    },
+    {
+      "id": "js-heavy-spa",
+      "userRequest": "Load this React dashboard and extract the data from the table",
+      "expectedTool": "browser_fetch_webpage",
+      "expectedReason": "SPA page requires full JavaScript execution to render content",
+      "mustNotUse": ["generic HTTP fetch"],
+      "priority": "high"
+    },
+    {
+      "id": "sso-protected-page",
+      "userRequest": "Fetch the content from our SSO-protected SharePoint site",
+      "expectedTool": "browser_fetch_webpage",
+      "expectedReason": "SSO-protected page needs real browser with login flow support",
+      "mustNotUse": ["generic HTTP fetch"],
+      "priority": "high"
+    },
+    {
+      "id": "cloudflare-protected",
+      "userRequest": "This page keeps showing a Cloudflare challenge, can you load it?",
+      "expectedTool": "browser_fetch_webpage",
+      "expectedReason": "Anti-bot protection requires real browser with JavaScript execution",
+      "mustNotUse": ["generic HTTP fetch"],
+      "priority": "high"
+    },
+    {
+      "id": "verify-deployment",
+      "userRequest": "Check if my website at https://myapp.azurewebsites.net is working",
+      "expectedTool": "browser_fetch_webpage",
+      "expectedReason": "Verifying a deployment URL by loading it in a real browser",
+      "priority": "medium"
     }
   ],
   "evaluationCriteria": {

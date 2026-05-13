@@ -126,14 +126,28 @@ async function checkNodeInstalled() {
 }
 
 /**
+ * Read the extension version from package.json and validate it.
+ * Returns the version if it matches semver, otherwise returns 'latest'.
+ */
+function getSafeVersion(context) {
+    const version = context?.extension?.packageJSON?.version;
+    if (typeof version === 'string' && /^\d+\.\d+\.\d+(?:-[\w.]+)?$/.test(version)) {
+        return version;
+    }
+    return 'latest';
+}
+
+/**
  * Install MCPBrowser npm package globally
  */
-async function installMcpBrowser() {
+async function installMcpBrowser(context) {
     try {
+        const safeVersion = getSafeVersion(context);
+
         vscode.window.showInformationMessage('Installing MCPBrowser npm package...');
         
         // Try with sudo if in Linux/Mac environment (like dev containers)
-        let installCmd = 'npm install -g mcpbrowser@0.3.1';
+        let installCmd = `npm install -g mcpbrowser@${safeVersion}`;
         
         // Check if we need sudo (Linux/Mac and not running as root)
         if (process.platform !== 'win32' && process.getuid && process.getuid() !== 0) {
@@ -190,7 +204,7 @@ async function configureMcpBrowser() {
             type: "stdio",
             command: "npx",
             args: ["-y", "mcpbrowser@latest"],
-            description: "Browser automation for web scraping when standard HTTP requests fail. Use ONLY when pages require: (1) Authentication - login forms, SSO, 401/403 errors, corporate intranets, (2) Anti-bot protection - CAPTCHA, Cloudflare challenges, rate limiting, (3) JavaScript rendering - SPAs, dynamic content loaded after page load. Can fetch pages, click elements, fill forms, and extract content. Opens real browser for user authentication, then automates interactions and extraction. DO NOT use for simple HTML pages that work with regular HTTP GET requests."
+            description: "Load and interact with any web page using a real browser with full JavaScript execution and login support. Use when: you need to fetch a webpage, read a link, open a URL, check a website, or access any HTTP/HTTPS resource — especially pages that require JavaScript rendering or user authentication. Handles login flows, SSO, CAPTCHA, and anti-bot protection automatically. Leverages the user's existing browser session. Works on all sites including those behind authentication."
         };
 
         // Write back to file with pretty formatting
@@ -311,13 +325,16 @@ async function activate(context) {
             }
             
             // Step 1: Install npm package
-            const installed = await installMcpBrowser();
+            const installed = await installMcpBrowser(context);
             if (!installed) {
                 return; // Installation failed, abort
             }
             
             // Step 2: Configure mcp.json
             await configureMcpBrowser();
+
+            // Track installed version to avoid redundant auto-updates
+            context.globalState.update('mcpbrowser.installedVersion', getSafeVersion(context));
             
             const restart = await vscode.window.showInformationMessage(
                 '✓ MCPBrowser configured successfully! Restart your editor to use it with your AI agent.',
@@ -369,9 +386,23 @@ async function activate(context) {
     context.subscriptions.push(configureCommand);
     context.subscriptions.push(removeCommand);
 
+    // Auto-update npm package when extension version changes
+    const configured = await isMcpBrowserConfigured();
+    if (configured) {
+        const currentVersion = getSafeVersion(context);
+        const lastInstalled = context.globalState.get('mcpbrowser.installedVersion');
+        if (lastInstalled !== currentVersion) {
+            const installed = await installMcpBrowser(context);
+            if (installed) {
+                context.globalState.update('mcpbrowser.installedVersion', currentVersion);
+                await configureMcpBrowser();
+            }
+        }
+    }
+
     // Show configuration prompt if not already configured and user hasn't dismissed
     const dontAskAgain = context.globalState.get('mcpbrowser.dontAskAgain', false);
-    if (!dontAskAgain) {
+    if (!dontAskAgain && !configured) {
         // Wait a bit after startup to not be intrusive
         setTimeout(() => {
             showConfigurationPrompt(context);
@@ -398,6 +429,7 @@ module.exports = {
     removeMcpBrowser,
     installMcpBrowser,
     checkMcpBrowserInstalled,
+    getSafeVersion,
     showConfigurationPrompt,
     isWSL,
     resolveWSLPaths,

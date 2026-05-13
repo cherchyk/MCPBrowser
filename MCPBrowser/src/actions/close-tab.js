@@ -59,7 +59,7 @@ export class CloseTabSuccessResponse extends MCPResponse {
 export const CLOSE_TAB_TOOL = {
   name: "browser_close_tab",
   title: "Close Tab",
-  description: "**BROWSER MANAGEMENT** - Closes the browser tab for the given URL's hostname. This removes the page from the tab pool and forces a fresh session on the next visit to that hostname. Useful for memory management or when you need to clear session state. Note: Uses exact hostname match (www.example.com and example.com are treated as different tabs).",
+  description: "Close a browser tab to free resources. Use when: you are done with a page and want to release memory, or need to reset session state for a hostname. Uses exact hostname match.",
   inputSchema: {
     type: "object",
     properties: {

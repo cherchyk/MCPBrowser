@@ -74,7 +74,7 @@ export class DetectFormsResponse extends MCPResponse {
 export const DETECT_FORMS_TOOL = {
   name: "browser_detect_forms",
   title: "Detect Forms",
-  description: "**AUTO FORM DISCOVERY** - Scans the current page and returns structured JSON of all forms: fields (name, type, required, placeholder, current value, validation constraints), submit buttons, and orphaned inputs not inside any <form> (common in SPAs). Use this BEFORE filling forms to understand what fields exist and how to interact with them.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first.",
+  description: "Scan a browser-loaded page and return all forms as structured JSON — fields, types, validation rules, submit buttons, and orphaned inputs. Use when: you need to understand a form before filling it, discover what fields exist on a page, or map form structure for automation. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.",
   inputSchema: {
     type: "object",
     properties: {

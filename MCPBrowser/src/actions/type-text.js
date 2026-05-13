@@ -66,7 +66,7 @@ export class TypeTextSuccessResponse extends MCPResponse {
 export const TYPE_TEXT_TOOL = {
   name: "browser_type_text",
   title: "Type Text",
-  description: "**BROWSER INTERACTION** - Types text into multiple input fields on browser-loaded pages in a single call. Use this for filling forms, entering search queries, or any text input on the page.\n\nWorks with input fields, textareas, and other editable elements. Supports filling multiple fields at once for efficient form filling.\n\n**PREREQUISITE**: Page MUST be loaded with browser_fetch_webpage first. This tool operates on an already-loaded page in the browser.",
+  description: "Type text into input fields on a browser-loaded page. Use when: you need to fill a form, enter a search query, type into a text box, or input data into any editable field. Supports filling multiple fields in a single call. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.",
   inputSchema: {
     type: "object",
     properties: {

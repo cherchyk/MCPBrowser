@@ -55,7 +55,7 @@ export class PluginActionDetailResponse extends MCPResponse {
 export const PLUGIN_INFO_TOOL = {
   name: "browser_plugin_info",
   title: "Plugin Info",
-  description: "Get information about an installed site plugin — its available actions, parameters, and site context. Call this after a plugin is detected (recommended in nextSteps) to discover what actions you can perform via browser_plugin_action. You can also call with no arguments to list all loaded plugins.",
+  description: "List available site-specific plugins and their actions. Use when: browser_fetch_webpage suggests a plugin in nextSteps, or you want to check what optimized actions are available for the current site. Call with no arguments to list all plugins, or with a plugin name for details.",
   inputSchema: {
     type: "object",
     properties: {
