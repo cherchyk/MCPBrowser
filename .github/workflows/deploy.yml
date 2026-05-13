@@ -99,6 +99,12 @@ jobs:
         cd VSCodeExtension
         ovsx publish mcpbrowser-${{ steps.version.outputs.version }}.vsix -p ${{ secrets.OVSX_PAT }}
     
+    - name: Build MCP Bundle
+      run: |
+        cd MCPBrowser
+        npm run build:mcpb
+        ls -lh dist/*.mcpb
+
     - name: Extract changelog for version
       id: changelog
       run: |
@@ -126,7 +132,8 @@ jobs:
         gh release create "v$VERSION" \
           --title "v$VERSION" \
           --notes-file release-notes.md \
-          VSCodeExtension/mcpbrowser-$VERSION.vsix
+          VSCodeExtension/mcpbrowser-$VERSION.vsix \
+          MCPBrowser/dist/mcpbrowser-$VERSION.mcpb
     
     - name: Deployment Summary
       run: |
@@ -136,5 +143,5 @@ jobs:
         echo "  ✅ MCP Registry (Visual Studio & other MCP clients)"
         echo "  ✅ VS Code Marketplace"
         echo "  ✅ Open VSX Registry"
-        echo "  ✅ GitHub Releases"
+        echo "  ✅ GitHub Releases (with .vsix + .mcpb bundle)"
 

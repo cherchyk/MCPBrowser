@@ -41,6 +41,17 @@ jobs:
         
         echo "✅ All versions synchronized at $MCP_VERSION"
 
+    - name: Build MCP Bundle
+      run: |
+        cd MCPBrowser
+        npm run build:mcpb
+
+    - name: Verify MCP Bundle
+      run: |
+        ls -lh MCPBrowser/dist/*.mcpb
+        # Verify it's a valid ZIP with manifest.json
+        unzip -l MCPBrowser/dist/*.mcpb | head -5
+
     - name: Verify VS Code Extension packages
       run: |
         npm install -g @vscode/vsce ovsx
