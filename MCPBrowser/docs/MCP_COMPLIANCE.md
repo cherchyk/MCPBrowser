@@ -21,11 +21,11 @@ Per the MCP spec, each tool definition must include:
 | `title` | ⚪ Optional | ✅ Implemented | Human-readable display name (moved from annotations to top-level) |
 | `outputSchema` | ⚪ Optional | ✅ Implemented | JSON Schema for structured output validation |
 | `icons` | ⚪ Optional | ❌ Not used | Array of icons for UI display |
-| `annotations` | ⚪ Optional | ❌ Removed | Properties describing tool behavior |
+| `annotations` | ⚪ Optional | ✅ Implemented | Risk hints: readOnlyHint, destructiveHint, idempotentHint, openWorldHint |
 
 ## Verified Tool Definitions
 
-All 5 tools conform to the specification:
+All 12 tools conform to the specification:
 
 ### 1. browser_fetch_webpage ✅
 
@@ -262,37 +262,52 @@ Following MCP security recommendations:
 - ⚠️ **Timeouts**: Clients should implement tool call timeouts
 - ⚠️ **Audit logging**: Clients should log tool usage
 
-## Changes Made for Compliance
+## Tool Annotations ✅
 
-### Before (Non-Compliant)
-```javascript
-{
-  name: "browser_close_tab",
-  description: "...",
-  inputSchema: { ... },
-  outputSchema: { ... },
-  annotations: {
-    title: "Close Tab"  // ❌ Title in annotations
-  }
-}
-```
+All 12 tools declare MCP risk annotations per the [Tool Annotations spec](https://modelcontextprotocol.io/specification/2025-11-25/server/tools#annotations):
 
-### After (Compliant)
-```javascript
-{
-  name: "browser_close_tab",
-  title: "Close Tab",  // ✅ Title at top level
-  description: "...",
-  inputSchema: { ... },
-  outputSchema: { ... }
-}
-```
+| Tool | readOnly | destructive | idempotent | openWorld |
+|------|----------|-------------|------------|-----------|
+| `browser_fetch_webpage` | ✅ true | false | ✅ true | ✅ true |
+| `browser_get_current_html` | ✅ true | false | ✅ true | false |
+| `browser_take_screenshot` | ✅ true | false | ✅ true | false |
+| `browser_detect_forms` | ✅ true | false | ✅ true | false |
+| `browser_plugin_info` | ✅ true | false | ✅ true | false |
+| `browser_scroll_page` | false | false | false | false |
+| `browser_click_element` | false | false | false | ✅ true |
+| `browser_type_text` | false | false | false | false |
+| `browser_navigate_history` | false | false | false | ✅ true |
+| `browser_plugin_action` | false | false | false | ✅ true |
+| `browser_execute_javascript` | false | ⚠️ true | false | ✅ true |
+| `browser_close_tab` | false | ⚠️ true | ✅ true | false |
+
+Clients can use these hints to auto-approve read-only tools and prompt for confirmation on destructive ones.
+
+## Security Model — Lethal Trifecta ⚠️
+
+MCPBrowser inherently combines all three legs of the "lethal trifecta" defined in the [MCP Tool Annotations blog post](https://blog.modelcontextprotocol.io/posts/2026-03-16-tool-annotations/):
+
+| Leg | Present | How |
+|-----|---------|-----|
+| **Private data access** | ✅ | Connects to user's existing browser with cookies, SSO sessions, and saved credentials |
+| **Untrusted content exposure** | ✅ | Loads and processes arbitrary web pages |
+| **External communication** | ✅ | Can navigate to any URL, execute JavaScript in page context |
+
+This is **by design** — browser automation requires all three capabilities. The following mitigations are in place:
+
+- **Tool annotations** accurately reflect risk levels (see table above)
+- **Destructive tools** (`execute_javascript`, `close_tab`) are annotated with `destructiveHint: true`
+- **Open-world tools** that reach external resources are annotated with `openWorldHint: true`
+- **Single-user model** — connects to the user's own browser (no shared/multi-tenant mode)
+- **EULA acceptance** required before first use
+- **Sequential request queue** — one operation at a time, no parallel mutations
+- **HTML sanitization** — script tags and event handlers stripped from extracted content
 
 ## Testing
 
-All 5 tools verified with:
-- ✅ 158 unit tests passing
-- ✅ 5 MCP compliance tests passing
+All 12 tools verified with:
+- ✅ Unit tests passing
+- ✅ MCP compliance tests passing
 - ✅ Response format validation
 - ✅ Structured content validation
 
@@ -302,11 +317,10 @@ All 5 tools verified with:
 
 All tool definitions:
 - Follow required field structure
-- Implement optional fields correctly
+- Implement optional fields correctly (title, outputSchema, annotations)
 - Use valid JSON Schema format
 - Document inputs and outputs
 - Handle errors properly
 - Follow naming conventions
 - Support structured output validation
-
-No violations or warnings.
+- Declare risk annotations for client safety UX

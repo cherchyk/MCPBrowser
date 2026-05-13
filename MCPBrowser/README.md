@@ -5,7 +5,7 @@
 [![Claude Desktop](https://img.shields.io/badge/Claude-Desktop-5865F2?logo=anthropic)](https://modelcontextprotocol.io/quickstart/user)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> ⚠️ **Security Notice:** MCPBrowser extracts webpage content and provides it to your AI agent (e.g., GitHub Copilot, Claude, Kiro, Antigravity), which then sends it to the LLM provider it uses (e.g., Anthropic, OpenAI, GitHub) for processing. Make sure you trust both your agent and the LLM provider — especially when accessing pages with sensitive or private data.
+> ⚠️ **Security Notice:** MCPBrowser extracts webpage content and provides it to your AI agent (e.g., GitHub Copilot, Claude, Kiro, Antigravity), which then sends it to the LLM provider it uses (e.g., Anthropic, OpenAI, GitHub) for processing. Make sure you trust both your agent and the LLM provider — especially when accessing pages with sensitive or private data. MCPBrowser combines private data access, untrusted content exposure, and external communication (the MCP "[lethal trifecta](https://blog.modelcontextprotocol.io/posts/2026-03-16-tool-annotations/)") — all tool annotations accurately declare these risks so MCP clients can enforce appropriate safety controls. See [MCP_COMPLIANCE.md](docs/MCP_COMPLIANCE.md) for details.
 
 > 💡 **Why MCPBrowser over Puppeteer/Playwright MCP servers?** Puppeteer and Playwright are browser automation libraries — their MCP servers give agents raw, low-level browser commands. MCPBrowser uses Puppeteer under the hood and was built specifically for AI agents, adding an intelligence layer that handles the hard parts automatically.
 >

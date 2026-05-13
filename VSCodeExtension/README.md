@@ -1,6 +1,6 @@
 # ✅ MCPBrowser (MCP Browser)
 
-> ⚠️ **Security Notice:** MCPBrowser extracts webpage content and provides it to your AI agent (e.g., GitHub Copilot, Kiro, Antigravity), which then sends it to the LLM provider it uses (e.g., Anthropic, OpenAI, GitHub) for processing. Make sure you trust both your agent and the LLM provider — especially when accessing pages with sensitive or private data.
+> ⚠️ **Security Notice:** MCPBrowser extracts webpage content and provides it to your AI agent (e.g., GitHub Copilot, Kiro, Antigravity), which then sends it to the LLM provider it uses (e.g., Anthropic, OpenAI, GitHub) for processing. Make sure you trust both your agent and the LLM provider — especially when accessing pages with sensitive or private data. MCPBrowser combines private data access, untrusted content exposure, and external communication (the MCP "[lethal trifecta](https://blog.modelcontextprotocol.io/posts/2026-03-16-tool-annotations/)") — all tool annotations accurately declare these risks so MCP clients can enforce appropriate safety controls.
 
 **MCP browser server extension for VS Code, Kiro, Antigravity, and compatible editors.** This browser-based MCP server extension enables in-browser web page fetching using your real Chrome, Edge, or Brave browser. Used when loading web pages via browser automation is preferred - handles login, SSO, CAPTCHA, and anti-crawler restrictions. Should be used when standard browser_fetch_webpage fails.
 
