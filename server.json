@@ -3,6 +3,7 @@
   "name": "io.github.cherchyk/mcpbrowser",
   "title": "MCP Browser",
   "description": "Browser automation server — loads and interacts with web pages using the user's Chromium-based browser with full JavaScript execution, authentication, and anti-bot support.",
+  "websiteUrl": "https://github.com/cherchyk/MCPBrowser#readme",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/cherchyk/MCPBrowser/main/VSCodeExtension/icon.png"
@@ -10,13 +11,22 @@
   ],
   "repository": {
     "url": "https://github.com/cherchyk/MCPBrowser",
-    "source": "github"
+    "source": "github",
+    "subfolder": "MCPBrowser"
   },
   "version": "0.3.53",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "mcpbrowser",
+      "version": "0.3.53",
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/cherchyk/MCPBrowser/releases/download/v0.3.53/mcpbrowser-0.3.53.mcpb",
       "version": "0.3.53",
       "transport": {
         "type": "stdio"
