@@ -68,8 +68,23 @@ async function main() {
   // Wire server to logger so logs flow to agent via notifications/message.
   attachLoggerServer(server);
 
+  // Load plugins before assembling tools so we only expose plugin tools when plugins are enabled
+  const pluginCount = await loadPlugins();
+  if (pluginCount > 0) {
+    logger.info(`${pluginCount} plugin(s) loaded and ready`);
+  }
+
   // Assemble tools from action imports
-  // ACCEPT_EULA_TOOL must be first - it's required before using other tools
+  // Only include plugin tools when plugins are actually enabled, with descriptions referencing loaded plugin names
+  const pluginTools = [];
+  if (pluginCount > 0) {
+    const pluginNames = [...getLoadedPlugins().keys()];
+    const nameList = pluginNames.join(', ');
+    pluginTools.push(
+      { ...PLUGIN_INFO_TOOL, description: `${PLUGIN_INFO_TOOL.description} Enabled plugins: ${nameList}.` },
+      { ...PLUGIN_ACTION_TOOL, description: `${PLUGIN_ACTION_TOOL.description} Enabled plugins: ${nameList}.` }
+    );
+  }
   const tools = [
     // ACCEPT_EULA_TOOL,
     FETCH_WEBPAGE_TOOL,
@@ -82,8 +97,7 @@ async function main() {
     SCROLL_PAGE_TOOL,
     NAVIGATE_HISTORY_TOOL,
     DETECT_FORMS_TOOL,
-    PLUGIN_INFO_TOOL,
-    PLUGIN_ACTION_TOOL
+    ...pluginTools
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
@@ -182,13 +196,6 @@ async function main() {
   });
 
   const transport = new StdioServerTransport();
-  
-  // Load plugins before starting the server
-  const pluginCount = await loadPlugins();
-  if (pluginCount > 0) {
-    logger.info(`${pluginCount} plugin(s) loaded and ready`);
-  }
-  
   await server.connect(transport);
   logger.info(`MCPBrowser server v${packageJson.version} started`);
 }

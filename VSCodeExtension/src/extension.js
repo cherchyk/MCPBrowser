@@ -190,7 +190,7 @@ async function configureMcpBrowser() {
             type: "stdio",
             command: "npx",
             args: ["-y", "mcpbrowser@latest"],
-            description: "Load any URL using a real browser. Use when: you need to fetch a webpage, read a link, open a URL, check a website, or access any HTTP/HTTPS resource. Handles JavaScript rendering, authentication, SSO, CAPTCHA, and anti-bot protection automatically. Works on all sites including GitHub Enterprise, Azure DevOps, SharePoint, internal dashboards, and public websites."
+            description: "Load and interact with any web page using a real browser with full JavaScript execution and login support. Use when: you need to fetch a webpage, read a link, open a URL, check a website, or access any HTTP/HTTPS resource — especially pages that require JavaScript rendering or user authentication. Handles login flows, SSO, CAPTCHA, and anti-bot protection automatically. Leverages the user's existing browser session. Works on all sites including those behind authentication."
         };
 
         // Write back to file with pretty formatting
