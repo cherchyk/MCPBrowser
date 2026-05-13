@@ -111,6 +111,13 @@ export const TYPE_TEXT_TOOL = {
     },
     required: ["currentUrl", "message", "html", "nextSteps"],
     additionalProperties: false
+  },
+  annotations: {
+    title: "Type Text",
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false
   }
 };
 

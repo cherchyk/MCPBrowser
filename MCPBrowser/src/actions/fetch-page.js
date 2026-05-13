@@ -113,6 +113,13 @@ export const FETCH_WEBPAGE_TOOL = {
     },
     required: ["currentUrl", "html", "nextSteps"],
     additionalProperties: false
+  },
+  annotations: {
+    title: "Fetch Web Page",
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true
   }
 };
 

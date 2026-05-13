@@ -108,6 +108,7 @@ export const NAVIGATE_HISTORY_TOOL = {
     title: "Navigate Back/Forward",
     readOnlyHint: false,
     destructiveHint: false,
+    idempotentHint: false,
     openWorldHint: true
   }
 };

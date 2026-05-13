@@ -81,6 +81,13 @@ export const CLOSE_TAB_TOOL = {
     },
     required: ["message", "hostname", "nextSteps"],
     additionalProperties: false
+  },
+  annotations: {
+    title: "Close Tab",
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false
   }
 };
 

@@ -81,6 +81,13 @@ export const PLUGIN_INFO_TOOL = {
     },
     required: ["nextSteps"],
     additionalProperties: true
+  },
+  annotations: {
+    title: "Plugin Info",
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false
   }
 };
 

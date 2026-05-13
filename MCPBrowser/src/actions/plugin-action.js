@@ -70,6 +70,13 @@ export const PLUGIN_ACTION_TOOL = {
     },
     required: ["nextSteps"],
     additionalProperties: true
+  },
+  annotations: {
+    title: "Plugin Action",
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true
   }
 };
 

@@ -113,6 +113,13 @@ export const TAKE_SCREENSHOT_TOOL = {
     },
     required: ["currentUrl", "screenshotBase64", "mimeType", "nextSteps"],
     additionalProperties: false
+  },
+  annotations: {
+    title: "Take Screenshot",
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false
   }
 };
 
