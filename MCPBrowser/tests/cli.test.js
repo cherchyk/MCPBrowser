@@ -177,7 +177,7 @@ await test('No args should start MCP server (responds to initialize)', async () 
     });
 
     assert.ok(response.result, 'Should get MCP initialize result');
-    assert.strictEqual(response.result.serverInfo.name, 'MCP Browser');
+    assert.strictEqual(response.result.serverInfo.name, 'MCPBrowser');
   } finally {
     proc.kill();
   }

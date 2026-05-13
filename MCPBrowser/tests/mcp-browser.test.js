@@ -93,7 +93,7 @@ await test('Should start and respond to initialize request', async () => {
     assert.ok(response.result, 'Initialize response should have result');
     assert.strictEqual(response.result.protocolVersion, '2024-11-05', 'Protocol version should match');
     assert.ok(response.result.serverInfo, 'Server info should be present');
-    assert.strictEqual(response.result.serverInfo.name, 'MCP Browser', 'Server name should be MCP Browser');
+    assert.strictEqual(response.result.serverInfo.name, 'MCPBrowser', 'Server name should be MCPBrowser');
   } finally {
     mcpProcess.kill();
   }
