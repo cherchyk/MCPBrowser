@@ -1,6 +1,6 @@
 {
   "name": "mcpbrowser",
-  "version": "0.3.50",
+  "version": "0.3.52",
   "mcpName": "io.github.cherchyk/mcpbrowser",
   "type": "module",
   "description": "MCP browser server — load and interact with any web page using a real Chrome/Edge/Brave browser with full JavaScript execution. Handles login flows, authentication, SSO, CAPTCHAs, and anti-bot protection. Use whenever a real browser is needed to load a page, especially when JavaScript rendering or user login is required.",
