@@ -541,9 +541,9 @@ describe('Extension Tests', () => {
     describe('getSafeVersion', () => {
         it('should return valid semver version from context', () => {
             const mockContext = {
-                extension: { packageJSON: { version: '0.3.50' } }
+                extension: { packageJSON: { version: '0.3.52' } }
             };
-            assert.strictEqual(extension.getSafeVersion(mockContext), '0.3.50');
+            assert.strictEqual(extension.getSafeVersion(mockContext), '0.3.52');
         });
 
         it('should return "latest" when version is missing', () => {
@@ -596,13 +596,13 @@ describe('Extension Tests', () => {
             vscodeStub.window.showInformationMessage.resolves();
 
             const mockContext = {
-                extension: { packageJSON: { version: '0.3.50' } }
+                extension: { packageJSON: { version: '0.3.52' } }
             };
 
             const result = await extension.installMcpBrowser(mockContext);
 
             assert.strictEqual(result, true);
-            assert(execPromiseStub.calledWith('npm install -g mcpbrowser@0.3.50'));
+            assert(execPromiseStub.calledWith('npm install -g mcpbrowser@0.3.52'));
         });
 
         it('should fall back to latest when context has invalid version', async () => {
@@ -632,6 +632,37 @@ describe('Extension Tests', () => {
 
             assert.strictEqual(result, false);
             assert(vscodeStub.window.showErrorMessage.called);
+        });
+
+        it('should not show notifications when silent option is true', async () => {
+            processStub.platform = 'win32';
+            global.process = Object.assign({}, process, processStub);
+            execPromiseStub.resolves({ stdout: 'installed' });
+
+            const mockContext = {
+                extension: { packageJSON: { version: '0.3.52' } }
+            };
+
+            const result = await extension.installMcpBrowser(mockContext, { silent: true });
+
+            assert.strictEqual(result, true);
+            assert(vscodeStub.window.showInformationMessage.notCalled);
+        });
+
+        it('should not show error notification on failure when silent', async () => {
+            processStub.platform = 'win32';
+            global.process = Object.assign({}, process, processStub);
+            execPromiseStub.rejects(new Error('Installation failed'));
+
+            const mockContext = {
+                extension: { packageJSON: { version: '1.0.0' } }
+            };
+
+            const result = await extension.installMcpBrowser(mockContext, { silent: true });
+
+            assert.strictEqual(result, false);
+            assert(vscodeStub.window.showErrorMessage.notCalled);
+            assert(vscodeStub.window.showInformationMessage.notCalled);
         });
     });
 
