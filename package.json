@@ -3,8 +3,7 @@
   "version": "0.3.50",
   "private": true,
   "description": "MCPBrowser workspace — MCP server and VS Code extension providing a real browser with full JavaScript execution and login/authentication support for AI agents",
-  "description": "MCPBrowser workspace — MCP server and VS Code extension providing a real browser with full JavaScript execution and login/authentication support for AI agents",
-  "scripts": {
+    "scripts": {
     "install:all": "npm ci && cd MCPBrowser && npm install && cd ../VSCodeExtension && npm install && cd ..",
     "test": "cd MCPBrowser && npm test && cd ../VSCodeExtension && npm test",
     "test:ci": "cd MCPBrowser && npm run test:unit && cd ../VSCodeExtension && npm test",
@@ -24,7 +23,7 @@
     "browser",
     "authentication",
     "javascript-rendering",
-    "web-automation"
+    "web-automation",
     "authentication",
     "javascript-rendering",
     "web-automation"
