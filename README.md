@@ -412,7 +412,7 @@ Follow Windsurf MCP [documentation](https://docs.windsurf.com/windsurf/cascade/m
 
 ### `browser_fetch_webpage`
 
-Fetches web pages using your Chrome/Edge browser. Handles authentication, CAPTCHA, SSO, anti-bot protection, and JavaScript-heavy sites. Opens the URL in a browser tab (reuses existing tab for same domain) and waits for the page to fully load before returning content. **Automatically detects SPAs** (React, Vue, Angular) and waits for JavaScript to render content.
+Fetches web pages using your Chrome/Edge/Brave browser. Handles authentication, CAPTCHA, SSO, anti-bot protection, and JavaScript-heavy sites. Opens the URL in a browser tab (reuses existing tab for same domain) and waits for the page to fully load before returning content. **Automatically detects SPAs** (React, Vue, Angular) and waits for JavaScript to render content.
 
 **Parameters:**
 - `url` (string, required) - The URL to fetch
@@ -709,7 +709,7 @@ Environment variables for advanced setup:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `CHROME_PATH` | Path to Chrome/Edge | Auto-detect |
+| `CHROME_PATH` | Path to Chrome/Edge/Brave | Auto-detect |
 | `CHROME_USER_DATA_DIR` | Browser profile directory | `%LOCALAPPDATA%/ChromeAuthProfile` |
 | `CHROME_REMOTE_DEBUG_PORT` | DevTools port | `9222` |
 

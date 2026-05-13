@@ -7,7 +7,7 @@
 ## Features
 
 - 🚀 **One-Click Setup**: Installs npm package and configures mcp.json automatically - complete setup with a single click
-- 🔐 **Authentication Support**: Fetches web pages in your Chrome/Edge browser - authenticate once, reuse sessions automatically
+- 🔐 **Authentication Support**: Fetches web pages in your Chrome/Edge/Brave browser - authenticate once, reuse sessions automatically
 - 🤖 **Bypass Anti-Crawler**: Fetch sites that block automated tools, including CAPTCHA and human verification
 
 ## Requirements
@@ -50,7 +50,7 @@ Fetch the content from https://portal.azure.com/resources - use my authenticated
 Fetch https://github.com/private-repo/issues using MCPBrowser
 ```
 
-Your AI agent will use your Chrome/Edge browser session to fetch these pages, bypassing authentication and anti-crawler restrictions.
+Your AI agent will use your Chrome/Edge/Brave browser session to fetch these pages, bypassing authentication and anti-crawler restrictions.
 
 ### Manual Commands
 

@@ -167,6 +167,54 @@
       "expectedTool": "browser_fetch_webpage",
       "expectedReason": "Verifying a deployment URL by loading it in a real browser",
       "priority": "medium"
+    },
+    {
+      "id": "intent-check-email",
+      "userRequest": "Check my Gmail inbox and summarize the top 3 emails",
+      "expectedToolSequence": ["browser_fetch_webpage", "browser_take_screenshot"],
+      "expectedReason": "No dedicated email tool exists, but browser can access Gmail via user's logged-in session",
+      "mustNotUse": ["generic HTTP fetch"],
+      "priority": "critical"
+    },
+    {
+      "id": "intent-calendar-events",
+      "userRequest": "What meetings do I have today on Google Calendar?",
+      "expectedTool": "browser_fetch_webpage",
+      "expectedReason": "Agent should navigate to calendar web app using the user's logged-in browser session",
+      "mustNotUse": ["generic HTTP fetch"],
+      "priority": "critical"
+    },
+    {
+      "id": "intent-jira-tickets",
+      "userRequest": "Read my latest Jira tickets",
+      "expectedTool": "browser_fetch_webpage",
+      "expectedReason": "Agent should infer Jira URL and use browser to access the authenticated web app",
+      "mustNotUse": ["generic HTTP fetch"],
+      "priority": "high"
+    },
+    {
+      "id": "intent-outlook-inbox",
+      "userRequest": "Do I have any new emails in Outlook?",
+      "expectedTool": "browser_fetch_webpage",
+      "expectedReason": "Browser can access Outlook web app with the user's existing session cookies",
+      "mustNotUse": ["generic HTTP fetch"],
+      "priority": "critical"
+    },
+    {
+      "id": "intent-azure-dashboard",
+      "userRequest": "Show me the status of my Azure resources",
+      "expectedTool": "browser_fetch_webpage",
+      "expectedReason": "Agent should open Azure Portal dashboard using the authenticated browser session",
+      "mustNotUse": ["generic HTTP fetch"],
+      "priority": "high"
+    },
+    {
+      "id": "intent-github-notifications",
+      "userRequest": "Check my GitHub notifications",
+      "expectedTool": "browser_fetch_webpage",
+      "expectedReason": "Browser can access GitHub with the user's logged-in session to read notifications",
+      "mustNotUse": ["generic HTTP fetch"],
+      "priority": "high"
     }
   ],
   "evaluationCriteria": {

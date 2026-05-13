@@ -62,7 +62,10 @@ async function main() {
   
   const server = new Server(
     { name: "MCPBrowser", version: packageJson.version },
-    { capabilities: { tools: {}, logging: {} } }
+    {
+      capabilities: { tools: {}, logging: {} },
+      instructions: "Browser automation server using the user's existing browser session (cookies and auth intact). Workflow: browser_fetch_webpage → browser_take_screenshot (visual content) or browser_get_current_html (re-read after interaction) → browser_click_element / browser_type_text (interact) → browser_close_tab (cleanup). All tools except browser_fetch_webpage and browser_plugin_info require a page loaded first. One tab per domain — same-domain navigations reuse the existing tab. Requests are queued and processed sequentially. If authentication is required, the user must complete login in the browser window, then retry the same URL."
+    }
   );
 
   // Wire server to logger so logs flow to agent via notifications/message.
