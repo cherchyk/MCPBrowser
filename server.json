@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.cherchyk/mcpbrowser",
   "title": "MCP Browser",
-  "description": "Browser automation server — loads and interacts with web pages using the user's Chromium-based browser with full JavaScript execution, authentication, and anti-bot support.",
+  "description": "Browser automation using the user's Chromium session — JS execution, auth, and anti-bot support.",
   "websiteUrl": "https://github.com/cherchyk/MCPBrowser#readme",
   "icons": [
     {
@@ -14,20 +14,20 @@
     "source": "github",
     "subfolder": "MCPBrowser"
   },
-  "version": "0.3.53",
+  "version": "0.3.54",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "mcpbrowser",
-      "version": "0.3.53",
+      "version": "0.3.54",
       "transport": {
         "type": "stdio"
       }
     },
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/cherchyk/MCPBrowser/releases/download/v0.3.53/mcpbrowser-0.3.53.mcpb",
-      "version": "0.3.53",
+      "identifier": "https://github.com/cherchyk/MCPBrowser/releases/download/v0.3.54/mcpbrowser-0.3.54.mcpb",
+      "version": "0.3.54",
       "transport": {
         "type": "stdio"
       }
