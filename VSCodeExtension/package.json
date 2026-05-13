@@ -36,6 +36,10 @@
     "javascript-rendering",
     "login",
     "interactive"
+    "open-vsx",
+    "javascript-rendering",
+    "login",
+    "interactive"
   ],
   "activationEvents": [
     "onStartupFinished"
