@@ -541,9 +541,9 @@ describe('Extension Tests', () => {
     describe('getSafeVersion', () => {
         it('should return valid semver version from context', () => {
             const mockContext = {
-                extension: { packageJSON: { version: '0.3.49' } }
+                extension: { packageJSON: { version: '0.3.50' } }
             };
-            assert.strictEqual(extension.getSafeVersion(mockContext), '0.3.49');
+            assert.strictEqual(extension.getSafeVersion(mockContext), '0.3.50');
         });
 
         it('should return "latest" when version is missing', () => {
@@ -596,13 +596,13 @@ describe('Extension Tests', () => {
             vscodeStub.window.showInformationMessage.resolves();
 
             const mockContext = {
-                extension: { packageJSON: { version: '0.3.49' } }
+                extension: { packageJSON: { version: '0.3.50' } }
             };
 
             const result = await extension.installMcpBrowser(mockContext);
 
             assert.strictEqual(result, true);
-            assert(execPromiseStub.calledWith('npm install -g mcpbrowser@0.3.49'));
+            assert(execPromiseStub.calledWith('npm install -g mcpbrowser@0.3.50'));
         });
 
         it('should fall back to latest when context has invalid version', async () => {
