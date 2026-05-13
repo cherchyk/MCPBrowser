@@ -1,6 +1,6 @@
 {
   "name": "mcpbrowser-workspace",
-  "version": "0.3.49",
+  "version": "0.3.50",
   "private": true,
   "description": "MCPBrowser workspace — MCP server and VS Code extension providing a real browser with full JavaScript execution and login/authentication support for AI agents",
   "scripts": {
