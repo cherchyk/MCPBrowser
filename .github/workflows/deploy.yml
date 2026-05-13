@@ -71,39 +71,33 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-    - name: Publish to MCP Registry
-      run: |
-        # Install mcp-publisher
-        curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
-        
-        # Authenticate using GitHub OIDC (no secrets needed!)
-        ./mcp-publisher login github-oidc
-        
-        # Publish to MCP Registry
-        ./mcp-publisher publish
-    
     - name: Package VS Code Extension
       run: |
         cd VSCodeExtension
         vsce package --no-dependencies
-    
-    - name: Publish to VS Code Marketplace
-      run: |
-        cd VSCodeExtension
-        vsce publish --packagePath mcpbrowser-${{ steps.version.outputs.version }}.vsix
-      env:
-        VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
-    - name: Publish to Open VSX Registry
-      run: |
-        cd VSCodeExtension
-        ovsx publish mcpbrowser-${{ steps.version.outputs.version }}.vsix -p ${{ secrets.OVSX_PAT }}
-    
     - name: Build MCP Bundle
       run: |
         cd MCPBrowser
         npm run build:mcpb
         ls -lh dist/*.mcpb
+
+    - name: Inject mcpb fileSha256 into server.json
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        MCPB_FILE="MCPBrowser/dist/mcpbrowser-${VERSION}.mcpb"
+        SHA256=$(sha256sum "$MCPB_FILE" | awk '{print $1}')
+        echo "SHA256: $SHA256"
+        
+        # Inject fileSha256 into the mcpb package entry in server.json
+        node -e "
+          const fs = require('fs');
+          const sj = JSON.parse(fs.readFileSync('server.json', 'utf8'));
+          const mcpbPkg = sj.packages.find(p => p.registryType === 'mcpb');
+          if (mcpbPkg) { mcpbPkg.fileSha256 = '${SHA256}'; }
+          fs.writeFileSync('server.json', JSON.stringify(sj, null, 2) + '\n');
+        "
+        echo "Updated server.json mcpb entry with fileSha256"
 
     - name: Extract changelog for version
       id: changelog
@@ -134,6 +128,29 @@ jobs:
           --notes-file release-notes.md \
           VSCodeExtension/mcpbrowser-$VERSION.vsix \
           MCPBrowser/dist/mcpbrowser-$VERSION.mcpb
+
+    - name: Publish to MCP Registry
+      run: |
+        # Install mcp-publisher
+        curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+        
+        # Authenticate using GitHub OIDC (no secrets needed!)
+        ./mcp-publisher login github-oidc
+        
+        # Publish to MCP Registry
+        ./mcp-publisher publish
+
+    - name: Publish to VS Code Marketplace
+      run: |
+        cd VSCodeExtension
+        vsce publish --packagePath mcpbrowser-${{ steps.version.outputs.version }}.vsix
+      env:
+        VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+    - name: Publish to Open VSX Registry
+      run: |
+        cd VSCodeExtension
+        ovsx publish mcpbrowser-${{ steps.version.outputs.version }}.vsix -p ${{ secrets.OVSX_PAT }}
     
     - name: Deployment Summary
       run: |
