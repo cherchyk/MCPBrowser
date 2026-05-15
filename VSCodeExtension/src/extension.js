@@ -192,7 +192,7 @@ async function installMcpBrowser(context, options = {}) {
         }
         
         // Try with sudo if in Linux/Mac environment (like dev containers)
-        let installCmd = `npm install -g mcpbrowser@${safeVersion}`;
+        let installCmd = `npm install -g mcpbrowser@${safeVersion} --registry https://registry.npmjs.org`;
         
         // Check if we need sudo (Linux/Mac and not running as root)
         if (process.platform !== 'win32' && process.getuid && process.getuid() !== 0) {
@@ -251,11 +251,20 @@ async function configureMcpBrowser() {
         // We intentionally use `mcpbrowser@latest` in args — npx resolves the @latest
         // dist-tag at runtime. The global install done by installMcpBrowser() is just
         // a cache so npx doesn't need to download. See VERSION STRATEGY in file header.
+        //
+        // npm_config_registry: Forces npx to resolve mcpbrowser from the public npm
+        // registry. Without this, projects with a .npmrc pointing to a private registry
+        // (e.g. Azure Artifacts, GitHub Packages) cause npx to fail with E401.
+        // User-set env vars are preserved via spread and take precedence.
         config[key].MCPBrowser = {
             ...existing,
             type: "stdio",
             command: "npx",
             args: ["-y", "mcpbrowser@latest"],
+            env: {
+                npm_config_registry: "https://registry.npmjs.org",
+                ...(existing.env || {})
+            },
             description: "Load and interact with any web page using a real browser with full JavaScript execution and login support. Use when: you need to fetch a webpage, read a link, open a URL, check a website, or access any HTTP/HTTPS resource — especially pages that require JavaScript rendering or user authentication. Handles login flows, SSO, CAPTCHA, and anti-bot protection automatically. Leverages the user's existing browser session. Works on all sites including those behind authentication."
         };
 

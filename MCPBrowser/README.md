@@ -498,6 +498,31 @@ Logs go to `stderr` so they don't interfere with MCP protocol on `stdout`.
 - Keep the browser tab open (default behavior)
 - Use the same domain for related requests
 
+**E401 error with `npx` / private npm registry?**
+
+If your project has a `.npmrc` that points to a private registry (e.g., Azure Artifacts, GitHub Packages, Artifactory), `npx` will try to fetch `mcpbrowser` from that registry instead of npmjs.org and fail with `E401`.
+
+**Fix:** Add `npm_config_registry` to the `env` block in your MCP config:
+```json
+{
+  "mcpServers": {
+    "mcpbrowser": {
+      "command": "npx",
+      "args": ["-y", "mcpbrowser@latest"],
+      "env": {
+        "npm_config_registry": "https://registry.npmjs.org"
+      }
+    }
+  }
+}
+```
+
+**Alternative:** Install globally to skip `npx` entirely:
+```bash
+npm install -g mcpbrowser
+```
+Then use `"command": "mcpbrowser"` with no `args` in your MCP config.
+
 ## Links
 
 - [GitHub](https://github.com/cherchyk/MCPBrowser)
