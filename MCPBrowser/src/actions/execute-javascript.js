@@ -36,8 +36,13 @@ export class ExecuteJavascriptResponse extends MCPResponse {
   }
 
   _getAdditionalFields() {
+    // outputSchema declares result as type: 'string' (serialized).
+    // Ensure non-string values (numbers, objects, arrays) are stringified.
+    const serializedResult = this.result == null ? null
+      : typeof this.result === 'string' ? this.result
+      : JSON.stringify(this.result);
     return {
-      result: this.result,
+      result: serializedResult,
       type: this.type,
       executionTimeMs: this.executionTimeMs,
       truncated: this.truncated,
@@ -74,14 +79,14 @@ export const EXECUTE_JAVASCRIPT_TOOL = {
   outputSchema: {
     type: 'object',
     properties: {
-      result: { description: 'Serialized result of the script', nullable: true },
+      result: { type: 'string', description: 'Serialized result of the script', nullable: true },
       type: { type: 'string', description: 'Type of the returned result' },
       executionTimeMs: { type: 'number', description: 'Script execution duration' },
       truncated: { type: 'boolean', description: 'True if result was capped to size limit' },
       urlChanged: { type: 'boolean', description: 'True if page URL changed during execution' },
       currentUrl: { type: 'string', description: 'URL after execution' },
       nextSteps: { type: 'array', items: { type: 'string' } },
-      error: { type: ['object', 'null'], description: 'Error object when script throws or times out' },
+      error: { type: 'object', description: 'Error object when script throws or times out' },
       recommendedPlugins: {
         type: 'array',
         items: { type: 'object' },

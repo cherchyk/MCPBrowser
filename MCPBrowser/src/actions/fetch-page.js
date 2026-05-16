@@ -81,8 +81,9 @@ export const FETCH_WEBPAGE_TOOL = {
       url: { type: "string", description: "The URL to fetch" },
       browser: { 
         type: "string", 
-        description: "Browser to use: 'chrome' or 'edge'. Leave empty for auto-detection. Uses CDP to connect to the user's existing browser session.",
-        enum: ["", "chrome", "edge"]
+        enum: ["chrome", "edge", "brave"],
+        description: "Browser to use. Uses CDP to connect to the user's existing browser session.",
+        default: "chrome"
       },
       removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
       selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Use to scope extraction and reduce response size (e.g., 'main', '[role=\"main\"]', 'body > div:first-child'). If no elements match, falls back to full page with a note." },

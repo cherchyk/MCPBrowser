@@ -123,7 +123,7 @@ export const DETECT_FORMS_TOOL = {
               }
             },
             submitButton: {
-              type: ["object", "null"],
+              type: "object",
               properties: {
                 selector: { type: "string" },
                 text: { type: "string" },

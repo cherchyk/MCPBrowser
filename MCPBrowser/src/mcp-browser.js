@@ -71,6 +71,17 @@ async function main() {
     }
   );
 
+  // Capture the negotiated MCP protocol version so the ListTools handler can
+  // strip fields that older clients cannot parse (outputSchema, annotations,
+  // title were added in MCP protocol 2025-03-26).
+  let negotiatedProtocolVersion = null;
+  const _origOnInitialize = server._oninitialize.bind(server);
+  server._oninitialize = async function(request) {
+    const result = await _origOnInitialize(request);
+    negotiatedProtocolVersion = result.protocolVersion;
+    return result;
+  };
+
   // Wire server to logger so logs flow to agent via notifications/message.
   attachLoggerServer(server);
 
@@ -106,7 +117,16 @@ async function main() {
     ...pluginTools
   ];
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    // outputSchema, annotations, and title require MCP protocol 2025-03-26+.
+    // Strip them for clients that negotiated an older version (e.g. Antigravity/Gemini).
+    if (!negotiatedProtocolVersion || negotiatedProtocolVersion < '2025-03-26') {
+      return {
+        tools: tools.map(({ outputSchema, annotations, title, ...core }) => core)
+      };
+    }
+    return { tools };
+  });
 
   // --- Prompts handlers ---
   server.setRequestHandler(ListPromptsRequestSchema, async () => ({ prompts: PROMPTS }));

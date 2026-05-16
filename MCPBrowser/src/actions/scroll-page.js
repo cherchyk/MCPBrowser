@@ -105,7 +105,8 @@ export const SCROLL_PAGE_TOOL = {
       direction: { 
         type: "string", 
         enum: ["up", "down", "left", "right"],
-        description: "Direction to scroll. Use with 'amount' parameter." 
+        description: "Direction to scroll. Use with 'amount' parameter.",
+        default: "down"
       },
       amount: { 
         type: "number", 
