@@ -94,7 +94,7 @@ export const NAVIGATE_HISTORY_TOOL = {
       direction: { type: "string", enum: ["back", "forward"], description: "Navigation direction used" },
       previousUrl: { type: "string", description: "URL before navigation" },
       currentUrl: { type: "string", description: "URL after navigation" },
-      html: { type: ["string", "null"], description: "Page HTML content after navigation (null if returnHtml=false)" },
+      html: { type: "string", description: "Page HTML content after navigation (null if returnHtml=false)" },
       nextSteps: {
         type: "array",
         items: { type: "string" },

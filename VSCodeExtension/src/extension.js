@@ -256,17 +256,50 @@ async function configureMcpBrowser() {
         // registry. Without this, projects with a .npmrc pointing to a private registry
         // (e.g. Azure Artifacts, GitHub Packages) cause npx to fail with E401.
         // User-set env vars are preserved via spread and take precedence.
-        config[key].MCPBrowser = {
-            ...existing,
-            type: "stdio",
-            command: "npx",
-            args: ["-y", "mcpbrowser@latest"],
+        const editor = detectEditor();
+        const isVSCode = editor === EDITOR_CONFIGS.vscode;
+
+        // On Windows, `npx` is a .cmd script that requires cmd.exe to execute.
+        // VS Code handles this internally, but other editors (Antigravity, Kiro)
+        // may use child_process.spawn() without shell:true, which fails to find
+        // .cmd files. Wrapping with `cmd /c` ensures cross-editor compatibility.
+        const isWindowsNonVSCode = process.platform === 'win32' && !isVSCode;
+        const command = isWindowsNonVSCode ? "cmd" : "npx";
+        const args = isWindowsNonVSCode
+            ? ["/c", "npx", "-y", "mcpbrowser@latest"]
+            : ["-y", "mcpbrowser@latest"];
+
+        // For non-VS Code editors, only spread properties they support.
+        // Fields like `type` and `description` are VS Code-specific and cause
+        // config parse errors in other editors. `disabled` is valid in both
+        // VS Code and Antigravity (set via their UI).
+        const baseExisting = isVSCode
+            ? existing
+            : Object.fromEntries(
+                Object.entries(existing).filter(([k]) =>
+                    ['command', 'args', 'env', 'cwd', 'autoApprove', 'disabled'].includes(k)
+                )
+            );
+
+        const mcpEntry = {
+            ...baseExisting,
+            command,
+            args,
             env: {
                 npm_config_registry: "https://registry.npmjs.org",
                 ...(existing.env || {})
             },
-            description: "Load and interact with any web page using a real browser with full JavaScript execution and login support. Use when: you need to fetch a webpage, read a link, open a URL, check a website, or access any HTTP/HTTPS resource — especially pages that require JavaScript rendering or user authentication. Handles login flows, SSO, CAPTCHA, and anti-bot protection automatically. Leverages the user's existing browser session. Works on all sites including those behind authentication."
         };
+
+        // `type` and `description` are VS Code-specific fields.
+        // Antigravity and Kiro do not support them and fail to start
+        // MCP servers when unknown fields are present.
+        if (isVSCode) {
+            mcpEntry.type = "stdio";
+            mcpEntry.description = "Load and interact with any web page using a real browser with full JavaScript execution and login support. Use when: you need to fetch a webpage, read a link, open a URL, check a website, or access any HTTP/HTTPS resource — especially pages that require JavaScript rendering or user authentication. Handles login flows, SSO, CAPTCHA, and anti-bot protection automatically. Leverages the user's existing browser session. Works on all sites including those behind authentication.";
+        }
+
+        config[key].MCPBrowser = mcpEntry;
 
         // Write back to file with pretty formatting
         await fs.writeFile(mcpPath, JSON.stringify(config, null, 2), 'utf-8');

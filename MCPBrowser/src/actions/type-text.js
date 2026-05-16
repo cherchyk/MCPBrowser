@@ -100,7 +100,7 @@ export const TYPE_TEXT_TOOL = {
       currentUrl: { type: "string", description: "URL after typing" },
       message: { type: "string", description: "Success message" },
       html: { 
-        type: ["string", "null"], 
+        type: "string", 
         description: "Page HTML if returnHtml was true, null otherwise" 
       },
       nextSteps: { 

@@ -17,9 +17,9 @@ const unitTests = [
   'core/output-schema-validation.test.js', // outputSchema vs structuredContent compliance
   'core/auth.test.js',                  // Auth flows with mock pages
   'mcp-browser.test.js',               // MCP server initialization
-  'cli.test.js'                         // CLI argument parsing and routing
+  'cli.test.js',                        // CLI argument parsing and routing
+  'validate-schema-compatibility.test.js' // MCP tool schema cross-client compatibility
   // Browser tests: see run-browser.js
-  // Tool selection tests: see tool-selection/run-tool-selection-tests.js
 ];
 
 console.log('🧪 Running Unit Tests (No Browser Required)');

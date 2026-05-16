@@ -114,16 +114,16 @@ export const CLICK_ELEMENT_TOOL = {
         properties: {
           status: { type: "string", enum: ["success", "timeout", "error"] },
           durationMs: { type: "number" },
-          error: { type: ["string", "null"] }
+          error: { type: "string" }
         },
         required: ["status", "durationMs"]
       },
       fallbackAttempt: {
-        type: ["object", "null"],
+        type: "object",
         properties: {
           status: { type: "string", enum: ["success", "timeout", "error"] },
           durationMs: { type: "number" },
-          error: { type: ["string", "null"] }
+          error: { type: "string" }
         },
         required: ["status", "durationMs"],
         description: "Present when fallbackUsed is true"
@@ -140,7 +140,7 @@ export const CLICK_ELEMENT_TOOL = {
       currentUrl: { type: "string", description: "URL after click" },
       message: { type: "string", description: "Status message" },
       html: { 
-        type: ["string", "null"], 
+        type: "string", 
         description: "Page HTML if returnHtml was true, null otherwise" 
       },
       forms: { type: "array", items: { type: "object" }, description: "Detected forms with fields, selectors, and metadata (when returnHtml is true)" },
