@@ -1,6 +1,7 @@
 import assert from 'assert';
 import { getBaseDomain } from '../../src/utils.js';
 import { isLikelyAuthUrl } from '../../src/core/auth.js';
+import { getLargeHtmlHints } from '../../src/core/page.js';
 
 console.log('🧪 Testing redirect detection functions\n');
 
@@ -188,6 +189,36 @@ test('Should be case insensitive', () => {
 test('Should detect /sign-in with hyphen', () => {
   const result = isLikelyAuthUrl('https://example.com/sign-in');
   assert.strictEqual(result, true, 'Should detect /sign-in');
+});
+
+// ============================================================================
+// getLargeHtmlHints Tests
+// ============================================================================
+
+console.log('\n📋 Testing getLargeHtmlHints()');
+
+test('Should return empty array for small HTML', () => {
+  const hints = getLargeHtmlHints('<div>small page</div>', null);
+  assert.deepStrictEqual(hints, [], 'No hints for small HTML');
+});
+
+test('Should return hint for HTML over 200KB', () => {
+  const largeHtml = 'x'.repeat(250_000);
+  const hints = getLargeHtmlHints(largeHtml, null);
+  assert.strictEqual(hints.length, 1, 'Should return exactly one hint');
+  assert.ok(hints[0].includes('selector'), 'Hint should mention selector param');
+});
+
+test('Should return empty array when selector was already used', () => {
+  const largeHtml = 'x'.repeat(250_000);
+  const hints = getLargeHtmlHints(largeHtml, '.my-section');
+  assert.deepStrictEqual(hints, [], 'No hints when selector already used');
+});
+
+test('Should return empty array for HTML just under threshold', () => {
+  const html = 'x'.repeat(199_000);
+  const hints = getLargeHtmlHints(html, null);
+  assert.deepStrictEqual(hints, [], 'No hints for HTML under 200KB');
 });
 
 // ============================================================================

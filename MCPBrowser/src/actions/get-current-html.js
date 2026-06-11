@@ -3,7 +3,7 @@
  */
 
 import { getBrowser, getValidatedPage } from '../core/browser.js';
-import { extractAndProcessHtml } from '../core/page.js';
+import { extractAndProcessHtml, getLargeHtmlHints } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
@@ -211,6 +211,7 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, select
       currentUrl,
       html,
       [
+        ...getLargeHtmlHints(html, selector),
         ...getPluginNextSteps(currentUrl, html),
         "Use MCPBrowser's browser_click_element to interact with elements",
         "Use MCPBrowser's browser_type_text to fill forms",

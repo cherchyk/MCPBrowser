@@ -4,7 +4,7 @@
  */
 
 import { getBrowser, domainPages } from '../core/browser.js';
-import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml } from '../core/page.js';
+import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml, getLargeHtmlHints } from '../core/page.js';
 import { isLikelyAuthUrl, waitForAuth } from '../core/auth.js';
 import { MCPResponse, ErrorResponse, HttpStatusResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
@@ -260,6 +260,7 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, post
       page.url(),
       processedHtml,
       [
+        ...getLargeHtmlHints(processedHtml, selector),
         ...getPluginNextSteps(page.url(), processedHtml),
         "Use MCPBrowser's browser_click_element to interact with buttons/links on the page",
         "Use MCPBrowser's browser_type_text to fill in form fields",

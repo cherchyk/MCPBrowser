@@ -25,7 +25,7 @@
  */
 
 import { getBrowser, getValidatedPage } from '../core/browser.js';
-import { extractAndProcessHtml, waitForPageReady } from '../core/page.js';
+import { extractAndProcessHtml, waitForPageReady, getLargeHtmlHints } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
@@ -99,6 +99,7 @@ export const CLICK_ELEMENT_TOOL = {
       returnHtml: { type: "boolean", description: "Whether to wait for stability and return HTML after clicking. Set to false for fast form interactions (checkboxes, radio buttons).", default: true },
       removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%. Only used when returnHtml is true.", default: true },
       postClickWait: { type: "number", description: "Milliseconds to wait after click for SPAs to render dynamic content.", default: 1000 },
+      htmlSelector: { type: "string", description: "CSS selector to extract a specific DOM subtree from the post-click page instead of the full page. Use on heavy SPAs (e.g., ADO, Jira) to reduce response size. Only used when returnHtml is true. Example: '.activity-feed', '[role=\"main\"]'." },
       detectForms: { type: "boolean", description: "Scan page for forms after click and return structured form data (fields, selectors, submit buttons, orphaned inputs). Only applies when returnHtml=true. Set to true when you need to fill or interact with forms after clicking.", default: false }
     },
     required: ["url"],
@@ -199,7 +200,7 @@ export const CLICK_ELEMENT_TOOL = {
  *   returnHtml: false 
  * });
  */
-export async function clickElement({ url, selector, text, waitForElementTimeout = 30000, returnHtml = true, removeUnnecessaryHTML = true, postClickWait = 1000, detectForms = false }) {
+export async function clickElement({ url, selector, text, waitForElementTimeout = 30000, returnHtml = true, removeUnnecessaryHTML = true, htmlSelector = null, postClickWait = 1000, detectForms = false }) {
   logger.info(`browser_click_element called: ${selector || `text="${text}"`}`);
   
   if (!url) {
@@ -344,7 +345,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     }
 
     const currentUrl = page.url();
-    const html = finalStatus === 'success' && returnHtml ? await extractAndProcessHtml(page, removeUnnecessaryHTML) : null;
+    const html = finalStatus === 'success' && returnHtml ? await extractAndProcessHtml(page, removeUnnecessaryHTML, htmlSelector) : null;
 
     // Scan for forms when requested and returning HTML (lightweight, ~50-100ms)
     let formData = null;
@@ -365,6 +366,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
 
     const nextSteps = returnHtml
       ? [
+          ...(html ? getLargeHtmlHints(html, htmlSelector) : []),
           ...(html ? getPluginNextSteps(currentUrl, html) : []),
           "Use MCPBrowser's browser_click_element again to navigate further",
           "Use MCPBrowser's browser_type_text to fill forms if needed",
