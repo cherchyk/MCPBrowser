@@ -8,6 +8,7 @@ import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
 import { scanPageForms } from './detect-forms.js';
+import { scanScrollableAreas } from './scroll-page.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -28,7 +29,7 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
    * @param {Array} [recommendedPlugins] - Detected plugin metadata
    * @param {Object} [formData] - Detected forms data
    */
-  constructor(currentUrl, html, nextSteps, recommendedPlugins = [], formData = null) {
+  constructor(currentUrl, html, nextSteps, recommendedPlugins = [], formData = null, scrollableAreas = []) {
     super(nextSteps);
     
     if (typeof currentUrl !== 'string') {
@@ -44,6 +45,7 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
     this.forms = formData?.forms || [];
     this.orphanedFields = formData?.orphanedFields || [];
     this.totalFieldCount = formData?.totalFieldCount || 0;
+    this.scrollableAreas = scrollableAreas;
   }
 
   _getAdditionalFields() {
@@ -53,7 +55,8 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
       recommendedPlugins: this.recommendedPlugins,
       forms: this.forms,
       orphanedFields: this.orphanedFields,
-      totalFieldCount: this.totalFieldCount
+      totalFieldCount: this.totalFieldCount,
+      scrollableAreas: this.scrollableAreas
     };
   }
 
@@ -101,6 +104,21 @@ export const GET_CURRENT_HTML_TOOL = {
         type: "array",
         items: { type: "object" },
         description: "Detected site-specific plugins available for this domain"
+      },
+      scrollableAreas: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            selector: { type: "string" },
+            scrollHeight: { type: "number" },
+            clientHeight: { type: "number" },
+            scrollTop: { type: "number" },
+            hiddenPixels: { type: "number" },
+            description: { type: "string" }
+          }
+        },
+        description: "Scrollable containers on the page. Pass a selector to browser_scroll_page's 'container' parameter to scroll within a specific area."
       }
     },
     required: ["currentUrl", "html", "nextSteps"],
@@ -189,6 +207,14 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, select
         logger.debug(`Form scan failed (non-fatal): ${err.message}`);
       }
     }
+
+    // Scan for scrollable areas (lightweight, ~20-50ms)
+    let scrollableAreas = [];
+    try {
+      scrollableAreas = await scanScrollableAreas(page);
+    } catch (err) {
+      logger.debug(`Scrollable area scan failed (non-fatal): ${err.message}`);
+    }
     
     // Detect empty/near-empty HTML extraction (e.g., CSP blocking page.evaluate)
     if (!html || html.trim().length < 100) {
@@ -219,7 +245,8 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, select
         "Use MCPBrowser's browser_close_tab to free resources when done"
       ],
       getRecommendedPlugins(currentUrl, html),
-      formData
+      formData,
+      scrollableAreas
     );
   } catch (err) {
     logger.error(`browser_get_current_html failed: ${err.message}`);

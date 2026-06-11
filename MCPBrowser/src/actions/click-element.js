@@ -30,6 +30,7 @@ import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
 import { scanPageForms } from './detect-forms.js';
+import { scanScrollableAreas } from './scroll-page.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -39,7 +40,7 @@ import { scanPageForms } from './detect-forms.js';
  * Structured response for browser_click_element with JS fallback metadata
  */
 export class ClickWithFallbackResponse extends MCPResponse {
-  constructor({ status, fallbackUsed = false, nativeAttempt, fallbackAttempt, postClickWait, currentUrl, html = null, message, nextSteps = [], recommendedPlugins = [], formData = null }) {
+  constructor({ status, fallbackUsed = false, nativeAttempt, fallbackAttempt, postClickWait, currentUrl, html = null, message, nextSteps = [], recommendedPlugins = [], formData = null, scrollableAreas = [] }) {
     super(nextSteps);
     this.status = status;
     this.fallbackUsed = fallbackUsed;
@@ -53,6 +54,7 @@ export class ClickWithFallbackResponse extends MCPResponse {
     this.forms = formData?.forms || [];
     this.orphanedFields = formData?.orphanedFields || [];
     this.totalFieldCount = formData?.totalFieldCount || 0;
+    this.scrollableAreas = scrollableAreas;
   }
 
   _getAdditionalFields() {
@@ -68,7 +70,8 @@ export class ClickWithFallbackResponse extends MCPResponse {
       recommendedPlugins: this.recommendedPlugins,
       forms: this.forms,
       orphanedFields: this.orphanedFields,
-      totalFieldCount: this.totalFieldCount
+      totalFieldCount: this.totalFieldCount,
+      scrollableAreas: this.scrollableAreas
     };
   }
 
@@ -156,6 +159,21 @@ export const CLICK_ELEMENT_TOOL = {
         type: "array",
         items: { type: "object" },
         description: "Detected site-specific plugins available for this domain"
+      },
+      scrollableAreas: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            selector: { type: "string" },
+            scrollHeight: { type: "number" },
+            clientHeight: { type: "number" },
+            scrollTop: { type: "number" },
+            hiddenPixels: { type: "number" },
+            description: { type: "string" }
+          }
+        },
+        description: "Scrollable containers on the page. Pass a selector to browser_scroll_page's 'container' parameter to scroll within a specific area."
       }
     },
     required: ["status", "fallbackUsed", "nativeAttempt", "currentUrl", "message", "html", "nextSteps"],
@@ -357,6 +375,16 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       }
     }
 
+    // Scan for scrollable areas when returning HTML (lightweight, ~20-50ms)
+    let scrollableAreas = [];
+    if (finalStatus === 'success' && returnHtml) {
+      try {
+        scrollableAreas = await scanScrollableAreas(page);
+      } catch (err) {
+        logger.debug(`Scrollable area scan failed (non-fatal): ${err.message}`);
+      }
+    }
+
     const baseMessage = selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`;
     const message = finalStatus === 'success'
       ? baseMessage
@@ -394,7 +422,8 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       message,
       nextSteps,
       recommendedPlugins: html ? getRecommendedPlugins(currentUrl, html) : [],
-      formData
+      formData,
+      scrollableAreas
     });
   } catch (err) {
     logger.error(`browser_click_element failed: ${err.message}`);
