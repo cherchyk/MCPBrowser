@@ -25,11 +25,12 @@
  */
 
 import { getBrowser, getValidatedPage } from '../core/browser.js';
-import { extractAndProcessHtml, waitForPageReady } from '../core/page.js';
+import { extractAndProcessHtml, waitForPageReady, getLargeHtmlHints } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
 import { scanPageForms } from './detect-forms.js';
+import { scanScrollableAreas } from './scroll-page.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -39,7 +40,7 @@ import { scanPageForms } from './detect-forms.js';
  * Structured response for browser_click_element with JS fallback metadata
  */
 export class ClickWithFallbackResponse extends MCPResponse {
-  constructor({ status, fallbackUsed = false, nativeAttempt, fallbackAttempt, postClickWait, currentUrl, html = null, message, nextSteps = [], recommendedPlugins = [], formData = null }) {
+  constructor({ status, fallbackUsed = false, nativeAttempt, fallbackAttempt, postClickWait, currentUrl, html = null, message, nextSteps = [], recommendedPlugins = [], formData = null, scrollableAreas = [] }) {
     super(nextSteps);
     this.status = status;
     this.fallbackUsed = fallbackUsed;
@@ -53,6 +54,7 @@ export class ClickWithFallbackResponse extends MCPResponse {
     this.forms = formData?.forms || [];
     this.orphanedFields = formData?.orphanedFields || [];
     this.totalFieldCount = formData?.totalFieldCount || 0;
+    this.scrollableAreas = scrollableAreas;
   }
 
   _getAdditionalFields() {
@@ -68,7 +70,8 @@ export class ClickWithFallbackResponse extends MCPResponse {
       recommendedPlugins: this.recommendedPlugins,
       forms: this.forms,
       orphanedFields: this.orphanedFields,
-      totalFieldCount: this.totalFieldCount
+      totalFieldCount: this.totalFieldCount,
+      scrollableAreas: this.scrollableAreas
     };
   }
 
@@ -99,6 +102,7 @@ export const CLICK_ELEMENT_TOOL = {
       returnHtml: { type: "boolean", description: "Whether to wait for stability and return HTML after clicking. Set to false for fast form interactions (checkboxes, radio buttons).", default: true },
       removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%. Only used when returnHtml is true.", default: true },
       postClickWait: { type: "number", description: "Milliseconds to wait after click for SPAs to render dynamic content.", default: 1000 },
+      htmlSelector: { type: "string", description: "CSS selector to extract a specific DOM subtree from the post-click page instead of the full page. Use on heavy SPAs (e.g., ADO, Jira) to reduce response size. Only used when returnHtml is true. Example: '.activity-feed', '[role=\"main\"]'." },
       detectForms: { type: "boolean", description: "Scan page for forms after click and return structured form data (fields, selectors, submit buttons, orphaned inputs). Only applies when returnHtml=true. Set to true when you need to fill or interact with forms after clicking.", default: false }
     },
     required: ["url"],
@@ -155,6 +159,21 @@ export const CLICK_ELEMENT_TOOL = {
         type: "array",
         items: { type: "object" },
         description: "Detected site-specific plugins available for this domain"
+      },
+      scrollableAreas: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            selector: { type: "string" },
+            scrollHeight: { type: "number" },
+            clientHeight: { type: "number" },
+            scrollTop: { type: "number" },
+            hiddenPixels: { type: "number" },
+            description: { type: "string" }
+          }
+        },
+        description: "Scrollable containers on the page. Pass a selector to browser_scroll_page's 'container' parameter to scroll within a specific area."
       }
     },
     required: ["status", "fallbackUsed", "nativeAttempt", "currentUrl", "message", "html", "nextSteps"],
@@ -199,7 +218,7 @@ export const CLICK_ELEMENT_TOOL = {
  *   returnHtml: false 
  * });
  */
-export async function clickElement({ url, selector, text, waitForElementTimeout = 30000, returnHtml = true, removeUnnecessaryHTML = true, postClickWait = 1000, detectForms = false }) {
+export async function clickElement({ url, selector, text, waitForElementTimeout = 30000, returnHtml = true, removeUnnecessaryHTML = true, htmlSelector = null, postClickWait = 1000, detectForms = false }) {
   logger.info(`browser_click_element called: ${selector || `text="${text}"`}`);
   
   if (!url) {
@@ -290,7 +309,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
         'The element could not be located on the page. It may be hidden, dynamically loaded, or the selector/text may be incorrect.',
         [
           "Use MCPBrowser's browser_get_current_html to verify page content",
-          "Use MCPBrowser's browser_take_screenshot to see the visual layout if HTML is unclear",
+          "Use MCPBrowser's browser_take_screenshot with fullPage=true to see the full visual layout if HTML is unclear",
           "Try a different selector or text",
           "Check if the element is visible on the page"
         ]
@@ -344,7 +363,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
     }
 
     const currentUrl = page.url();
-    const html = finalStatus === 'success' && returnHtml ? await extractAndProcessHtml(page, removeUnnecessaryHTML) : null;
+    const html = finalStatus === 'success' && returnHtml ? await extractAndProcessHtml(page, removeUnnecessaryHTML, htmlSelector) : null;
 
     // Scan for forms when requested and returning HTML (lightweight, ~50-100ms)
     let formData = null;
@@ -353,6 +372,16 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
         formData = await scanPageForms(page);
       } catch (err) {
         logger.debug(`Form scan failed (non-fatal): ${err.message}`);
+      }
+    }
+
+    // Scan for scrollable areas when returning HTML (lightweight, ~20-50ms)
+    let scrollableAreas = [];
+    if (finalStatus === 'success' && returnHtml) {
+      try {
+        scrollableAreas = await scanScrollableAreas(page);
+      } catch (err) {
+        logger.debug(`Scrollable area scan failed (non-fatal): ${err.message}`);
       }
     }
 
@@ -365,16 +394,17 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
 
     const nextSteps = returnHtml
       ? [
+          ...(html ? getLargeHtmlHints(html, htmlSelector) : []),
           ...(html ? getPluginNextSteps(currentUrl, html) : []),
           "Use MCPBrowser's browser_click_element again to navigate further",
           "Use MCPBrowser's browser_type_text to fill forms if needed",
           "Use MCPBrowser's browser_get_current_html to refresh page state",
-          "Use MCPBrowser's browser_take_screenshot if page has popups or visual content that's hard to parse from HTML",
+          "Use MCPBrowser's browser_take_screenshot with fullPage=true if page has popups or visual content that's hard to parse from HTML",
           "Use MCPBrowser's browser_close_tab when finished"
         ]
       : [
           "Use MCPBrowser's browser_get_current_html to see updated page state",
-          "Use MCPBrowser's browser_take_screenshot if the page has popups, modals, or visual content",
+          "Use MCPBrowser's browser_take_screenshot with fullPage=true if the page has popups, modals, or visual content",
           "Use MCPBrowser's browser_click_element or MCPBrowser's browser_type_text for more interactions",
           "Use MCPBrowser's browser_close_tab when finished"
         ];
@@ -392,7 +422,8 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       message,
       nextSteps,
       recommendedPlugins: html ? getRecommendedPlugins(currentUrl, html) : [],
-      formData
+      formData,
+      scrollableAreas
     });
   } catch (err) {
     logger.error(`browser_click_element failed: ${err.message}`);
@@ -401,7 +432,7 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       'The element was found but could not be clicked. It may be covered by another element, not interactable, or the page may have changed.',
       [
         "Use MCPBrowser's browser_get_current_html to check current page state",
-        "Use MCPBrowser's browser_take_screenshot to see what's visually blocking the element",
+        "Use MCPBrowser's browser_take_screenshot with fullPage=true to see what's visually blocking the element",
         "Verify the selector or text is correct",
         "Try MCPBrowser's browser_fetch_webpage to reload if page is stale"
       ]

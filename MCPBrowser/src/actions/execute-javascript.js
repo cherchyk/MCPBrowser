@@ -114,11 +114,14 @@ function buildErrorResponse(message, reason, nextSteps) {
   return new InformationalResponse(message, reason, nextSteps);
 }
 
+const VALID_RETURN_TYPES = new Set(['json', 'text', 'void']);
+
 export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIMEOUT_DEFAULT_MS, returnType = 'json' }) {
   logger.info(`browser_execute_javascript called: ${url}`);
 
   if (!url) throw new Error('url parameter is required');
   if (!script || typeof script !== 'string' || !script.trim()) throw new Error('script parameter is required');
+  if (!VALID_RETURN_TYPES.has(returnType)) throw new Error(`Invalid returnType: '${returnType}'. Must be one of: json, text, void`);
 
   let hostname;
   try {
@@ -159,7 +162,15 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
   }
 
   const effectiveTimeout = clampTimeout(timeoutMs);
-  const beforeUrl = page.url();
+
+  // Capture beforeUrl via evaluate for consistency with post-exec currentUrl check
+  let beforeUrl;
+  try {
+    beforeUrl = await page.evaluate(() => location.href);
+  } catch {
+    beforeUrl = page.url();
+  }
+
   const start = Date.now();
 
   const evalPromise = page.evaluate(async ({ userScript, mode }) => {
@@ -188,14 +199,17 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
   }, { userScript: script, mode: returnType });
 
   let evalResult;
+  let timeoutTimer;
   try {
     evalResult = await Promise.race([
       evalPromise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error(`Execution timed out after ${effectiveTimeout}ms`)), effectiveTimeout))
+      new Promise((_, reject) => {
+        timeoutTimer = setTimeout(() => reject(new Error(`Execution timed out after ${effectiveTimeout}ms`)), effectiveTimeout);
+      })
     ]);
   } catch (err) {
     const executionTimeMs = Date.now() - start;
-    let currentUrl = page.url();
+    let currentUrl = beforeUrl;
     try {
       currentUrl = await page.evaluate(() => location.href);
     } catch {
@@ -210,21 +224,23 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
       currentUrl,
       error: { name: 'TimeoutError', message: err.message }
     });
+  } finally {
+    clearTimeout(timeoutTimer);
   }
 
   const executionTimeMs = Date.now() - start;
-  let currentUrl = page.url();
+  let currentUrl = beforeUrl;
   try {
     currentUrl = await page.evaluate(() => location.href);
   } catch {
-    // If we can't read location (e.g., cross-origin), fall back to page.url()
+    // If we can't read location (e.g., cross-origin), fall back to beforeUrl
   }
   const urlChanged = currentUrl !== beforeUrl;
 
   // Detect CSP block or silent evaluation failure:
   // When page.evaluate() is blocked by CSP, Puppeteer returns undefined (not an error).
-  // Distinguish this from a script that intentionally returns nothing.
-  if (evalResult === undefined || evalResult === null) {
+  // Our inner wrapper always returns { value, type } or { error }, never undefined.
+  if (evalResult === undefined) {
     return new ExecuteJavascriptResponse({
       result: null,
       type: 'undefined',

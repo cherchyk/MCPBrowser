@@ -502,7 +502,7 @@ function buildNextSteps(forms, orphanedFields) {
     steps.push("Use MCPBrowser's browser_type_text for orphaned fields (SPA inputs not inside a <form>)");
   }
 
-  steps.push("Use MCPBrowser's browser_take_screenshot if form layout is unclear from the data");
+  steps.push("Use MCPBrowser's browser_take_screenshot with fullPage=true if form layout is unclear from the data");
   steps.push("Use MCPBrowser's browser_get_current_html to see full page HTML");
 
   return steps;

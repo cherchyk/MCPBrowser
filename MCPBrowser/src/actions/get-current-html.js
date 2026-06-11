@@ -3,11 +3,12 @@
  */
 
 import { getBrowser, getValidatedPage } from '../core/browser.js';
-import { extractAndProcessHtml } from '../core/page.js';
+import { extractAndProcessHtml, getLargeHtmlHints } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
 import { scanPageForms } from './detect-forms.js';
+import { scanScrollableAreas } from './scroll-page.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -28,7 +29,7 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
    * @param {Array} [recommendedPlugins] - Detected plugin metadata
    * @param {Object} [formData] - Detected forms data
    */
-  constructor(currentUrl, html, nextSteps, recommendedPlugins = [], formData = null) {
+  constructor(currentUrl, html, nextSteps, recommendedPlugins = [], formData = null, scrollableAreas = []) {
     super(nextSteps);
     
     if (typeof currentUrl !== 'string') {
@@ -44,6 +45,7 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
     this.forms = formData?.forms || [];
     this.orphanedFields = formData?.orphanedFields || [];
     this.totalFieldCount = formData?.totalFieldCount || 0;
+    this.scrollableAreas = scrollableAreas;
   }
 
   _getAdditionalFields() {
@@ -53,7 +55,8 @@ export class GetCurrentHtmlSuccessResponse extends MCPResponse {
       recommendedPlugins: this.recommendedPlugins,
       forms: this.forms,
       orphanedFields: this.orphanedFields,
-      totalFieldCount: this.totalFieldCount
+      totalFieldCount: this.totalFieldCount,
+      scrollableAreas: this.scrollableAreas
     };
   }
 
@@ -101,6 +104,21 @@ export const GET_CURRENT_HTML_TOOL = {
         type: "array",
         items: { type: "object" },
         description: "Detected site-specific plugins available for this domain"
+      },
+      scrollableAreas: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            selector: { type: "string" },
+            scrollHeight: { type: "number" },
+            clientHeight: { type: "number" },
+            scrollTop: { type: "number" },
+            hiddenPixels: { type: "number" },
+            description: { type: "string" }
+          }
+        },
+        description: "Scrollable containers on the page. Pass a selector to browser_scroll_page's 'container' parameter to scroll within a specific area."
       }
     },
     required: ["currentUrl", "html", "nextSteps"],
@@ -189,6 +207,14 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, select
         logger.debug(`Form scan failed (non-fatal): ${err.message}`);
       }
     }
+
+    // Scan for scrollable areas (lightweight, ~20-50ms)
+    let scrollableAreas = [];
+    try {
+      scrollableAreas = await scanScrollableAreas(page);
+    } catch (err) {
+      logger.debug(`Scrollable area scan failed (non-fatal): ${err.message}`);
+    }
     
     // Detect empty/near-empty HTML extraction (e.g., CSP blocking page.evaluate)
     if (!html || html.trim().length < 100) {
@@ -197,7 +223,7 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, select
         `HTML extraction returned empty content from ${currentUrl}`,
         'The page may be blocking evaluation via Content Security Policy (CSP), the page has not fully rendered, or the page uses a sandboxed context that prevents DOM reading.',
         [
-          "Use MCPBrowser's browser_take_screenshot to verify the page is visually loaded",
+          "Use MCPBrowser's browser_take_screenshot with fullPage=true to verify the page is visually loaded",
           "Use MCPBrowser's browser_execute_javascript with a simple script like 'document.title' to test page accessibility",
           "Try MCPBrowser's browser_fetch_webpage to reload the page",
           "Wait and retry — the page may still be rendering"
@@ -211,14 +237,16 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, select
       currentUrl,
       html,
       [
+        ...getLargeHtmlHints(html, selector),
         ...getPluginNextSteps(currentUrl, html),
         "Use MCPBrowser's browser_click_element to interact with elements",
         "Use MCPBrowser's browser_type_text to fill forms",
-        "Use MCPBrowser's browser_take_screenshot if page layout or visual content is hard to understand from HTML",
+        "Use MCPBrowser's browser_take_screenshot with fullPage=true if page layout or visual content is hard to understand from HTML",
         "Use MCPBrowser's browser_close_tab to free resources when done"
       ],
       getRecommendedPlugins(currentUrl, html),
-      formData
+      formData,
+      scrollableAreas
     );
   } catch (err) {
     logger.error(`browser_get_current_html failed: ${err.message}`);

@@ -539,3 +539,24 @@ export async function extractAndProcessHtml(page, removeUnnecessaryHTML, selecto
   
   return processedHtml;
 }
+
+/**
+ * Returns nextStep hints when the HTML response is large and no selector was used.
+ * Call after extractAndProcessHtml to get agent-visible guidance on using the selector
+ * parameter to scope extraction on heavy SPAs.
+ *
+ * @param {string} html - The processed HTML string
+ * @param {string|null} selector - The selector that was used (null = full page)
+ * @returns {string[]} Array of nextStep hint strings (empty if HTML is small or selector was used)
+ */
+export function getLargeHtmlHints(html, selector) {
+  if (selector) return [];
+  const byteLength = new TextEncoder().encode(html).length;
+  if (byteLength > 200_000) {
+    const sizeKB = (byteLength / 1024).toFixed(0);
+    return [
+      `⚠ Large HTML response (${sizeKB}KB). Use the "selector" parameter (e.g., selector: '[role="main"]', 'main', '.content') to extract only the relevant DOM subtree and reduce response size.`
+    ];
+  }
+  return [];
+}

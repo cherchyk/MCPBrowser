@@ -78,7 +78,8 @@ await test('ExecuteJavascriptResponse should serialize structured fields', async
   });
 
   const json = resp.toJSON();
-  assert.strictEqual(json.result.foo, 'bar');
+  // _getAdditionalFields stringifies non-string results for outputSchema compliance
+  assert.strictEqual(json.result, '{"foo":"bar"}');
   assert.strictEqual(json.type, 'object');
   assert.strictEqual(json.executionTimeMs, 123);
   assert.strictEqual(json.truncated, false);
@@ -167,6 +168,15 @@ await test('Should truncate large results and flag truncation', async () => {
   assert.strictEqual(resp.type, 'string');
   assert.match(resp.result, /\[truncated\]$/);
   await closeTab({ url: testUrl });
+});
+
+await test('Should reject invalid returnType', async () => {
+  try {
+    await executeJavascript({ url: 'https://example.com', script: 'return 1;', returnType: 'invalid' });
+    throw new Error('Should have thrown an error');
+  } catch (err) {
+    assert.match(err.message, /Invalid returnType/);
+  }
 });
 
 console.log('\n==================================================');
