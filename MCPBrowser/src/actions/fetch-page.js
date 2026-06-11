@@ -291,7 +291,7 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, post
         "Use MCPBrowser's browser_click_element to interact with buttons/links on the page",
         "Use MCPBrowser's browser_type_text to fill in form fields",
         "Use MCPBrowser's browser_get_current_html to re-check page state after interactions",
-        "Use MCPBrowser's browser_take_screenshot if page has charts, images, or complex visual layout that's hard to understand from HTML",
+        "Use MCPBrowser's browser_take_screenshot with fullPage=true to capture the entire page visually (charts, images, complex layouts)",
         "Use MCPBrowser's browser_close_tab when finished to free browser resources"
       ],
       getRecommendedPlugins(page.url(), processedHtml),

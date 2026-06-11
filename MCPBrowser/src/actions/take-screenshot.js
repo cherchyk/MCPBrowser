@@ -89,12 +89,12 @@ export class TakeScreenshotSuccessResponse extends MCPResponse {
 export const TAKE_SCREENSHOT_TOOL = {
   name: "browser_take_screenshot",
   title: "Take Screenshot",
-  description: "Capture a screenshot of a browser-loaded page as PNG. Use when: you need to see what a page looks like, analyze visual layout, view charts/images/graphs, debug UI issues, or when HTML alone is insufficient to understand the page content. Returns base64-encoded PNG. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.",
+  description: "Capture a screenshot of a browser-loaded page as PNG. Set fullPage=true to capture the entire scrollable page in one shot — this avoids multiple scroll+screenshot cycles. Only use fullPage=false when you specifically need just the current viewport (rare). Use when: you need to see what a page looks like, analyze visual layout, view charts/images/graphs, debug UI issues, or when HTML alone is insufficient. Returns base64-encoded PNG. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.",
   inputSchema: {
     type: "object",
     properties: {
       url: { type: "string", description: "The URL of the page (must match a previously fetched page)" },
-      fullPage: { type: "boolean", description: "Capture the full scrollable page instead of just the viewport. Default: false (viewport only).", default: false }
+      fullPage: { type: "boolean", description: "RECOMMENDED: set to true to capture the entire scrollable page in one shot instead of just the viewport. Avoids multiple scroll+screenshot cycles. Automatically falls back to viewport if the page is extremely tall.", default: false }
     },
     required: ["url"],
     additionalProperties: false
@@ -135,6 +135,10 @@ export const TAKE_SCREENSHOT_TOOL = {
  * @param {boolean} [params.fullPage=false] - Whether to capture full scrollable page
  * @returns {Promise<Object>} Result object with screenshot data
  */
+
+/** Max page height (px) for safe full-page capture. Beyond this, fall back to viewport to avoid giant payloads. */
+const MAX_FULL_PAGE_HEIGHT = 12000;
+
 export async function takeScreenshot({ url, fullPage = false }) {
   logger.info(`browser_take_screenshot called: url=${url}, fullPage=${fullPage}`);
   
@@ -186,25 +190,45 @@ export async function takeScreenshot({ url, fullPage = false }) {
   try {
     const currentUrl = page.url();
     
+    // Safety cap: if fullPage requested, check page height first
+    let effectiveFullPage = fullPage;
+    let wasClipped = false;
+    if (fullPage) {
+      const pageHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+      if (pageHeight > MAX_FULL_PAGE_HEIGHT) {
+        logger.warn(`browser_take_screenshot: page height ${pageHeight}px exceeds ${MAX_FULL_PAGE_HEIGHT}px cap, falling back to viewport`);
+        effectiveFullPage = false;
+        wasClipped = true;
+      }
+    }
+    
     // Take screenshot as base64
     const screenshotBuffer = await page.screenshot({
       encoding: 'base64',
       type: 'png',
-      fullPage: fullPage
+      fullPage: effectiveFullPage
     });
     
-    logger.info(`browser_take_screenshot completed: captured from ${currentUrl} (fullPage=${fullPage})`);
+    logger.info(`browser_take_screenshot completed: captured from ${currentUrl} (fullPage=${effectiveFullPage}${wasClipped ? ', clipped from full' : ''})`);
+    
+    const nextSteps = [];
+    if (wasClipped) {
+      nextSteps.push(`Page too tall for full-page capture (>${MAX_FULL_PAGE_HEIGHT}px). Viewport screenshot taken instead. Use browser_scroll_page to see more content, then browser_take_screenshot again.`);
+    } else if (!fullPage) {
+      nextSteps.push("Use MCPBrowser's browser_take_screenshot with fullPage=true to capture the entire page in one shot");
+    }
+    nextSteps.push(
+      "Use MCPBrowser's browser_get_current_html if you need the HTML instead",
+      "Use MCPBrowser's browser_click_element to interact with elements",
+      "Use MCPBrowser's browser_type_text to fill forms",
+      "Use MCPBrowser's browser_close_tab to free resources when done"
+    );
     
     return new TakeScreenshotSuccessResponse(
       currentUrl,
       screenshotBuffer,
       'image/png',
-      [
-        "Use MCPBrowser's browser_get_current_html if you need the HTML instead",
-        "Use MCPBrowser's browser_click_element to interact with elements",
-        "Use MCPBrowser's browser_type_text to fill forms",
-        "Use MCPBrowser's browser_close_tab to free resources when done"
-      ]
+      nextSteps
     );
   } catch (err) {
     logger.error(`browser_take_screenshot failed: ${err.message}`);

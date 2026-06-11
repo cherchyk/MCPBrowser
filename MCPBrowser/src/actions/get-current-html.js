@@ -223,7 +223,7 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, select
         `HTML extraction returned empty content from ${currentUrl}`,
         'The page may be blocking evaluation via Content Security Policy (CSP), the page has not fully rendered, or the page uses a sandboxed context that prevents DOM reading.',
         [
-          "Use MCPBrowser's browser_take_screenshot to verify the page is visually loaded",
+          "Use MCPBrowser's browser_take_screenshot with fullPage=true to verify the page is visually loaded",
           "Use MCPBrowser's browser_execute_javascript with a simple script like 'document.title' to test page accessibility",
           "Try MCPBrowser's browser_fetch_webpage to reload the page",
           "Wait and retry — the page may still be rendering"
@@ -241,7 +241,7 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, select
         ...getPluginNextSteps(currentUrl, html),
         "Use MCPBrowser's browser_click_element to interact with elements",
         "Use MCPBrowser's browser_type_text to fill forms",
-        "Use MCPBrowser's browser_take_screenshot if page layout or visual content is hard to understand from HTML",
+        "Use MCPBrowser's browser_take_screenshot with fullPage=true if page layout or visual content is hard to understand from HTML",
         "Use MCPBrowser's browser_close_tab to free resources when done"
       ],
       getRecommendedPlugins(currentUrl, html),

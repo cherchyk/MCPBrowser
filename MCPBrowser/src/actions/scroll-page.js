@@ -546,7 +546,7 @@ export async function scrollPage({ url, direction, amount = 500, selector, x, y,
       scrollInfo.viewportHeight,
       [
         ...containerHint,
-        "Use MCPBrowser's browser_take_screenshot to capture the current view",
+        "Use MCPBrowser's browser_take_screenshot with fullPage=true to capture the entire page in one shot",
         "Use MCPBrowser's browser_scroll_page again to navigate further",
         "Use MCPBrowser's browser_click_element to interact with visible elements",
         "Use MCPBrowser's browser_get_current_html to get the page content"
