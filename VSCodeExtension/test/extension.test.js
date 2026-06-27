@@ -4,7 +4,7 @@ const proxyquire = require('proxyquire');
 const path = require('path');
 
 describe('Extension Tests', () => {
-    const TEST_VERSION = '0.3.59';
+    const TEST_VERSION = '0.3.60';
     let extension;
     let fsStub;
     let execPromiseStub;

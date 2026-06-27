@@ -2,7 +2,7 @@
   "name": "mcpbrowser",
   "displayName": "MCPBrowser - Real Browser for AI Agents",
   "description": "MCP browser server extension for AI agents. Load and interact with any web page using a real browser with full JavaScript execution and login support. Handles authentication, SSO, CAPTCHA, and anti-crawler protection. Use whenever a page requires JavaScript rendering or user login. Works with GitHub Copilot, Kiro, Antigravity, and any MCP-compatible agent.",
-  "version": "0.3.59",
+  "version": "0.3.60",
   "publisher": "cherchyk",
   "icon": "icon.png",
   "engines": {

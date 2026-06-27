@@ -94,7 +94,7 @@ export const TAKE_SCREENSHOT_TOOL = {
     type: "object",
     properties: {
       url: { type: "string", description: "The URL of the page (must match a previously fetched page)" },
-      fullPage: { type: "boolean", description: "RECOMMENDED: set to true to capture the entire scrollable page in one shot instead of just the viewport. Avoids multiple scroll+screenshot cycles. Automatically falls back to viewport if the page is extremely tall.", default: false }
+      // fullPage: { type: "boolean", description: "RECOMMENDED: set to true to capture the entire scrollable page in one shot instead of just the viewport. Avoids multiple scroll+screenshot cycles. Automatically falls back to viewport if the page is extremely tall.", default: false }
     },
     required: ["url"],
     additionalProperties: false
