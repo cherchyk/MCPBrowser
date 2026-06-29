@@ -82,8 +82,8 @@ export const NAVIGATE_HISTORY_TOOL = {
         description: "Navigation direction: 'back' to go to previous page, 'forward' to go to next page",
         default: "back"
       },
-      returnHtml: { type: "boolean", description: "Return page HTML after navigation", default: true },
-      removeUnnecessaryHTML: { type: "boolean", description: "Remove unnecessary HTML elements (scripts, styles, etc.) for size reduction.", default: true }
+      // returnHtml: { type: "boolean", description: "Return page HTML after navigation", default: true },
+      // removeUnnecessaryHTML: { type: "boolean", description: "Remove unnecessary HTML elements (scripts, styles, etc.) for size reduction.", default: true }
     },
     required: ["url"],
     additionalProperties: false

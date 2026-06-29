@@ -79,7 +79,7 @@ export const DETECT_FORMS_TOOL = {
     type: "object",
     properties: {
       url: { type: "string", description: "URL of the already-loaded page" },
-      includeHidden: { type: "boolean", default: false, description: "Include hidden fields (type=hidden). Useful for understanding form state." }
+      // includeHidden: { type: "boolean", default: false, description: "Include hidden fields (type=hidden). Useful for understanding form state." }
     },
     required: ["url"],
     additionalProperties: false

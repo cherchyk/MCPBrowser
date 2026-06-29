@@ -70,8 +70,8 @@ export const EXECUTE_JAVASCRIPT_TOOL = {
     properties: {
       url: { type: 'string', description: 'The URL of the page (must match a previously fetched page)' },
       script: { type: 'string', description: 'JavaScript source code to execute in page context' },
-      timeoutMs: { type: 'number', description: 'Maximum execution time in milliseconds', default: EXECUTION_TIMEOUT_DEFAULT_MS },
-      returnType: { type: 'string', description: "How to interpret the result: 'json' | 'text' | 'void'", enum: ['json', 'text', 'void'], default: 'json' }
+      // timeoutMs: { type: 'number', description: 'Maximum execution time in milliseconds', default: EXECUTION_TIMEOUT_DEFAULT_MS },
+      // returnType: { type: 'string', description: "How to interpret the result: 'json' | 'text' | 'void'", enum: ['json', 'text', 'void'], default: 'json' }
     },
     required: ['url', 'script'],
     additionalProperties: false

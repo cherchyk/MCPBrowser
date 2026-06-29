@@ -82,15 +82,15 @@ export const FETCH_WEBPAGE_TOOL = {
     type: "object",
     properties: {
       url: { type: "string", description: "The URL to fetch" },
-      browser: { 
-        type: "string", 
-        enum: ["chrome", "edge", "brave"],
-        description: "Browser to use. Uses CDP to connect to the user's existing browser session.",
-        default: "chrome"
-      },
-      removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
+      // browser: { 
+      //   type: "string", 
+      //   enum: ["chrome", "edge", "brave"],
+      //   description: "Browser to use. Uses CDP to connect to the user's existing browser session.",
+      //   default: "chrome"
+      // },
+      // removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
       selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Use to scope extraction and reduce response size (e.g., 'main', '[role=\"main\"]', 'body > div:first-child'). If no elements match, falls back to full page with a note." },
-      postLoadWait: { type: "number", description: "Additional milliseconds to wait after page load before extracting HTML. Use for pages that need extra time to render. Default: 0 (no extra wait, SPA detection handles most cases automatically).", default: 0 },
+      // postLoadWait: { type: "number", description: "Additional milliseconds to wait after page load before extracting HTML. Use for pages that need extra time to render. Default: 0 (no extra wait, SPA detection handles most cases automatically).", default: 0 },
       detectForms: { type: "boolean", description: "Scan page for forms and return structured form data (fields, selectors, submit buttons, orphaned inputs). Set to true when you need to fill or interact with forms.", default: false }
     },
     required: ["url"],

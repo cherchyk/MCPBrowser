@@ -87,9 +87,9 @@ export const TYPE_TEXT_TOOL = {
         },
         minItems: 1
       },
-      returnHtml: { type: "boolean", description: "Whether to wait for stability and return HTML after typing.", default: true },
-      removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%. Only used when returnHtml is true.", default: true },
-      postTypeWait: { type: "number", description: "Milliseconds to wait after typing for SPAs to render dynamic content.", default: 1000 }
+      // returnHtml: { type: "boolean", description: "Whether to wait for stability and return HTML after typing.", default: true },
+      // removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%. Only used when returnHtml is true.", default: true },
+      // postTypeWait: { type: "number", description: "Milliseconds to wait after typing for SPAs to render dynamic content.", default: 1000 }
     },
     required: ["url", "fields"],
     additionalProperties: false
