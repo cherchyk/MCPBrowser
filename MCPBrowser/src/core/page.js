@@ -481,25 +481,52 @@ async function waitForNavigationToSettle(page) {
 export async function extractAndProcessHtml(page, removeUnnecessaryHTML, selector = null) {
   let html;
 
-  const extractFn = selector
-    ? (sel) => {
-        const els = document.querySelectorAll(sel);
-        if (!els.length) return null;
-        return Array.from(els).map(el => el.outerHTML).join('\n');
-      }
-    : () => document.documentElement?.outerHTML || "";
+  // Runs in the browser context. Extracts HTML and, when removeHidden is set,
+  // prunes non-visible elements (hidden attribute or computed display:none)
+  // from a *clone* so the live DOM the user sees is never mutated. Using the
+  // live DOM's computed styles (rather than regex) makes visibility detection
+  // reliable and avoids corrupting nested structure.
+  const extractFn = (sel, removeHidden) => {
+    const isHidden = (el) =>
+      el.nodeType === 1 &&
+      (el.hasAttribute('hidden') || window.getComputedStyle(el).display === 'none');
 
-  const extractArg = selector || undefined;
+    const pruneHidden = (clone, live) => {
+      const liveWalk = document.createTreeWalker(live, NodeFilter.SHOW_ELEMENT);
+      const cloneWalk = document.createTreeWalker(clone, NodeFilter.SHOW_ELEMENT);
+      const toRemove = [];
+      let l = liveWalk.currentNode;
+      let c = cloneWalk.currentNode;
+      while (l && c) {
+        if (isHidden(l)) toRemove.push(c);
+        l = liveWalk.nextNode();
+        c = cloneWalk.nextNode();
+      }
+      toRemove.forEach((n) => n.remove());
+      return clone;
+    };
+
+    const render = (el) =>
+      removeHidden ? pruneHidden(el.cloneNode(true), el).outerHTML : el.outerHTML;
+
+    if (sel) {
+      const els = document.querySelectorAll(sel);
+      if (!els.length) return null;
+      return Array.from(els).map(render).join('\n');
+    }
+    const root = document.documentElement;
+    return root ? render(root) : '';
+  };
 
   try {
-    html = await page.evaluate(extractFn, extractArg);
+    html = await page.evaluate(extractFn, selector || null, removeUnnecessaryHTML);
   } catch (err) {
     if (isNavigationError(err)) {
       logger.debug('Late navigation during HTML extraction, waiting for settle...');
       await waitForNavigationToSettle(page);
       // Re-run page readiness — the new page may be a SPA that needs rendering time
       await waitForPageReady(page);
-      html = await page.evaluate(extractFn, extractArg);
+      html = await page.evaluate(extractFn, selector || null, removeUnnecessaryHTML);
     } else {
       throw err;
     }
@@ -509,12 +536,12 @@ export async function extractAndProcessHtml(page, removeUnnecessaryHTML, selecto
   if (selector && html === null) {
     logger.debug(`Selector "${selector}" matched no elements, falling back to full page`);
     try {
-      html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+      html = await page.evaluate(extractFn, null, removeUnnecessaryHTML);
     } catch (err) {
       if (isNavigationError(err)) {
         await waitForNavigationToSettle(page);
         await waitForPageReady(page);
-        html = await page.evaluate(() => document.documentElement?.outerHTML || "");
+        html = await page.evaluate(extractFn, null, removeUnnecessaryHTML);
       } else {
         throw err;
       }
@@ -540,23 +567,153 @@ export async function extractAndProcessHtml(page, removeUnnecessaryHTML, selecto
   return processedHtml;
 }
 
+// Size (bytes) above which we warn the agent about raw response size and nudge
+// toward scoping extraction with the "selector" parameter.
+const LARGE_HTML_THRESHOLD = 200_000;
+
 /**
- * Returns nextStep hints when the HTML response is large and no selector was used.
- * Call after extractAndProcessHtml to get agent-visible guidance on using the selector
- * parameter to scope extraction on heavy SPAs.
+ * Returns a nextStep hint warning about very large HTML responses, nudging the
+ * agent to use the "selector" parameter to scope extraction.
+ * Returns an empty array when a selector was already used or the HTML is small.
  *
  * @param {string} html - The processed HTML string
  * @param {string|null} selector - The selector that was used (null = full page)
- * @returns {string[]} Array of nextStep hint strings (empty if HTML is small or selector was used)
+ * @returns {string[]} Array of nextStep hint strings
  */
 export function getLargeHtmlHints(html, selector) {
-  if (selector) return [];
+  if (selector || !html) return [];
   const byteLength = new TextEncoder().encode(html).length;
-  if (byteLength > 200_000) {
+  if (byteLength > LARGE_HTML_THRESHOLD) {
     const sizeKB = (byteLength / 1024).toFixed(0);
     return [
-      `⚠ Large HTML response (${sizeKB}KB). Use the "selector" parameter (e.g., selector: '[role="main"]', 'main', '.content') to extract only the relevant DOM subtree and reduce response size.`
+      `⚠ Large HTML response (${sizeKB}KB). Use the "selector" parameter (e.g., selector: 'main', 'article', '[role="main"]', '.content') to extract only the relevant DOM subtree and reduce response size.`
     ];
   }
   return [];
+}
+
+/**
+ * @typedef {Object} MainContentRecommendation
+ * @property {string} selector - CSS selector matching exactly one element that
+ *   appears to hold the primary content.
+ * @property {number} textLength - Approximate character length of the region's text.
+ * @property {number} coverage - Fraction of the page's text inside the region (0-1).
+ * @property {number} linkDensity - Fraction of the region's text that is links (0-1).
+ * @property {'landmark'|'heuristic'} matchedBy - How the region was identified.
+ */
+
+/**
+ * Detects the primary content area of the current page using in-browser
+ * heuristics, so an agent can scope extraction to it with the "selector"
+ * parameter. Prefers explicit semantic landmarks (main / [role="main"] /
+ * article); when none is usable, scores block containers by text volume, link
+ * density, paragraph count, and id/class hints (a lightweight readability pass).
+ *
+ * Only returns a recommendation when a unique, stable selector can be built for
+ * the winning element — otherwise returns null (recommend nothing rather than a
+ * fragile selector). Runs entirely in the page and is non-fatal on error.
+ *
+ * @param {Page} page - The Puppeteer page instance
+ * @returns {Promise<MainContentRecommendation|null>} The recommendation, or null
+ */
+export async function detectMainContent(page) {
+  try {
+    return await page.evaluate(() => {
+      const norm = (s) => (s || '').replace(/\s+/g, ' ').trim();
+      const textOf = (el) => norm(el.textContent).length;
+      const bodyLen = textOf(document.body || document.documentElement) || 1;
+
+      const linkDensity = (el) => {
+        const total = textOf(el) || 1;
+        let linkLen = 0;
+        el.querySelectorAll('a').forEach((a) => { linkLen += norm(a.textContent).length; });
+        return Math.min(1, linkLen / total);
+      };
+
+      // Build a unique, stable selector for an element, or null if we can't.
+      const uniqueSelector = (el) => {
+        if (!el || el === document.body) return null;
+        const tag = el.tagName.toLowerCase();
+        const isUnique = (sel) => {
+          try { return document.querySelectorAll(sel).length === 1; } catch { return false; }
+        };
+        if ((tag === 'main' || tag === 'article') && isUnique(tag)) return tag;
+        if (el.getAttribute('role') === 'main' && isUnique('[role="main"]')) return '[role="main"]';
+        if (el.id && /^[A-Za-z][\w-]*$/.test(el.id) && isUnique(`#${el.id}`)) return `#${el.id}`;
+        for (const cls of el.classList) {
+          if (!/^[A-Za-z][\w-]*$/.test(cls)) continue;
+          const sel = `${tag}.${cls}`;
+          if (isUnique(sel)) return sel;
+        }
+        return null;
+      };
+
+      const build = (el, matchedBy, forcedSelector) => {
+        const selector = forcedSelector || uniqueSelector(el);
+        if (!selector) return null;
+        const textLength = textOf(el);
+        return {
+          selector,
+          textLength,
+          coverage: Math.round((textLength / bodyLen) * 100) / 100,
+          linkDensity: Math.round(linkDensity(el) * 100) / 100,
+          matchedBy,
+        };
+      };
+
+      // 1. Explicit semantic landmarks with substantial, low-link content.
+      for (const sel of ['main', '[role="main"]', 'article']) {
+        const el = document.querySelector(sel);
+        if (!el) continue;
+        const len = textOf(el);
+        if (len > 200 && len / bodyLen > 0.15 && linkDensity(el) < 0.5) {
+          const forced = document.querySelectorAll(sel).length === 1 ? sel : null;
+          const rec = build(el, 'landmark', forced);
+          if (rec) return rec;
+        }
+      }
+
+      // 2. Readability-style scoring for pages without a usable landmark.
+      //    Skipped on enormous DOMs to bound cost (landmarks above still apply).
+      const candidates = document.querySelectorAll('article, main, section, div');
+      if (candidates.length > 8000) return null;
+
+      const NEGATIVE = /(nav|menu|header|footer|sidebar|breadcrumb|comment|share|social|advert|promo|banner|cookie|subscribe|newsletter|related|recommend|pagination|masthead|widget|toolbar)/i;
+      const POSITIVE = /(content|article|main|post|entry|story|body|blog|markdown|prose|readme|doc)/i;
+
+      let best = null;
+      let bestScore = 0;
+      candidates.forEach((el) => {
+        const len = textOf(el);
+        if (len < 400) return;
+        const ld = linkDensity(el);
+        if (ld > 0.5) return;
+        const paragraphs = el.querySelectorAll('p').length;
+        let score = len * (1 - ld) + paragraphs * 30;
+        const idClass = `${el.id} ${el.className}`;
+        if (POSITIVE.test(idClass)) score *= 1.5;
+        if (NEGATIVE.test(idClass)) score *= 0.3;
+        if (len / bodyLen > 0.95) score *= 0.8; // avoid whole-body wrappers
+        if (score > bestScore) { bestScore = score; best = el; }
+      });
+
+      return best ? build(best, 'heuristic') : null;
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Builds a nextStep hint from a MainContentRecommendation.
+ * @param {MainContentRecommendation|null} recommendation - Result of detectMainContent
+ * @returns {string[]} Zero or one hint string.
+ */
+export function buildMainContentHint(recommendation) {
+  if (!recommendation || !recommendation.selector) return [];
+  const { selector, textLength } = recommendation;
+  const approxKB = textLength > 0 ? ` (~${Math.max(1, Math.round(textLength / 1024))}KB of text)` : '';
+  return [
+    `Main content appears to be in '${selector}'${approxKB}. The page is already loaded — use MCPBrowser's browser_get_current_html with selector: '${selector}' to extract just that region (no reload needed), skipping navigation, headers, and footers.`
+  ];
 }

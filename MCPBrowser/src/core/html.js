@@ -3,11 +3,19 @@
  */
 
 /**
- * Removes non-content elements and attributes from HTML:
- * 1. Removing non-content elements (scripts, styles, meta tags, comments)
- * 2. Removing code-related attributes (class, id, style, data-*, event handlers)
- * 3. Removing SVG graphics and other non-text elements
- * 4. Collapsing excessive whitespace
+ * Removes non-informative markup to shrink HTML for agent consumption while
+ * preserving what an agent needs to understand and interact with the page.
+ *
+ * Removes: executable script, style and noscript blocks, svg, comments, most
+ * meta and link tags, inline style and event-handler attributes, and most
+ * "data-" and "aria-" attributes.
+ * Keeps: class, id, role, data-testid, a whitelist of "aria-" attributes
+ * (accessible name and widget state), JSON-LD and application/json data
+ * scripts, and description and OpenGraph meta tags.
+ *
+ * Note: visibility-based pruning (hidden attribute, display:none) happens during
+ * DOM extraction (see extractAndProcessHtml in page.js), not here — regex
+ * removal of nested elements is unreliable and corrupts structure.
  * @param {string} html - The HTML to clean
  * @returns {string} The cleaned HTML
  */
@@ -22,8 +30,11 @@ export function cleanHtml(html) {
   // Remove HTML comments
   cleaned = cleaned.replace(/<!--[\s\S]*?-->/g, '');
   
-  // Remove script tags and their content
-  cleaned = cleaned.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  // Remove <script> tags, but preserve data-carrying scripts (JSON-LD and
+  // application/json) — these hold structured page data valuable to an agent.
+  cleaned = cleaned.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (match, attrs) =>
+    /type\s*=\s*["'](?:application\/ld\+json|application\/json)["']/i.test(attrs) ? match : ''
+  );
   
   // Remove style tags and their content
   cleaned = cleaned.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
@@ -34,12 +45,14 @@ export function cleanHtml(html) {
   // Remove SVG tags and their content (often large, not useful for text)
   cleaned = cleaned.replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, '');
   
-  // Remove hidden elements (not visible, not interactable)
-  cleaned = cleaned.replace(/<[^>]+\s+hidden\s*(?:=\s*["']?[^"'>]*["']?)?\s*[^>]*>[\s\S]*?<\/[^>]+>/gi, '');
-  cleaned = cleaned.replace(/<[^>]+\s+style\s*=\s*["'][^"']*display\s*:\s*none[^"']*["'][^>]*>[\s\S]*?<\/[^>]+>/gi, '');
-  
-  // Remove meta tags
-  cleaned = cleaned.replace(/<meta\b[^>]*>/gi, '');
+  // Hidden elements (hidden attribute / display:none) are pruned from the live
+  // DOM during extraction (see extractAndProcessHtml), not via regex here.
+
+  // Remove <meta> tags, but keep the description and OpenGraph (og:*) tags —
+  // they provide a concise, agent-friendly summary of the page.
+  cleaned = cleaned.replace(/<meta\b([^>]*)>/gi, (match, attrs) =>
+    /name\s*=\s*["']description["']|property\s*=\s*["']og:[^"']*["']/i.test(attrs) ? match : ''
+  );
   
   // Remove link tags (stylesheets, preload, etc.)
   cleaned = cleaned.replace(/<link\b[^>]*>/gi, '');
@@ -74,8 +87,17 @@ export function cleanHtml(html) {
   // and enable stable selectors like [role="main"], [role="navigation"]
   // cleaned = cleaned.replace(/\s+role=["'][^"']*["']/gi, '');
   
-  // Remove aria-* attributes
-  cleaned = cleaned.replace(/\s+aria-[a-z0-9-]+=["'][^"']*["']/gi, '');
+  // Remove aria-* attributes, but keep the ones carrying an element's accessible
+  // name or interaction state — essential for identifying icon-only controls
+  // (e.g. aria-label) and understanding widget state (expanded/selected/checked).
+  const ARIA_KEEP = new Set([
+    'aria-label', 'aria-labelledby', 'aria-describedby',
+    'aria-expanded', 'aria-selected', 'aria-checked',
+    'aria-current', 'aria-hidden'
+  ]);
+  cleaned = cleaned.replace(/\s+(aria-[a-z0-9-]+)=["'][^"']*["']/gi, (match, name) =>
+    ARIA_KEEP.has(name.toLowerCase()) ? match : ''
+  );
   
   // Collapse multiple whitespace/newlines into single space
   cleaned = cleaned.replace(/\s+/g, ' ');
@@ -84,42 +106,76 @@ export function cleanHtml(html) {
 }
 
 /**
- * Enriches HTML by converting relative URLs to absolute URLs
+ * Enriches HTML by resolving relative URLs to absolute ones so an agent always
+ * sees fully-qualified links. Handles href, src, poster, srcset and <form>
+ * action attributes, and honors a <base href> when the document declares one.
  * @param {string} html - The HTML to enrich
- * @param {string} baseUrl - The base URL for resolving relative URLs
+ * @param {string} baseUrl - The document URL used to resolve relative URLs
  * @returns {string} The enriched HTML
  */
 export function enrichHtml(html, baseUrl) {
   if (!html) return "";
-  
+
+  // Honor <base href> if present — browsers resolve relative URLs against it
+  // rather than the document URL.
+  let effectiveBase = baseUrl;
+  const baseMatch = html.match(/<base\b[^>]*\shref=["']([^"']*)["']/i);
+  if (baseMatch && baseMatch[1]) {
+    try {
+      effectiveBase = new URL(baseMatch[1], baseUrl).href;
+    } catch {
+      // Malformed <base href> — fall back to the document URL.
+    }
+  }
+
+  // URLs that are already absolute or non-resolvable (anchors, data/blob URIs,
+  // mailto/tel/javascript schemes) are left untouched.
+  const shouldSkip = (url) =>
+    !url || /^(?:https?:|\/\/|data:|blob:|mailto:|tel:|javascript:|#)/i.test(url);
+
+  const toAbsolute = (url) => {
+    try {
+      return new URL(url, effectiveBase).href;
+    } catch {
+      return null;
+    }
+  };
+
   let enriched = html;
-  
-  // Convert relative URLs to absolute in href attributes
-  enriched = enriched.replace(/href=["']([^"']+)["']/gi, (match, url) => {
-    if (!url || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//') || url.startsWith('#') || url.startsWith('mailto:') || url.startsWith('tel:')) {
-      return match;
-    }
-    try {
-      const absoluteUrl = new URL(url, baseUrl).href;
-      return `href="${absoluteUrl}"`;
-    } catch {
-      return match;
-    }
+
+  // Single-URL attributes: href, src, poster. Anchored on leading whitespace so
+  // substrings like xlink:href or data-src are never matched.
+  enriched = enriched.replace(/(\s(?:href|src|poster)=)["']([^"']+)["']/gi, (match, prefix, url) => {
+    if (shouldSkip(url)) return match;
+    const abs = toAbsolute(url);
+    return abs ? `${prefix}"${abs}"` : match;
   });
-  
-  // Convert relative URLs to absolute in src attributes
-  enriched = enriched.replace(/src=["']([^"']+)["']/gi, (match, url) => {
-    if (!url || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//') || url.startsWith('data:')) {
-      return match;
-    }
-    try {
-      const absoluteUrl = new URL(url, baseUrl).href;
-      return `src="${absoluteUrl}"`;
-    } catch {
-      return match;
-    }
+
+  // <form action>: scoped to the form tag so custom attributes such as
+  // data-action are never rewritten.
+  enriched = enriched.replace(/(<form\b[^>]*?\saction=)["']([^"']+)["']/gi, (match, prefix, url) => {
+    if (shouldSkip(url)) return match;
+    const abs = toAbsolute(url);
+    return abs ? `${prefix}"${abs}"` : match;
   });
-  
+
+  // srcset: a comma-separated list of "url [descriptor]" candidates.
+  enriched = enriched.replace(/(\ssrcset=)["']([^"']+)["']/gi, (match, prefix, value) => {
+    const converted = value
+      .split(',')
+      .map((candidate) => candidate.trim())
+      .filter(Boolean)
+      .map((candidate) => {
+        const spaceIdx = candidate.search(/\s/);
+        const url = spaceIdx === -1 ? candidate : candidate.slice(0, spaceIdx);
+        const descriptor = spaceIdx === -1 ? '' : candidate.slice(spaceIdx).trim();
+        const resolved = shouldSkip(url) ? url : (toAbsolute(url) || url);
+        return descriptor ? `${resolved} ${descriptor}` : resolved;
+      })
+      .join(', ');
+    return `${prefix}"${converted}"`;
+  });
+
   return enriched;
 }
 

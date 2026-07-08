@@ -3,7 +3,8 @@
  */
 
 import { getBrowser, getValidatedPage } from '../core/browser.js';
-import { extractAndProcessHtml, getLargeHtmlHints } from '../core/page.js';
+import { extractAndProcessHtml, getLargeHtmlHints, detectMainContent, buildMainContentHint } from '../core/page.js';
+import { formatContent } from '../core/markdown.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
@@ -81,7 +82,8 @@ export const GET_CURRENT_HTML_TOOL = {
     properties: {
       url: { type: "string", description: "The URL of the page (must match a previously fetched page)" },
       // removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
-      selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Use to scope extraction and reduce response size (e.g., 'main', '[role=\"main\"]', 'body > div:first-child'). If no elements match, falls back to full page with a note." },
+      selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Prefer semantic content regions like 'main', 'article', or '[role=\"main\"]' to capture the primary content while skipping navigation, headers, and footers (this also reduces response size). Other examples: '.content', 'body > div:first-child'. If no elements match, falls back to full page with a note." },
+      format: { type: "string", enum: ["html", "text", "markdown"], description: "Format for the returned content. 'html' (default) returns cleaned HTML. 'text' returns normalized visible text. 'markdown' returns readable Markdown. For 'text' and 'markdown' without a selector, MCPBrowser automatically scopes to the detected main content, skipping navigation/header/footer.", default: "html" },
       detectForms: { type: "boolean", description: "Scan page for forms and return structured form data (fields, selectors, submit buttons, orphaned inputs). Set to true when you need to fill or interact with forms.", default: false }
     },
     required: ["url"],
@@ -91,7 +93,7 @@ export const GET_CURRENT_HTML_TOOL = {
     type: "object",
     properties: {
       currentUrl: { type: "string", description: "Current page URL" },
-      html: { type: "string", description: "Page HTML content" },
+      html: { type: "string", description: "Page content in the requested format (cleaned HTML by default; visible text or Markdown when 'format' is set)" },
       forms: { type: "array", items: { type: "object" }, description: "Detected forms with fields, selectors, and metadata" },
       orphanedFields: { type: "array", items: { type: "object" }, description: "Input/select/textarea elements not inside any <form>" },
       totalFieldCount: { type: "number", description: "Total number of form fields found on the page" },
@@ -145,7 +147,7 @@ export const GET_CURRENT_HTML_TOOL = {
  * @param {boolean} [params.removeUnnecessaryHTML=true] - Whether to clean HTML
  * @returns {Promise<Object>} Result object with current HTML
  */
-export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, selector = null, detectForms = false }) {
+export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, selector = null, detectForms = false, format = 'html' }) {
   const startTime = Date.now();
   logger.info(`browser_get_current_html called: url=${url}${selector ? ` selector=${selector}` : ''}`);
   
@@ -196,7 +198,18 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, select
 
   try {
     const currentUrl = page.url();
-    const html = await extractAndProcessHtml(page, removeUnnecessaryHTML, selector);
+
+    // When the agent didn't scope with a selector, detect the primary content
+    // area. Used to (a) recommend scoping for HTML output, and (b) auto-scope
+    // for text/markdown output so the agent gets clean content in one call.
+    let contentRecommendation = null;
+    if (!selector) {
+      contentRecommendation = await detectMainContent(page);
+    }
+    const autoScoped = !selector && format !== 'html' && !!contentRecommendation;
+    const effectiveSelector = autoScoped ? contentRecommendation.selector : selector;
+
+    const html = await extractAndProcessHtml(page, removeUnnecessaryHTML, effectiveSelector);
     
     // Scan for forms when requested (lightweight, ~50-100ms)
     let formData = null;
@@ -233,11 +246,16 @@ export async function getCurrentHtml({ url, removeUnnecessaryHTML = true, select
     
     logger.info(`browser_get_current_html completed: got HTML from ${currentUrl}`);
     
+    // Convert to the requested output format (html | text | markdown).
+    const content = formatContent(html, format);
+    
     return new GetCurrentHtmlSuccessResponse(
       currentUrl,
-      html,
+      content,
       [
-        ...getLargeHtmlHints(html, selector),
+        ...(format === 'html' ? buildMainContentHint(contentRecommendation) : []),
+        ...(autoScoped ? [`Returned only the detected main content (selector: '${effectiveSelector}', format: ${format}). To get the full page instead, call again with selector: 'body'.`] : []),
+        ...getLargeHtmlHints(html, effectiveSelector),
         ...getPluginNextSteps(currentUrl, html),
         "Use MCPBrowser's browser_click_element to interact with elements",
         "Use MCPBrowser's browser_type_text to fill forms",

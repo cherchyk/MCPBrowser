@@ -10,6 +10,7 @@ const __dirname = dirname(__filename);
 const unitTests = [
   'core/browser.test.js',               // Browser management with mocks
   'core/html.test.js',                  // HTML processing (pure functions)
+  'core/markdown.test.js',              // Text/Markdown content conversion (pure functions)
   'core/page.test.js',                  // Page operations with mocks
   'core/responses.test.js',             // Response class validation
   'core/informational-response.test.js', // InformationalResponse (soft failures)
