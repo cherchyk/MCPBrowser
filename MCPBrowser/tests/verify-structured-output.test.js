@@ -113,13 +113,20 @@ await test('browser_fetch_webpage success should have MCP-compliant structure', 
   // Check required fields
   assert.ok(result.content, 'Should have content field');
   assert.ok(Array.isArray(result.content), 'content should be an array');
-  assert.strictEqual(result.content.length, 1, 'Should have one content item');
+  assert.strictEqual(result.content.length, 2, 'Should have two content items (summary + serialized JSON)');
   
   // Check content item structure
   const contentItem = result.content[0];
   assert.strictEqual(contentItem.type, 'text', 'Content type should be text');
   assert.ok(contentItem.text, 'Should have text field');
   assert.ok(contentItem.text.includes('Successfully fetched'), 'Text should describe success');
+
+  // Second content item: serialized JSON of structuredContent (MCP 2025-11-25
+  // backwards-compatibility for clients that don't consume structuredContent)
+  const jsonItem = result.content[1];
+  assert.strictEqual(jsonItem.type, 'text', 'Second content item should be text');
+  const parsedJson = JSON.parse(jsonItem.text);
+  assert.ok(parsedJson.html, 'Serialized JSON content should include html');
   
   // Check isError flag
   assert.ok(result.hasOwnProperty('isError'), 'Should have isError field');

@@ -4,7 +4,8 @@
  */
 
 import { getBrowser, domainPages } from '../core/browser.js';
-import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml, getLargeHtmlHints } from '../core/page.js';
+import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml, getLargeHtmlHints, detectMainContent, buildMainContentHint } from '../core/page.js';
+import { formatContent } from '../core/markdown.js';
 import { isLikelyAuthUrl, waitForAuth } from '../core/auth.js';
 import { MCPResponse, ErrorResponse, HttpStatusResponse, InformationalResponse } from '../core/responses.js';
 import logger from '../core/logger.js';
@@ -89,7 +90,8 @@ export const FETCH_WEBPAGE_TOOL = {
       //   default: "chrome"
       // },
       // removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%.", default: true },
-      selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Use to scope extraction and reduce response size (e.g., 'main', '[role=\"main\"]', 'body > div:first-child'). If no elements match, falls back to full page with a note." },
+      selector: { type: "string", description: "CSS selector to extract a specific DOM subtree instead of the full page. Prefer semantic content regions like 'main', 'article', or '[role=\"main\"]' to capture the primary content while skipping navigation, headers, and footers (this also reduces response size). Other examples: '.content', 'body > div:first-child'. If no elements match, falls back to full page with a note." },
+      format: { type: "string", enum: ["html", "text", "markdown"], description: "Format for the returned content. 'html' (default) returns cleaned HTML. 'text' returns normalized visible text. 'markdown' returns readable Markdown. For 'text' and 'markdown' without a selector, MCPBrowser automatically scopes to the detected main content, skipping navigation/header/footer.", default: "html" },
       // postLoadWait: { type: "number", description: "Additional milliseconds to wait after page load before extracting HTML. Use for pages that need extra time to render. Default: 0 (no extra wait, SPA detection handles most cases automatically).", default: 0 },
       detectForms: { type: "boolean", description: "Scan page for forms and return structured form data (fields, selectors, submit buttons, orphaned inputs). Set to true when you need to fill or interact with forms.", default: false }
     },
@@ -100,7 +102,7 @@ export const FETCH_WEBPAGE_TOOL = {
     type: "object",
     properties: {
       currentUrl: { type: "string", description: "Final URL after any redirects" },
-      html: { type: "string", description: "Page HTML content" },
+      html: { type: "string", description: "Page content in the requested format (cleaned HTML by default; visible text or Markdown when 'format' is set)" },
       forms: { type: "array", items: { type: "object" }, description: "Detected forms with fields, selectors, and metadata" },
       orphanedFields: { type: "array", items: { type: "object" }, description: "Input/select/textarea elements not inside any <form>" },
       totalFieldCount: { type: "number", description: "Total number of form fields found on the page" },
@@ -161,7 +163,7 @@ export const FETCH_WEBPAGE_TOOL = {
  * @param {number} [params.postLoadWait=0] - Additional milliseconds to wait after page load before extracting HTML
  * @returns {Promise<Object>} Result object with success status, URL, HTML content, or error details
  */
-export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = true, selector = null, postLoadWait = 0, detectForms = false }) {
+export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = true, selector = null, postLoadWait = 0, detectForms = false, format = 'html' }) {
   logger.info(`browser_fetch_webpage called: url=${url}`);
   
   // Handle missing URL with environment variable fallback
@@ -189,7 +191,7 @@ export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = tru
 
   // Queue this request - processed sequentially, one at a time
   return queueRequest(async () => {
-    return await doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait, detectForms });
+    return await doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait, detectForms, format });
   });
 }
 
@@ -197,7 +199,7 @@ export async function fetchPage({ url, browser = '', removeUnnecessaryHTML = tru
  * Internal function that does the actual page fetching.
  * Called by the queue processor - only one runs at a time.
  */
-async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait, detectForms }) {
+async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, postLoadWait, detectForms, format }) {
   const originalHostname = new URL(url).hostname;
 
   // Ensure browser connection
@@ -253,8 +255,21 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, post
       await new Promise(resolve => setTimeout(resolve, postLoadWait));
     }
     
+    // When the agent didn't scope with a selector, detect the primary content
+    // area — to recommend scoping for HTML output, and to auto-scope for
+    // text/markdown output so the agent gets clean content in one call.
+    let contentRecommendation = null;
+    if (!selector) {
+      contentRecommendation = await detectMainContent(page);
+    }
+    const autoScoped = !selector && format !== 'html' && !!contentRecommendation;
+    const effectiveSelector = autoScoped ? contentRecommendation.selector : selector;
+
     // Extract and process HTML
-    const processedHtml = await extractAndProcessHtml(page, removeUnnecessaryHTML, selector);
+    const processedHtml = await extractAndProcessHtml(page, removeUnnecessaryHTML, effectiveSelector);
+
+    // Convert to the requested output format (html | text | markdown).
+    const content = formatContent(processedHtml, format);
     
     // Scan for forms when requested (lightweight, ~50-100ms)
     let formData = null;
@@ -279,14 +294,16 @@ async function doFetchPage({ url, browser, removeUnnecessaryHTML, selector, post
     // Check for non-2xx HTTP status codes
     if (statusCode && (statusCode >= 400 && statusCode < 600)) {
       logger.debug(`HTTP ${statusCode} ${statusText} - returning as informational response`);
-      return new HttpStatusResponse(page.url(), statusCode, statusText, processedHtml);
+      return new HttpStatusResponse(page.url(), statusCode, statusText, content);
     }
     
     return new FetchPageSuccessResponse(
       page.url(),
-      processedHtml,
+      content,
       [
-        ...getLargeHtmlHints(processedHtml, selector),
+        ...(format === 'html' ? buildMainContentHint(contentRecommendation) : []),
+        ...(autoScoped ? [`Returned only the detected main content (selector: '${effectiveSelector}', format: ${format}). To get the full page instead, call again with selector: 'body'.`] : []),
+        ...getLargeHtmlHints(processedHtml, effectiveSelector),
         ...getPluginNextSteps(page.url(), processedHtml),
         "Use MCPBrowser's browser_click_element to interact with buttons/links on the page",
         "Use MCPBrowser's browser_type_text to fill in form fields",

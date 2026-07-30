@@ -50,15 +50,23 @@ export class MCPResponse {
    * @returns {Object} MCP-compliant response with content, isError, and optionally structuredContent
    */
   toMcpFormat() {
+    const structured = this.toJSON();
     return {
       content: [
         {
           type: "text",
           text: this.getTextSummary()
+        },
+        {
+          // Per MCP spec (2025-11-25): a tool returning structured content SHOULD
+          // also return the serialized JSON in a TextContent block, so clients
+          // that do not consume structuredContent still receive the full data.
+          type: "text",
+          text: JSON.stringify(structured)
         }
       ],
       isError: false,
-      structuredContent: this.toJSON()
+      structuredContent: structured
     };
   }
 
@@ -130,9 +138,11 @@ export class InformationalResponse extends MCPResponse {
   }
 
   /**
-   * Informational responses omit structuredContent to avoid schema violations.
-   * Their fields (message, reason, status) don't match tool-specific outputSchemas.
-   * @returns {Object} MCP-compliant response with text content only
+   * Informational responses omit structuredContent to avoid schema violations —
+   * their fields (message, reason, status) don't match tool-specific outputSchemas.
+   * The serialized JSON is still provided as a text block for JSON-consuming
+   * clients; per the MCP spec, structuredContent is validated only when present.
+   * @returns {Object} MCP-compliant response with text content (no structuredContent)
    */
   toMcpFormat() {
     return {
@@ -140,6 +150,10 @@ export class InformationalResponse extends MCPResponse {
         {
           type: "text",
           text: this.getTextSummary()
+        },
+        {
+          type: "text",
+          text: JSON.stringify(this.toJSON())
         }
       ],
       isError: false
@@ -291,9 +305,11 @@ export class HttpStatusResponse extends MCPResponse {
   }
 
   /**
-   * HTTP status responses omit structuredContent to avoid schema violations.
-   * Their fields (url, statusCode, etc.) don't match tool-specific outputSchemas.
-   * @returns {Object} MCP-compliant response with text content only
+   * HTTP status responses omit structuredContent to avoid schema violations —
+   * their fields (url, statusCode, etc.) don't match tool-specific outputSchemas.
+   * The serialized JSON is still provided as a text block for JSON-consuming
+   * clients; per the MCP spec, structuredContent is validated only when present.
+   * @returns {Object} MCP-compliant response with text content (no structuredContent)
    */
   toMcpFormat() {
     return {
@@ -301,6 +317,10 @@ export class HttpStatusResponse extends MCPResponse {
         {
           type: "text",
           text: this.getTextSummary()
+        },
+        {
+          type: "text",
+          text: JSON.stringify(this.toJSON())
         }
       ],
       isError: false

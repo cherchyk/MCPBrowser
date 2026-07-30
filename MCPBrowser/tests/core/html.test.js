@@ -246,11 +246,12 @@ test('Should preserve role attributes', () => {
   assert(result.includes('Menu'), 'Should preserve content');
 });
 
-// Test 25: Remove aria-* attributes
-test('Should remove aria-* attributes', () => {
+// Test 25: Keep name/state aria-* attributes, remove the rest
+test('Should keep name/state aria-* and remove others', () => {
   const html = '<button aria-label="Close" aria-pressed="false">X</button>';
   const result = prepareHtml(html, 'https://example.com');
-  assert(!result.includes('aria-'), 'Should remove aria attributes');
+  assert(result.includes('aria-label="Close"'), 'Should keep aria-label (accessible name)');
+  assert(!result.includes('aria-pressed'), 'Should remove non-whitelisted aria');
   assert(result.includes('X'), 'Should preserve content');
 });
 
@@ -263,22 +264,30 @@ test('Should collapse multiple whitespace into single space', () => {
   assert(result.includes('Line 1'), 'Should preserve content');
 });
 
-// Test 26b: Remove hidden elements
-test('Should remove elements with hidden attribute', () => {
-  const html = '<div>Visible</div><div hidden>Hidden content</div><div>More visible</div>';
+// Test 26b: Data-carrying scripts are preserved (JSON-LD structured data)
+test('Should preserve JSON-LD script tags while removing executable scripts', () => {
+  const html = '<script type="application/ld+json">{"@type":"Product","name":"Widget"}</script><script>alert(1)</script>';
   const result = prepareHtml(html, 'https://example.com');
-  assert(result.includes('Visible'), 'Should preserve visible content');
-  assert(!result.includes('Hidden content'), 'Should remove hidden element content');
-  assert(result.includes('More visible'), 'Should preserve other visible content');
+  assert(result.includes('application/ld+json'), 'Should keep JSON-LD script');
+  assert(result.includes('Widget'), 'Should keep JSON-LD content');
+  assert(!result.includes('alert'), 'Should still remove executable scripts');
 });
 
-// Test 26c: Remove elements with display:none
-test('Should remove elements with display:none style', () => {
-  const html = '<div>Visible</div><div style="display:none">Hidden</div><div>More visible</div>';
+// Test 26c: application/json data scripts are preserved (e.g. __NEXT_DATA__)
+test('Should preserve application/json script tags', () => {
+  const html = '<script type="application/json" id="__NEXT_DATA__">{"props":{"x":1}}</script>';
   const result = prepareHtml(html, 'https://example.com');
-  assert(result.includes('Visible'), 'Should preserve visible content');
-  assert(!result.includes('Hidden'), 'Should remove display:none element');
-  assert(result.includes('More visible'), 'Should preserve other visible content');
+  assert(result.includes('application/json'), 'Should keep application/json script');
+  assert(result.includes('__NEXT_DATA__'), 'Should keep script attributes');
+});
+
+// Test 26d: Keep description and OpenGraph meta, drop the rest
+test('Should keep description and og:* meta tags, drop others', () => {
+  const html = '<meta charset="utf-8"><meta name="description" content="A page"><meta property="og:title" content="Title">';
+  const result = prepareHtml(html, 'https://example.com');
+  assert(!result.includes('charset'), 'Should remove charset meta');
+  assert(result.includes('name="description"'), 'Should keep description meta');
+  assert(result.includes('property="og:title"'), 'Should keep OpenGraph meta');
 });
 
 // Test 27: Comprehensive test with all removals
@@ -305,7 +314,7 @@ test('Should handle HTML with all types of removals', () => {
   assert(!result.includes('style="color: blue"'), 'Should remove inline style values');
   assert(!result.includes('onclick='), 'Should remove onclick');
   assert(result.includes('role='), 'Should preserve role (semantically valuable)');
-  assert(!result.includes('aria-'), 'Should remove aria');
+  assert(result.includes('aria-label='), 'Should preserve aria-label (accessible name)');
   
   // Should remove non-content elements
   assert(!result.includes('<svg'), 'Should remove svg');
@@ -479,6 +488,58 @@ test('enrichHtml: Should NOT remove script or style tags', () => {
   const result = enrichHtml(html, 'https://example.com');
   assert(result.includes('<script'), 'Should keep script tag');
   assert(result.includes('<style'), 'Should keep style tag');
+});
+
+// Test enrichHtml 10: Convert relative form action to absolute
+test('enrichHtml: Should convert relative form action to absolute', () => {
+  const html = '<form action="/submit" method="post"><input name="q"></form>';
+  const result = enrichHtml(html, 'https://example.com/page/');
+  assert(result.includes('action="https://example.com/submit"'), 'Should convert relative action to absolute');
+});
+
+// Test enrichHtml 11: Do not rewrite non-form action attributes
+test('enrichHtml: Should not rewrite data-action attributes', () => {
+  const html = '<button data-action="save">Save</button>';
+  const result = enrichHtml(html, 'https://example.com');
+  assert(result.includes('data-action="save"'), 'Should leave data-action untouched');
+});
+
+// Test enrichHtml 12: Convert relative poster to absolute
+test('enrichHtml: Should convert relative poster URLs to absolute', () => {
+  const html = '<video poster="/thumb.jpg"></video>';
+  const result = enrichHtml(html, 'https://example.com');
+  assert(result.includes('poster="https://example.com/thumb.jpg"'), 'Should convert relative poster to absolute');
+});
+
+// Test enrichHtml 13: Convert relative srcset URLs, preserve descriptors
+test('enrichHtml: Should convert relative srcset URLs and keep descriptors', () => {
+  const html = '<img srcset="/a.jpg 1x, /b.jpg 2x">';
+  const result = enrichHtml(html, 'https://example.com');
+  assert(result.includes('https://example.com/a.jpg 1x'), 'Should convert first candidate');
+  assert(result.includes('https://example.com/b.jpg 2x'), 'Should convert second candidate');
+});
+
+// Test enrichHtml 14: srcset keeps absolute and protocol-relative candidates
+test('enrichHtml: Should keep absolute/protocol-relative srcset candidates', () => {
+  const html = '<img srcset="https://cdn.com/a.jpg 1x, //cdn.com/b.jpg 2x">';
+  const result = enrichHtml(html, 'https://example.com');
+  assert(result.includes('https://cdn.com/a.jpg 1x'), 'Should keep absolute candidate');
+  assert(result.includes('//cdn.com/b.jpg 2x'), 'Should keep protocol-relative candidate');
+});
+
+// Test enrichHtml 15: Honor <base href> for relative resolution
+test('enrichHtml: Should resolve relative URLs against <base href>', () => {
+  const html = '<head><base href="https://cdn.example.com/app/"></head><body><a href="page">Link</a><img src="img/logo.png"></body>';
+  const result = enrichHtml(html, 'https://example.com/');
+  assert(result.includes('href="https://cdn.example.com/app/page"'), 'Should resolve href against base');
+  assert(result.includes('src="https://cdn.example.com/app/img/logo.png"'), 'Should resolve src against base');
+});
+
+// Test enrichHtml 16: Relative <base href> resolves against document URL
+test('enrichHtml: Should resolve a relative <base href> against the document URL', () => {
+  const html = '<base href="/app/"><a href="page">Link</a>';
+  const result = enrichHtml(html, 'https://example.com/docs/');
+  assert(result.includes('href="https://example.com/app/page"'), 'Should combine relative base with document URL');
 });
 
 // ==================================================
