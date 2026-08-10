@@ -69,7 +69,9 @@ Puppeteer and Playwright are browser automation libraries — their MCP servers 
 - Chrome, Edge, or Brave browser
 - [Node.js 18+](https://nodejs.org/) (includes npm)
 
-> **Note:** Node.js must be installed on your system. The VS Code extension and npm package both require Node.js to run the MCP server. Download from [nodejs.org](https://nodejs.org/) if not already installed.
+> **Note:** Node.js is required for npm-based installation. The VS Code extension bundles the server and uses VS Code's embedded Node.js runtime.
+
+> **npm download metrics:** MCPBrowser is now packaged directly inside the VS Code extension (VSIX). Because most users install MCPBrowser through VS Code, Antigravity, or Kiro, npm download counts are expected to decrease even as overall usage continues to grow. The npm package remains a fully supported delivery channel for `npx`, global installation, and other MCP clients.
 
 ## Installation
 
@@ -88,7 +90,9 @@ Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?it
 code --install-extension cherchyk.mcpbrowser
 ```
 
-The extension automatically installs and configures everything for your AI agent (GitHub Copilot, Kiro Agent, Antigravity Agent). Also works with VSCodium and other Open VSX-compatible editors.
+The extension bundles the server and registers it through VS Code's native MCP provider API, so it does not need a global npm installation or a runtime download. Kiro and Antigravity users can run **Configure MCPBrowser** to add the bundled server to their editor configuration.
+
+Enterprise administrators can allowlist the extension ID `cherchyk.mcpbrowser` and the canonical MCP Registry ID `io.github.cherchyk/mcpbrowser`.
 
 ### Option 2: Claude Code
 

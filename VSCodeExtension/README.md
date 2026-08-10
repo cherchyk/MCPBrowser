@@ -6,16 +6,17 @@
 
 ## Features
 
-- 🚀 **One-Click Setup**: Installs npm package and configures mcp.json automatically - complete setup with a single click
+- 🚀 **No Runtime Downloads**: The MCP server and its dependencies are bundled in the signed VSIX
+- 🏢 **Enterprise Ready**: Uses VS Code's native MCP provider API and stable registry identity
 - 🔐 **Authentication Support**: Fetches web pages in your Chrome/Edge/Brave browser - authenticate once, reuse sessions automatically
 - 🤖 **Bypass Anti-Crawler**: Fetch sites that block automated tools, including CAPTCHA and human verification
 
 ## Requirements
 
 - Chrome, Edge, or Brave browser
-- [Node.js 18+](https://nodejs.org/) (includes npm)
+- VS Code 1.107 or later
 
-> **Note:** Node.js must be installed on your system. This extension uses Node.js to run the MCP server. VS Code does not include Node.js - download from [nodejs.org](https://nodejs.org/) if not already installed.
+The extension uses VS Code's embedded Node.js runtime. It does not install global npm packages or download code when the MCP server starts.
 
 ## How It Works
 
@@ -31,11 +32,9 @@ When your AI agent needs to fetch a web page via browser:
 ### Installation Steps
 
 1. Install this extension from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) or [Open VSX Registry](https://open-vsx.org/extension/cherchyk/mcpbrowser)
-2. You'll see a notification: **"MCPBrowser is available! Would you like to configure it?"**
-3. Click **"Configure Now"**
-4. Wait for "Installing MCPBrowser npm package..." to complete 
-5. When you see **"MCPBrowser configured successfully!"**, click **"Restart Now"**
-6. After restart, MCPBrowser is ready to use with your AI agent!
+2. MCPBrowser registers its bundled MCP server automatically
+3. Open **MCP: List Servers** and confirm `io.github.cherchyk/mcpbrowser` is available
+4. MCPBrowser is ready to use with your AI agent
 
 ### Using with Your AI Agent
 
@@ -55,8 +54,33 @@ Your AI agent will use your Chrome/Edge/Brave browser session to fetch these pag
 ### Manual Commands
 
 Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P`):
-- **Configure MCPBrowser** - Set up or update MCP server configuration
-- **Remove MCPBrowser** - Remove MCP server configuration
+- **Configure MCPBrowser** - Verify the bundled MCP server or configure compatible editors
+- **Remove MCPBrowser** - Show removal guidance or remove compatible-editor configuration
+
+## Enterprise allowlisting
+
+MCPBrowser is published in the official MCP Registry with this canonical ID:
+
+```text
+io.github.cherchyk/mcpbrowser
+```
+
+For VS Code enterprise policy, allow the extension and MCP server:
+
+```json
+{
+  "AllowedExtensions": {
+    "cherchyk.mcpbrowser": "stable"
+  },
+  "ChatAllowedMcpServers": [
+    {
+      "serverName": "io.github.cherchyk/mcpbrowser"
+    }
+  ]
+}
+```
+
+For GitHub Copilot organization or enterprise policy, add the canonical ID to the organization's MCP registry before enabling **Registry only** access.
 
 ## About MCPBrowser
 
