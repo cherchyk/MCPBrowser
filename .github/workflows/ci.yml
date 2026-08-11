@@ -57,9 +57,3 @@ jobs:
         npm install -g @vscode/vsce ovsx
         cd VSCodeExtension
         vsce package --no-dependencies
-        VSIX=$(ls mcpbrowser-*.vsix)
-        unzip -l "$VSIX" | grep -q 'extension/server/src/mcp-browser.js'
-        if unzip -l "$VSIX" | grep -q 'extension/server/node_modules/'; then
-          echo "::error::VSIX contains an unbundled server/node_modules tree"
-          exit 1
-        fi

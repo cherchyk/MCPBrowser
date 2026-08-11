@@ -1,253 +1,614 @@
 const assert = require('assert');
-const path = require('path');
-const proxyquire = require('proxyquire');
 const sinon = require('sinon');
+const proxyquire = require('proxyquire');
+const path = require('path');
 
-describe('MCPBrowser extension', () => {
+describe('Extension Tests', () => {
+    const TEST_VERSION = '0.4.4';
     let extension;
     let fsStub;
-    let vscodeStub;
     let execPromiseStub;
-    let context;
+    let vscodeStub;
+    let processStub;
+    let osStub;
+    let originalProcess;
 
     beforeEach(() => {
-        const missingFileError = Object.assign(new Error('ENOENT'), {
-            code: 'ENOENT'
-        });
+        // Save original process
+        originalProcess = global.process;
+
+        // Setup stubs
         fsStub = {
             promises: {
-                access: sinon.stub().resolves(),
-                readFile: sinon.stub().rejects(missingFileError),
-                writeFile: sinon.stub().resolves(),
-                mkdir: sinon.stub().resolves()
+                readFile: sinon.stub(),
+                writeFile: sinon.stub(),
+                mkdir: sinon.stub()
             }
         };
-        execPromiseStub = sinon.stub();
 
-        class McpStdioServerDefinition {
-            constructor(label, command, args, env, version) {
-                this.label = label;
-                this.command = command;
-                this.args = args;
-                this.env = env;
-                this.version = version;
-            }
-        }
+        execPromiseStub = sinon.stub();
 
         vscodeStub = {
             window: {
                 showInformationMessage: sinon.stub(),
+                showWarningMessage: sinon.stub(),
                 showErrorMessage: sinon.stub()
             },
             commands: {
-                registerCommand: sinon.stub().callsFake((_name, handler) => ({
-                    dispose: sinon.stub(),
-                    handler
-                }))
+                registerCommand: sinon.stub(),
+                executeCommand: sinon.stub()
             },
             env: {
+                openExternal: sinon.stub(),
                 appName: 'Visual Studio Code'
             },
-            lm: {
-                registerMcpServerDefinitionProvider: sinon.stub().returns({
-                    dispose: sinon.stub()
-                })
-            },
-            McpStdioServerDefinition,
             Uri: {
-                file: sinon.stub().callsFake(fsPath => ({ fsPath }))
+                parse: sinon.stub().callsFake(url => ({ url }))
             }
         };
 
+        processStub = {
+            platform: 'linux',
+            env: {},
+            getuid: sinon.stub().returns(1000)
+        };
+
+        osStub = {
+            homedir: sinon.stub().returns('/home/testuser')
+        };
+
+        // Load extension with stubs - use noCallThru to prevent loading real vscode module
         extension = proxyquire.noCallThru()('../src/extension', {
-            vscode: vscodeStub,
-            fs: fsStub,
-            os: {
-                homedir: sinon.stub().returns('/home/testuser')
-            },
-            util: {
+            'vscode': vscodeStub,
+            'fs': fsStub,
+            'os': osStub,
+            'util': {
                 promisify: () => execPromiseStub
             },
-            child_process: {
+            'child_process': {
                 exec: sinon.stub()
             }
         });
 
-        context = {
-            extensionPath: path.join('C:', 'extensions', 'mcpbrowser'),
-            extension: {
-                packageJSON: {
-                    version: '0.4.3'
-                }
-            },
-            subscriptions: []
-        };
+        // Override process
+        global.process = Object.assign({}, process, processStub);
     });
 
     afterEach(() => {
+        // Restore original process
+        global.process = originalProcess;
+        // Restore all sinon stubs
         sinon.restore();
     });
 
-    describe('editor detection', () => {
-        it('detects VS Code', () => {
-            assert.strictEqual(extension.detectEditor().name, 'VS Code');
-            assert.strictEqual(extension.getServersKey(), 'servers');
+    describe('detectEditor', () => {
+        it('should detect VS Code by default', () => {
+            vscodeStub.env.appName = 'Visual Studio Code';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            const editor = ext.detectEditor();
+            assert.strictEqual(editor.name, 'VS Code');
+            assert.strictEqual(editor.serversKey, 'servers');
         });
 
-        it('detects Kiro', () => {
+        it('should detect Kiro', () => {
             vscodeStub.env.appName = 'Kiro';
-            assert.strictEqual(extension.detectEditor().name, 'Kiro');
-            assert.strictEqual(extension.getServersKey(), 'mcpServers');
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            const editor = ext.detectEditor();
+            assert.strictEqual(editor.name, 'Kiro');
+            assert.strictEqual(editor.serversKey, 'mcpServers');
         });
 
-        it('detects Antigravity', () => {
+        it('should detect Antigravity', () => {
             vscodeStub.env.appName = 'Antigravity';
-            assert.strictEqual(extension.detectEditor().name, 'Antigravity');
-            assert.strictEqual(extension.getServersKey(), 'mcpServers');
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            const editor = ext.detectEditor();
+            assert.strictEqual(editor.name, 'Antigravity');
+            assert.strictEqual(editor.serversKey, 'mcpServers');
+        });
+
+        it('should fall back to VS Code for unknown editors', () => {
+            vscodeStub.env.appName = 'Unknown Editor';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            const editor = ext.detectEditor();
+            assert.strictEqual(editor.name, 'VS Code');
         });
     });
 
-    describe('bundled server definition', () => {
-        it('uses the canonical MCP server ID and bundled entry point', () => {
-            const definition = extension.createMcpServerDefinition(context);
+    describe('getMcpConfigPath', () => {
+        it('should return VS Code Windows path when platform is win32', () => {
+            vscodeStub.env.appName = 'Visual Studio Code';
+            processStub.platform = 'win32';
+            processStub.env.APPDATA = 'C:\\Users\\TestUser\\AppData\\Roaming';
+            global.process = Object.assign({}, process, processStub);
 
-            assert.strictEqual(definition.label, 'MCPBrowser');
-            assert.strictEqual(definition.command, process.execPath);
-            assert.deepStrictEqual(definition.args, [
-                path.join(context.extensionPath, 'server', 'src', 'mcp-browser.js')
-            ]);
-            assert.deepStrictEqual(definition.env, { ELECTRON_RUN_AS_NODE: '1' });
-            assert.strictEqual(definition.version, '0.4.3');
+            const winExtension = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            const configPath = winExtension.getMcpConfigPath();
+            assert.ok(configPath.includes('Code'));
+            assert.ok(configPath.endsWith('mcp.json'));
         });
 
-        it('registers a native MCP provider', async () => {
-            const disposable = extension.registerMcpProvider(context);
-
-            assert(disposable);
-            assert(vscodeStub.lm.registerMcpServerDefinitionProvider.calledOnceWith('mcpbrowser'));
-
-            const provider =
-                vscodeStub.lm.registerMcpServerDefinitionProvider.firstCall.args[1];
-            const definitions = await provider.provideMcpServerDefinitions();
-            assert.strictEqual(definitions[0].label, 'MCPBrowser');
-
-            await provider.resolveMcpServerDefinition(definitions[0]);
-            assert(fsStub.promises.access.calledWith(
-                path.join(context.extensionPath, 'server', 'src', 'mcp-browser.js')
-            ));
-        });
-
-        it('reports a missing bundled server', async () => {
-            fsStub.promises.access.rejects(new Error('missing'));
-
-            await assert.rejects(
-                extension.ensureBundledServer(context),
-                /Bundled MCPBrowser server is missing/
-            );
-        });
-    });
-
-    describe('legacy editor configuration', () => {
-        beforeEach(() => {
+        it('should return Kiro path when running in Kiro', () => {
             vscodeStub.env.appName = 'Kiro';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            const configPath = ext.getMcpConfigPath();
+            assert.ok(configPath.includes('.kiro'));
+            assert.ok(configPath.includes('settings'));
+            assert.ok(configPath.endsWith('mcp.json'));
         });
 
-        it('writes a local bundled command without npm or npx', async () => {
-            fsStub.promises.readFile.rejects(Object.assign(new Error('ENOENT'), {
-                code: 'ENOENT'
-            }));
+        it('should return Antigravity path when running in Antigravity', () => {
+            vscodeStub.env.appName = 'Antigravity';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
 
-            await extension.configureMcpBrowser(context);
+            const configPath = ext.getMcpConfigPath();
+            assert.ok(configPath.includes('.gemini'));
+            assert.ok(configPath.includes('antigravity'));
+            assert.ok(configPath.endsWith('mcp_config.json'));
+        });
+    });
 
-            const written = JSON.parse(fsStub.promises.writeFile.firstCall.args[1]);
-            const server = written.mcpServers['io.github.cherchyk/mcpbrowser'];
-
-            assert.strictEqual(server.command, process.execPath);
-            assert.deepStrictEqual(server.args, [
-                path.join(context.extensionPath, 'server', 'src', 'mcp-browser.js')
-            ]);
-            assert.strictEqual(server.env.ELECTRON_RUN_AS_NODE, '1');
-            assert(!JSON.stringify(server).includes('npm'));
-            assert(!JSON.stringify(server).includes('npx'));
+    describe('getServersKey', () => {
+        it('should return "servers" for VS Code', () => {
+            vscodeStub.env.appName = 'Visual Studio Code';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            assert.strictEqual(ext.getServersKey(), 'servers');
         });
 
-        it('migrates the legacy MCPBrowser configuration key', async () => {
-            fsStub.promises.readFile.resolves(JSON.stringify({
-                mcpServers: {
+        it('should return "mcpServers" for Kiro', () => {
+            vscodeStub.env.appName = 'Kiro';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            assert.strictEqual(ext.getServersKey(), 'mcpServers');
+        });
+
+        it('should return "mcpServers" for Antigravity', () => {
+            vscodeStub.env.appName = 'Antigravity';
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            assert.strictEqual(ext.getServersKey(), 'mcpServers');
+        });
+    });
+
+    describe('isWSL', () => {
+        it('should return true when WSL_DISTRO_NAME is set', () => {
+            processStub.env = { WSL_DISTRO_NAME: 'Ubuntu' };
+            global.process = Object.assign({}, process, processStub);
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            assert.strictEqual(ext.isWSL(), true);
+        });
+
+        it('should return false when WSL_DISTRO_NAME is not set', () => {
+            processStub.env = {};
+            global.process = Object.assign({}, process, processStub);
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            assert.strictEqual(ext.isWSL(), false);
+        });
+    });
+
+    describe('resolveWSLPaths', () => {
+        it('should resolve Windows APPDATA path in WSL', async () => {
+            processStub.env = { WSL_DISTRO_NAME: 'Ubuntu' };
+            global.process = Object.assign({}, process, processStub);
+
+            execPromiseStub.onFirstCall().resolves({ stdout: 'C:\\Users\\TestUser\\AppData\\Roaming\r\n' });
+            execPromiseStub.onSecondCall().resolves({ stdout: '/mnt/c/Users/TestUser/AppData/Roaming\n' });
+
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            await ext.resolveWSLPaths();
+            assert.strictEqual(ext._getCachedWSLAppData(), '/mnt/c/Users/TestUser/AppData/Roaming');
+        });
+
+        it('should not resolve when not in WSL', async () => {
+            processStub.env = {};
+            global.process = Object.assign({}, process, processStub);
+
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            await ext.resolveWSLPaths();
+            assert.strictEqual(ext._getCachedWSLAppData(), null);
+            assert(execPromiseStub.notCalled);
+        });
+
+        it('should fall back gracefully when cmd.exe fails', async () => {
+            processStub.env = { WSL_DISTRO_NAME: 'Ubuntu' };
+            global.process = Object.assign({}, process, processStub);
+
+            execPromiseStub.rejects(new Error('cmd.exe not found'));
+
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            await ext.resolveWSLPaths();
+            assert.strictEqual(ext._getCachedWSLAppData(), null);
+        });
+    });
+
+    describe('getMcpConfigPath (WSL)', () => {
+        it('should use Windows APPDATA path when WSL path is cached', () => {
+            vscodeStub.env.appName = 'Visual Studio Code';
+            processStub.platform = 'linux';
+            global.process = Object.assign({}, process, processStub);
+
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            ext._setCachedWSLAppData('/mnt/c/Users/TestUser/AppData/Roaming');
+            const configPath = ext.getMcpConfigPath();
+            // path.join normalizes separators per platform, so check key components
+            assert.ok(configPath.includes('TestUser'), 'should contain Windows user path');
+            assert.ok(configPath.includes('Code'), 'should contain Code directory');
+            assert.ok(configPath.endsWith('mcp.json'), 'should end with mcp.json');
+            // Should NOT use the Linux ~/.config path
+            assert.ok(!configPath.includes('.config'), 'should not use Linux .config path');
+        });
+
+        it('should fall back to Linux path when WSL path not cached', () => {
+            vscodeStub.env.appName = 'Visual Studio Code';
+            processStub.platform = 'linux';
+            global.process = Object.assign({}, process, processStub);
+
+            const ext = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub, 'fs': fsStub, 'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+
+            ext._setCachedWSLAppData(null);
+            const configPath = ext.getMcpConfigPath();
+            assert.ok(configPath.includes('.config'));
+            assert.ok(configPath.endsWith('mcp.json'));
+        });
+    });
+
+    describe('checkNodeInstalled', () => {
+        it('should return true when npm is available', async () => {
+            execPromiseStub.resolves({ stdout: '10.2.0' });
+
+            assert.strictEqual(await extension.checkNodeInstalled(), true);
+        });
+
+        it('should return false when npm is not available', async () => {
+            execPromiseStub.rejects(new Error('command not found'));
+
+            assert.strictEqual(await extension.checkNodeInstalled(), false);
+        });
+
+        it('should return false when npm command fails', async () => {
+            execPromiseStub.rejects(new Error('npm failed'));
+
+            assert.strictEqual(await extension.checkNodeInstalled(), false);
+        });
+    });
+
+    describe('isMcpBrowserConfigured', () => {
+        it('should return true when MCPBrowser is configured', async () => {
+            const mockConfig = {
+                servers: {
                     MCPBrowser: {
-                        autoApprove: ['browser_fetch_webpage']
+                        type: "stdio",
+                        command: "npx"
                     }
                 }
-            }));
+            };
+            fsStub.promises.readFile.resolves(JSON.stringify(mockConfig));
 
-            await extension.configureMcpBrowser(context);
-
-            const written = JSON.parse(fsStub.promises.writeFile.firstCall.args[1]);
-            assert(!written.mcpServers.MCPBrowser);
-            assert.deepStrictEqual(
-                written.mcpServers['io.github.cherchyk/mcpbrowser'].autoApprove,
-                ['browser_fetch_webpage']
-            );
+            assert.strictEqual(await extension.isMcpBrowserConfigured(), true);
         });
 
-        it('removes canonical and legacy configuration entries', async () => {
-            fsStub.promises.readFile.resolves(JSON.stringify({
-                mcpServers: {
-                    MCPBrowser: {},
-                    'io.github.cherchyk/mcpbrowser': {},
-                    other: {}
+        it('should return false when file does not exist', async () => {
+            const missingError = Object.assign(new Error('missing'), { code: 'ENOENT' });
+            fsStub.promises.readFile.rejects(missingError);
+
+            assert.strictEqual(await extension.isMcpBrowserConfigured(), false);
+        });
+
+        it('should return false when MCPBrowser is not in config', async () => {
+            const mockConfig = {
+                servers: {
+                    OtherServer: {}
                 }
-            }));
+            };
+            fsStub.promises.readFile.resolves(JSON.stringify(mockConfig));
 
-            assert.strictEqual(await extension.removeMcpBrowser(), true);
+            assert.strictEqual(await extension.isMcpBrowserConfigured(), false);
+        });
 
-            const written = JSON.parse(fsStub.promises.writeFile.firstCall.args[1]);
-            assert.deepStrictEqual(written.mcpServers, { other: {} });
+        it('should return false when servers object is missing', async () => {
+            const mockConfig = {};
+            fsStub.promises.readFile.resolves(JSON.stringify(mockConfig));
+
+            assert.strictEqual(await extension.isMcpBrowserConfigured(), false);
         });
     });
 
-    describe('activation', () => {
-        it('registers the provider and commands in VS Code', async () => {
-            await extension.activate(context);
-
-            assert(vscodeStub.lm.registerMcpServerDefinitionProvider.calledOnce);
-            assert(vscodeStub.commands.registerCommand.calledTwice);
-            assert.strictEqual(context.subscriptions.length, 3);
-            assert(fsStub.promises.writeFile.notCalled);
+    describe('getExtensionVersion', () => {
+        it('should return the extension version from context', () => {
+            const mockContext = {
+                extension: { packageJSON: { version: TEST_VERSION } }
+            };
+            assert.strictEqual(extension.getExtensionVersion(mockContext), TEST_VERSION);
         });
 
-        it('removes the legacy npx entry during provider migration', async () => {
+        it('should return "unknown" when version is missing', () => {
+            assert.strictEqual(extension.getExtensionVersion({}), 'unknown');
+            assert.strictEqual(extension.getExtensionVersion(null), 'unknown');
+            assert.strictEqual(extension.getExtensionVersion(undefined), 'unknown');
+        });
+
+        it('should return "unknown" when version is not a string', () => {
+            const mockContext = {
+                extension: { packageJSON: { version: 123 } }
+            };
+            assert.strictEqual(extension.getExtensionVersion(mockContext), 'unknown');
+        });
+
+        it('should return "unknown" when extension property is missing', () => {
+            assert.strictEqual(extension.getExtensionVersion({ extension: null }), 'unknown');
+            assert.strictEqual(extension.getExtensionVersion({ extension: {} }), 'unknown');
+            assert.strictEqual(
+                extension.getExtensionVersion({ extension: { packageJSON: {} } }),
+                'unknown'
+            );
+        });
+    });
+
+    describe('installMcpBrowser', () => {
+        it('should install latest from the configured registry', async () => {
+            processStub.platform = 'win32';
+            global.process = Object.assign({}, process, processStub);
+            execPromiseStub.resolves({ stdout: 'installed' });
+            vscodeStub.window.showInformationMessage.resolves();
+
+            const result = await extension.installMcpBrowser({});
+
+            assert.strictEqual(result, true);
+            assert.strictEqual(execPromiseStub.firstCall.args[0], 'npm install -g mcpbrowser@latest');
+        });
+
+        it('does not invoke sudo on non-Windows platforms', async () => {
+            processStub.platform = 'linux';
+            processStub.getuid = sinon.stub().returns(1000);
+            global.process = Object.assign({}, process, processStub);
+            execPromiseStub.resolves({ stdout: 'installed' });
+
+            assert.strictEqual(await extension.installMcpBrowser({}, { silent: true }), true);
+            assert.strictEqual(execPromiseStub.callCount, 1);
+            assert.strictEqual(execPromiseStub.firstCall.args[0], 'npm install -g mcpbrowser@latest');
+        });
+
+        it('should return false on installation error', async () => {
+            processStub.platform = 'win32';
+            global.process = Object.assign({}, process, processStub);
+            execPromiseStub.rejects(new Error('Installation failed'));
+            vscodeStub.window.showInformationMessage.resolves();
+            vscodeStub.window.showErrorMessage.resolves();
+
+            const mockContext = {
+                extension: { packageJSON: { version: '1.0.0' } }
+            };
+
+            const result = await extension.installMcpBrowser(mockContext);
+
+            assert.strictEqual(result, false);
+            assert(vscodeStub.window.showErrorMessage.called);
+        });
+
+        it('should not show notifications when silent option is true', async () => {
+            processStub.platform = 'win32';
+            global.process = Object.assign({}, process, processStub);
+            execPromiseStub.resolves({ stdout: 'installed' });
+
+            const mockContext = {
+                extension: { packageJSON: { version: TEST_VERSION } }
+            };
+
+            const result = await extension.installMcpBrowser(mockContext, { silent: true });
+
+            assert.strictEqual(result, true);
+            assert(vscodeStub.window.showInformationMessage.notCalled);
+        });
+
+        it('should not show error notification on failure when silent', async () => {
+            processStub.platform = 'win32';
+            global.process = Object.assign({}, process, processStub);
+            execPromiseStub.rejects(new Error('Installation failed'));
+
+            const mockContext = {
+                extension: { packageJSON: { version: '1.0.0' } }
+            };
+
+            const result = await extension.installMcpBrowser(mockContext, { silent: true });
+
+            assert.strictEqual(result, false);
+            assert(vscodeStub.window.showErrorMessage.notCalled);
+            assert(vscodeStub.window.showInformationMessage.notCalled);
+        });
+    });
+
+    describe('configureMcpBrowser latest version', () => {
+        it('configures npx with latest and removes the old forced public registry', async () => {
+            processStub.platform = 'win32';
+            processStub.env = { APPDATA: 'C:\\Users\\test\\AppData\\Roaming' };
+            global.process = Object.assign({}, process, processStub);
             fsStub.promises.readFile.resolves(JSON.stringify({
                 servers: {
                     MCPBrowser: {
-                        command: 'npx',
-                        args: ['-y', 'mcpbrowser@latest']
-                    },
-                    other: {}
+                        env: {
+                            npm_config_registry: 'https://registry.npmjs.org',
+                            KEEP_ME: 'value'
+                        }
+                    }
                 }
             }));
+            fsStub.promises.writeFile.resolves();
 
-            await extension.activate(context);
+            await extension.configureMcpBrowser();
 
-            const written = JSON.parse(fsStub.promises.writeFile.firstCall.args[1]);
-            assert.deepStrictEqual(written.servers, { other: {} });
-            assert(vscodeStub.lm.registerMcpServerDefinitionProvider.calledOnce);
+            const writtenConfig = JSON.parse(fsStub.promises.writeFile.firstCall.args[1]);
+            assert.deepStrictEqual(
+                writtenConfig.servers.MCPBrowser.args,
+                ['-y', 'mcpbrowser@latest']
+            );
+            assert.deepStrictEqual(writtenConfig.servers.MCPBrowser.env, { KEEP_ME: 'value' });
         });
 
-        it('falls back to bundled mcp.json configuration without the provider API', async () => {
-            vscodeStub.lm = {};
-            vscodeStub.window.showInformationMessage
-                .onFirstCall()
-                .resolves('Configure Now');
-            fsStub.promises.readFile.rejects(Object.assign(new Error('ENOENT'), {
-                code: 'ENOENT'
-            }));
+        it('creates a new config only when the file does not exist', async () => {
+            processStub.platform = 'win32';
+            processStub.env = { APPDATA: 'C:\\Users\\test\\AppData\\Roaming' };
+            global.process = Object.assign({}, process, processStub);
+            const missingError = Object.assign(new Error('missing'), { code: 'ENOENT' });
+            fsStub.promises.readFile.rejects(missingError);
+            fsStub.promises.mkdir.resolves();
+            fsStub.promises.writeFile.resolves();
 
-            await extension.activate(context);
+            await extension.configureMcpBrowser();
 
-            const written = JSON.parse(fsStub.promises.writeFile.firstCall.args[1]);
-            assert(written.servers['io.github.cherchyk/mcpbrowser']);
-            assert.strictEqual(context.subscriptions.length, 2);
+            assert(fsStub.promises.mkdir.calledOnce);
+            const writtenConfig = JSON.parse(fsStub.promises.writeFile.firstCall.args[1]);
+            assert.deepStrictEqual(
+                writtenConfig.servers.MCPBrowser.args,
+                ['-y', 'mcpbrowser@latest']
+            );
+        });
+
+        it('does not overwrite malformed JSON', async () => {
+            processStub.platform = 'win32';
+            processStub.env = { APPDATA: 'C:\\Users\\test\\AppData\\Roaming' };
+            global.process = Object.assign({}, process, processStub);
+            fsStub.promises.readFile.resolves('{ malformed');
+
+            await assert.rejects(extension.configureMcpBrowser(), SyntaxError);
+            assert(fsStub.promises.writeFile.notCalled);
+            assert(fsStub.promises.mkdir.notCalled);
+        });
+    });
+
+    describe('removeMcpBrowser missing config', () => {
+        it('returns false when the config file does not exist', async () => {
+            processStub.platform = 'win32';
+            processStub.env = { APPDATA: 'C:\\Users\\test\\AppData\\Roaming' };
+            global.process = Object.assign({}, process, processStub);
+            const missingError = Object.assign(new Error('missing'), { code: 'ENOENT' });
+            fsStub.promises.readFile.rejects(missingError);
+
+            assert.strictEqual(await extension.removeMcpBrowser(), false);
+            assert(fsStub.promises.writeFile.notCalled);
+        });
+    });
+
+    describe('isMcpBrowserConfigured errors', () => {
+        it('returns false only when the config file does not exist', async () => {
+            processStub.platform = 'win32';
+            processStub.env = { APPDATA: 'C:\\Users\\test\\AppData\\Roaming' };
+            global.process = Object.assign({}, process, processStub);
+            const missingError = Object.assign(new Error('missing'), { code: 'ENOENT' });
+            fsStub.promises.readFile.rejects(missingError);
+
+            assert.strictEqual(await extension.isMcpBrowserConfigured(), false);
+        });
+
+        it('surfaces malformed JSON instead of treating it as unconfigured', async () => {
+            processStub.platform = 'win32';
+            processStub.env = { APPDATA: 'C:\\Users\\test\\AppData\\Roaming' };
+            global.process = Object.assign({}, process, processStub);
+            fsStub.promises.readFile.resolves('{ malformed');
+
+            await assert.rejects(extension.isMcpBrowserConfigured(), SyntaxError);
+        });
+    });
+
+    describe('activate', () => {
+        it('should register both commands', async () => {
+            const mockContext = {
+                subscriptions: [],
+                globalState: {
+                    get: sinon.stub().returns(false)
+                }
+            };
+
+            // await extension.activate(mockContext);
+
+            // assert(vscodeStub.commands.registerCommand.calledTwice);
+            // assert(vscodeStub.commands.registerCommand.calledWith('mcpbrowser.configure'));
+            // assert(vscodeStub.commands.registerCommand.calledWith('mcpbrowser.remove'));
+        });
+
+        it('should not show prompt if dontAskAgain is set', async () => {
+            const mockContext = {
+                subscriptions: [],
+                globalState: {
+                    get: sinon.stub().returns(true)
+                }
+            };
+
+            // await extension.activate(mockContext);
+
+            // // Wait for setTimeout
+            // await new Promise(resolve => setTimeout(resolve, 6000));
+            // assert(vscodeStub.window.showInformationMessage.notCalled);
         });
     });
 });

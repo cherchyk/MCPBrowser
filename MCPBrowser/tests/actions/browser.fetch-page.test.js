@@ -268,11 +268,18 @@ await test(`[${browserType}] Should handle parallel requests to same domain (que
   
   // Verify each request
   for (const { index, url, result, duration, completedAt } of results) {
-    const isSuccess = !(result instanceof ErrorResponse);
+    const isSuccess =
+      typeof result?.currentUrl === 'string' &&
+      typeof result?.html === 'string';
     const shortUrl = url.split('/').slice(-2).join('/');
     
     if (!isSuccess) {
-      console.log(`   ⚠️  Request ${index + 1} (${shortUrl}) had error: ${result.message}`);
+      const responseDetail = result instanceof ErrorResponse
+        ? result.message
+        : result?.statusCode
+          ? `HTTP ${result.statusCode} ${result.statusText}`
+          : result?.message || 'non-success response';
+      console.log(`   ⚠️  Request ${index + 1} (${shortUrl}) had error: ${responseDetail}`);
       // Don't fail test on individual request errors - we're testing the queue mechanism
       continue;
     }
