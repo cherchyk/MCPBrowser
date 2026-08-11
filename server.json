@@ -14,20 +14,12 @@
     "source": "github",
     "subfolder": "MCPBrowser"
   },
-  "version": "0.4.4",
+  "version": "0.4.5",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "mcpbrowser",
-      "version": "0.4.4",
-      "transport": {
-        "type": "stdio"
-      }
-    },
-    {
-      "registryType": "mcpb",
-      "identifier": "https://github.com/cherchyk/MCPBrowser/releases/download/v0.4.4/mcpbrowser-0.4.4.mcpb",
-      "version": "0.4.4",
+      "version": "0.4.5",
       "transport": {
         "type": "stdio"
       }

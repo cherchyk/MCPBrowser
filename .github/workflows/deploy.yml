@@ -72,29 +72,6 @@ jobs:
         cd VSCodeExtension
         vsce package --no-dependencies
 
-    - name: Build MCP Bundle
-      run: |
-        cd MCPBrowser
-        npm run build:mcpb
-        ls -lh dist/*.mcpb
-
-    - name: Inject mcpb fileSha256 into server.json
-      run: |
-        VERSION=${{ steps.version.outputs.version }}
-        MCPB_FILE="MCPBrowser/dist/mcpbrowser-${VERSION}.mcpb"
-        SHA256=$(sha256sum "$MCPB_FILE" | awk '{print $1}')
-        echo "SHA256: $SHA256"
-        
-        # Inject fileSha256 into the mcpb package entry in server.json
-        node -e "
-          const fs = require('fs');
-          const sj = JSON.parse(fs.readFileSync('server.json', 'utf8'));
-          const mcpbPkg = sj.packages.find(p => p.registryType === 'mcpb');
-          if (mcpbPkg) { mcpbPkg.fileSha256 = '${SHA256}'; }
-          fs.writeFileSync('server.json', JSON.stringify(sj, null, 2) + '\n');
-        "
-        echo "Updated server.json mcpb entry with fileSha256"
-
     - name: Publish to npm
       run: |
         cd MCPBrowser
@@ -129,8 +106,7 @@ jobs:
         gh release create "v$VERSION" \
           --title "v$VERSION" \
           --notes-file release-notes.md \
-          VSCodeExtension/mcpbrowser-$VERSION.vsix \
-          MCPBrowser/dist/mcpbrowser-$VERSION.mcpb
+          VSCodeExtension/mcpbrowser-$VERSION.vsix
 
     - name: Publish to MCP Registry
       run: |
@@ -163,4 +139,4 @@ jobs:
         echo "  ✅ MCP Registry (Visual Studio & other MCP clients)"
         echo "  ✅ VS Code Marketplace"
         echo "  ✅ Open VSX Registry"
-        echo "  ✅ GitHub Releases (with .vsix + .mcpb bundle)"
+        echo "  ✅ GitHub Releases (with .vsix)"
