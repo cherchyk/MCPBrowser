@@ -15,6 +15,7 @@ const util = require('util');
 const execPromise = util.promisify(exec);
 const MCP_PROVIDER_ID = 'mcpbrowser';
 const MCP_SERVER_ID = 'io.github.cherchyk/mcpbrowser';
+const MCP_SERVER_LABEL = 'MCPBrowser';
 const LEGACY_SERVER_ID = 'MCPBrowser';
 const BUNDLED_SERVER_ENTRY = path.join('server', 'src', 'mcp-browser.js');
 
@@ -115,7 +116,7 @@ async function ensureBundledServer(context) {
 function createMcpServerDefinition(context) {
     const serverPath = getBundledServerPath(context);
     const definition = new vscode.McpStdioServerDefinition(
-        MCP_SERVER_ID,
+        MCP_SERVER_LABEL,
         process.execPath,
         [serverPath],
         { ELECTRON_RUN_AS_NODE: '1' },
@@ -248,7 +249,7 @@ async function activate(context) {
                 if (usesNativeProvider) {
                     await ensureBundledServer(context);
                     vscode.window.showInformationMessage(
-                        `${MCP_SERVER_ID} is registered by the MCPBrowser extension.`
+                        `${MCP_SERVER_LABEL} is registered by the MCPBrowser extension.`
                     );
                     return;
                 }
@@ -308,6 +309,7 @@ module.exports = {
     EDITOR_CONFIGS,
     MCP_PROVIDER_ID,
     MCP_SERVER_ID,
+    MCP_SERVER_LABEL,
     detectEditor,
     getMcpConfigPath,
     getServersKey,

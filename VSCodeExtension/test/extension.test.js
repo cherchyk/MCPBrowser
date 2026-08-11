@@ -77,7 +77,7 @@ describe('MCPBrowser extension', () => {
             extensionPath: path.join('C:', 'extensions', 'mcpbrowser'),
             extension: {
                 packageJSON: {
-                    version: '0.4.2'
+                    version: '0.4.3'
                 }
             },
             subscriptions: []
@@ -111,13 +111,13 @@ describe('MCPBrowser extension', () => {
         it('uses the canonical MCP server ID and bundled entry point', () => {
             const definition = extension.createMcpServerDefinition(context);
 
-            assert.strictEqual(definition.label, 'io.github.cherchyk/mcpbrowser');
+            assert.strictEqual(definition.label, 'MCPBrowser');
             assert.strictEqual(definition.command, process.execPath);
             assert.deepStrictEqual(definition.args, [
                 path.join(context.extensionPath, 'server', 'src', 'mcp-browser.js')
             ]);
             assert.deepStrictEqual(definition.env, { ELECTRON_RUN_AS_NODE: '1' });
-            assert.strictEqual(definition.version, '0.4.2');
+            assert.strictEqual(definition.version, '0.4.3');
         });
 
         it('registers a native MCP provider', async () => {
@@ -129,7 +129,7 @@ describe('MCPBrowser extension', () => {
             const provider =
                 vscodeStub.lm.registerMcpServerDefinitionProvider.firstCall.args[1];
             const definitions = await provider.provideMcpServerDefinitions();
-            assert.strictEqual(definitions[0].label, 'io.github.cherchyk/mcpbrowser');
+            assert.strictEqual(definitions[0].label, 'MCPBrowser');
 
             await provider.resolveMcpServerDefinition(definitions[0]);
             assert(fsStub.promises.access.calledWith(

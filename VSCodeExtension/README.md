@@ -33,7 +33,7 @@ When your AI agent needs to fetch a web page via browser:
 
 1. Install this extension from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) or [Open VSX Registry](https://open-vsx.org/extension/cherchyk/mcpbrowser)
 2. MCPBrowser registers its bundled MCP server automatically
-3. Open **MCP: List Servers** and confirm `io.github.cherchyk/mcpbrowser` is available
+3. Open **MCP: List Servers** and confirm `MCPBrowser` is available
 4. MCPBrowser is ready to use with your AI agent
 
 ### Using with Your AI Agent
@@ -74,7 +74,7 @@ For VS Code enterprise policy, allow the extension and MCP server:
   },
   "ChatAllowedMcpServers": [
     {
-      "serverName": "io.github.cherchyk/mcpbrowser"
+      "serverName": "MCPBrowser"
     }
   ]
 }
