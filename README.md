@@ -393,9 +393,7 @@ Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?it
 code --install-extension cherchyk.mcpbrowser
 ```
 
-The extension bundles the MCP server and registers it through VS Code's native MCP provider API. It does not install global npm packages or download code when the server starts. Kiro and Antigravity users can run **Configure MCPBrowser** to add the bundled server to their editor configuration.
-
-The canonical registry ID is `io.github.cherchyk/mcpbrowser`. Enterprise administrators can add this ID to their curated MCP registry and allow `cherchyk.mcpbrowser` through the VS Code `AllowedExtensions` policy.
+The extension automatically installs and configures everything for your AI agent (GitHub Copilot, Kiro Agent, Antigravity Agent). Also works with VSCodium and other Open VSX-compatible editors.
 
 ---
 
