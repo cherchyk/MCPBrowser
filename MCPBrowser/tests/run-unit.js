@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Pure unit tests - NO BROWSER REQUIRED (perfect for CI/CD)
-const unitTests = [
+const parallelTests = [
   'core/browser.test.js',               // Browser management with mocks
   'core/html.test.js',                  // HTML processing (pure functions)
   'core/markdown.test.js',              // Text/Markdown content conversion (pure functions)
@@ -17,15 +17,20 @@ const unitTests = [
   'core/http-status-response.test.js',  // HttpStatusResponse (HTTP 4xx/5xx)
   'core/output-schema-validation.test.js', // outputSchema vs structuredContent compliance
   'core/auth.test.js',                  // Auth flows with mock pages
-  'mcp-browser.test.js',               // MCP server initialization
-  'cli.test.js',                        // CLI argument parsing and routing
   'validate-schema-compatibility.test.js' // MCP tool schema cross-client compatibility
   // Browser tests: see run-browser.js
 ];
+const serialTests = [
+  'mcp-browser.test.js',                // MCP server initialization
+  'cli.test.js'                         // CLI argument parsing and routing
+];
+const unitTests = [...parallelTests, ...serialTests];
 
 console.log('🧪 Running Unit Tests (No Browser Required)');
 console.log(`Mode: CI-SAFE - Perfect for GitHub Actions`);
-console.log(`Tests: ${unitTests.length} suites running in parallel`);
+console.log(
+  `Tests: ${parallelTests.length} suites in parallel, then ${serialTests.length} process suites serially`
+);
 console.log('='.repeat(60));
 
 let totalPassed = 0;
@@ -53,14 +58,22 @@ function runTest(testFile) {
 
 async function runUnitTests() {
   const startTime = Date.now();
-  
-  console.log(`\n🚀 Running ${unitTests.length} tests in parallel...`);
+
+  console.log(`\n🚀 Running ${parallelTests.length} tests in parallel...`);
   console.log('-'.repeat(60));
-  
-  const results = await Promise.all(unitTests.map(test => runTest(test)));
+
+  const parallelResults = await Promise.all(parallelTests.map(test => runTest(test)));
+
+  console.log('\n🔄 Running process-spawning suites serially...\n');
+  const serialResults = [];
+  for (const test of serialTests) {
+    serialResults.push(await runTest(test));
+  }
+
+  const results = [...parallelResults, ...serialResults];
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-  
-  console.log(`\n⚡ Parallel execution completed in ${duration}s\n`);
+
+  console.log(`\n⚡ Test execution completed in ${duration}s\n`);
   
   for (const { testFile, code, output } of results) {
     console.log(`▶️  ${testFile}`);

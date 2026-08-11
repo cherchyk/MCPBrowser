@@ -24,8 +24,8 @@ jobs:
     - name: Install dependencies
       run: |
         npm ci
-        cd MCPBrowser && npm install
-        cd ../VSCodeExtension && npm install
+        cd MCPBrowser && npm ci
+        cd ../VSCodeExtension && npm ci
     
     - name: Install vsce and ovsx
       run: npm install -g @vscode/vsce ovsx
@@ -44,6 +44,9 @@ jobs:
         
         echo "✅ All versions synchronized at $MCP_VERSION"
         echo "version=$MCP_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Run release tests
+      run: npm run test:ci
     
     - name: Verify npm token (dry-run)
       run: |
@@ -64,17 +67,16 @@ jobs:
       env:
         OVSX_PAT: ${{ secrets.OVSX_PAT }}
     
-    - name: Publish to npm
-      run: |
-        cd MCPBrowser
-        npm publish
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
     - name: Package VS Code Extension
       run: |
         cd VSCodeExtension
         vsce package --no-dependencies
+        VSIX="mcpbrowser-${{ steps.version.outputs.version }}.vsix"
+        unzip -l "$VSIX" | grep -q 'extension/server/src/mcp-browser.js'
+        if unzip -l "$VSIX" | grep -q 'extension/server/node_modules/'; then
+          echo "::error::VSIX contains an unbundled server/node_modules tree"
+          exit 1
+        fi
 
     - name: Build MCP Bundle
       run: |
@@ -98,6 +100,13 @@ jobs:
           fs.writeFileSync('server.json', JSON.stringify(sj, null, 2) + '\n');
         "
         echo "Updated server.json mcpb entry with fileSha256"
+
+    - name: Publish to npm
+      run: |
+        cd MCPBrowser
+        npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
     - name: Extract changelog for version
       id: changelog
@@ -161,4 +170,3 @@ jobs:
         echo "  ✅ VS Code Marketplace"
         echo "  ✅ Open VSX Registry"
         echo "  ✅ GitHub Releases (with .vsix + .mcpb bundle)"
-

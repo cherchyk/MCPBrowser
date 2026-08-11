@@ -22,11 +22,11 @@ jobs:
     - name: Install dependencies
       run: |
         npm ci
-        cd MCPBrowser && npm install
-        cd ../VSCodeExtension && npm install
+        cd MCPBrowser && npm ci
+        cd ../VSCodeExtension && npm ci
     
     - name: Run tests (skip manual auth tests)
-      run: npm run test:unit
+      run: npm run test:ci
 
     - name: Verify version synchronization
       run: |
@@ -57,3 +57,9 @@ jobs:
         npm install -g @vscode/vsce ovsx
         cd VSCodeExtension
         vsce package --no-dependencies
+        VSIX=$(ls mcpbrowser-*.vsix)
+        unzip -l "$VSIX" | grep -q 'extension/server/src/mcp-browser.js'
+        if unzip -l "$VSIX" | grep -q 'extension/server/node_modules/'; then
+          echo "::error::VSIX contains an unbundled server/node_modules tree"
+          exit 1
+        fi

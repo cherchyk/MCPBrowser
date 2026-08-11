@@ -2,6 +2,7 @@
 node_modules/
 MCPBrowser/node_modules/
 VSCodeExtension/node_modules/
+VSCodeExtension/server/
 
 # Environment files
 .env
