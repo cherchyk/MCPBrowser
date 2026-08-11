@@ -58,12 +58,12 @@ function runTest(testFile) {
 
 async function runUnitTests() {
   const startTime = Date.now();
-  
+
   console.log(`\n🚀 Running ${parallelTests.length} tests in parallel...`);
   console.log('-'.repeat(60));
-  
+
   const parallelResults = await Promise.all(parallelTests.map(test => runTest(test)));
-  
+
   console.log('\n🔄 Running process-spawning suites serially...\n');
   const serialResults = [];
   for (const test of serialTests) {
@@ -72,7 +72,7 @@ async function runUnitTests() {
 
   const results = [...parallelResults, ...serialResults];
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-  
+
   console.log(`\n⚡ Test execution completed in ${duration}s\n`);
   
   for (const { testFile, code, output } of results) {
