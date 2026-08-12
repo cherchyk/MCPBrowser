@@ -4,9 +4,9 @@ const proxyquire = require('proxyquire');
 const fsNative = require('fs').promises;
 const osNative = require('os');
 const path = require('path');
-0.4.6
+
 describe('Extension Tests', () => {
-    const TEST_VERSION = '0.4.5';
+    const TEST_VERSION = '0.4.6';
     let extension;
     let fsStub;
     let execPromiseStub;
