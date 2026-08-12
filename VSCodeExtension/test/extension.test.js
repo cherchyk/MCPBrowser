@@ -1,8 +1,10 @@
 const assert = require('assert');
 const sinon = require('sinon');
 const proxyquire = require('proxyquire');
+const fsNative = require('fs').promises;
+const osNative = require('os');
 const path = require('path');
-
+0.4.6
 describe('Extension Tests', () => {
     const TEST_VERSION = '0.4.5';
     let extension;
@@ -35,7 +37,7 @@ describe('Extension Tests', () => {
                 showErrorMessage: sinon.stub()
             },
             commands: {
-                registerCommand: sinon.stub(),
+                registerCommand: sinon.stub().returns({ dispose: sinon.stub() }),
                 executeCommand: sinon.stub()
             },
             env: {
@@ -582,33 +584,131 @@ describe('Extension Tests', () => {
 
     describe('activate', () => {
         it('should register both commands', async () => {
+            const missingError = Object.assign(new Error('missing'), { code: 'ENOENT' });
+            fsStub.promises.readFile.rejects(missingError);
+            fsStub.promises.mkdir.resolves();
+            fsStub.promises.writeFile.resolves();
+            execPromiseStub.onFirstCall().resolves({ stdout: '11.0.0' });
+            execPromiseStub.onSecondCall().resolves();
             const mockContext = {
                 subscriptions: [],
+                extension: { packageJSON: { version: TEST_VERSION } },
                 globalState: {
-                    get: sinon.stub().returns(false)
+                    get: sinon.stub().returns(false),
+                    update: sinon.stub().resolves()
                 }
             };
 
-            // await extension.activate(mockContext);
+            await extension.activate(mockContext);
 
-            // assert(vscodeStub.commands.registerCommand.calledTwice);
-            // assert(vscodeStub.commands.registerCommand.calledWith('mcpbrowser.configure'));
-            // assert(vscodeStub.commands.registerCommand.calledWith('mcpbrowser.remove'));
+            assert(vscodeStub.commands.registerCommand.calledTwice);
+            assert(vscodeStub.commands.registerCommand.calledWith('mcpbrowser.configure'));
+            assert(vscodeStub.commands.registerCommand.calledWith('mcpbrowser.remove'));
         });
 
-        it('should not show prompt if dontAskAgain is set', async () => {
+        it('writes mcp.json before the optional package pre-install completes', async () => {
+            const missingError = Object.assign(new Error('missing'), { code: 'ENOENT' });
+            fsStub.promises.readFile.rejects(missingError);
+            fsStub.promises.mkdir.resolves();
+            fsStub.promises.writeFile.resolves();
+            execPromiseStub.onFirstCall().resolves({ stdout: '11.0.0' });
+            execPromiseStub.onSecondCall().returns(new Promise(() => {}));
             const mockContext = {
                 subscriptions: [],
+                extension: { packageJSON: { version: TEST_VERSION } },
                 globalState: {
-                    get: sinon.stub().returns(true)
+                    get: sinon.stub().returns(false),
+                    update: sinon.stub().resolves()
                 }
             };
 
-            // await extension.activate(mockContext);
+            await extension.activate(mockContext);
 
-            // // Wait for setTimeout
-            // await new Promise(resolve => setTimeout(resolve, 6000));
-            // assert(vscodeStub.window.showInformationMessage.notCalled);
+            assert(fsStub.promises.writeFile.calledOnce);
+            const writtenConfig = JSON.parse(fsStub.promises.writeFile.firstCall.args[1]);
+            assert.deepStrictEqual(
+                writtenConfig.servers.MCPBrowser.args,
+                ['-y', 'mcpbrowser@latest']
+            );
+        });
+
+        it('surfaces malformed mcp.json without failing activation', async () => {
+            fsStub.promises.readFile.resolves('{ malformed');
+            const mockContext = {
+                subscriptions: [],
+                extension: { packageJSON: { version: TEST_VERSION } },
+                globalState: {
+                    get: sinon.stub().returns(false),
+                    update: sinon.stub().resolves()
+                }
+            };
+
+            await extension.activate(mockContext);
+
+            assert(vscodeStub.window.showErrorMessage.calledOnce);
+            assert.match(
+                vscodeStub.window.showErrorMessage.firstCall.args[0],
+                /could not read mcp\.json/
+            );
+            assert(fsStub.promises.writeFile.notCalled);
+        });
+    });
+
+    describe('real mcp.json lifecycle', () => {
+        let tempRoot;
+        let previousAppData;
+
+        beforeEach(async () => {
+            tempRoot = await fsNative.mkdtemp(path.join(osNative.tmpdir(), 'mcpbrowser-extension-'));
+            previousAppData = process.env.APPDATA;
+            process.env.APPDATA = tempRoot;
+            processStub.platform = 'win32';
+            processStub.env = process.env;
+            global.process = Object.assign({}, process, processStub);
+        });
+
+        afterEach(async () => {
+            if (previousAppData === undefined) {
+                delete process.env.APPDATA;
+            } else {
+                process.env.APPDATA = previousAppData;
+            }
+            await fsNative.rm(tempRoot, { recursive: true, force: true });
+        });
+
+        it('configures and removes MCPBrowser while preserving other servers', async () => {
+            const realFsExtension = proxyquire.noCallThru()('../src/extension', {
+                'vscode': vscodeStub,
+                'os': osStub,
+                'util': { promisify: () => execPromiseStub },
+                'child_process': { exec: sinon.stub() }
+            });
+            const mcpPath = path.join(tempRoot, 'Code', 'User', 'mcp.json');
+            await fsNative.mkdir(path.dirname(mcpPath), { recursive: true });
+            await fsNative.writeFile(mcpPath, JSON.stringify({
+                servers: {
+                    ExistingServer: {
+                        type: 'http',
+                        url: 'https://example.test/mcp'
+                    }
+                },
+                inputs: []
+            }), 'utf8');
+
+            await realFsExtension.configureMcpBrowser();
+
+            let config = JSON.parse(await fsNative.readFile(mcpPath, 'utf8'));
+            assert.deepStrictEqual(config.servers.MCPBrowser.args, ['-y', 'mcpbrowser@latest']);
+            assert.strictEqual(config.servers.ExistingServer.url, 'https://example.test/mcp');
+            assert.deepStrictEqual(config.inputs, []);
+
+            assert.strictEqual(await realFsExtension.removeMcpBrowser(), true);
+
+            config = JSON.parse(await fsNative.readFile(mcpPath, 'utf8'));
+            assert.strictEqual(config.servers.MCPBrowser, undefined);
+            assert.strictEqual(config.servers.ExistingServer.url, 'https://example.test/mcp');
+            assert.deepStrictEqual(config.inputs, []);
+            assert.strictEqual(await realFsExtension.removeMcpBrowser(), false);
         });
     });
 });

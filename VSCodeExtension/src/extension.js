@@ -13,11 +13,10 @@
  *   - If MCPBrowser is already configured in mcp.json:
  *       → Silently update the npm package if the extension version changed (fire-and-forget).
  *   - If MCPBrowser is NOT configured:
- *       → Silently install npm package + write mcp.json (fire-and-forget, no user prompt).
- *   - Both paths are non-blocking — they do NOT await, so activation returns immediately.
+ *       → Write mcp.json immediately, then silently pre-install the npm package.
  *
  * Manual commands:
- *   - "Configure MCPBrowser"  → interactive install + config (shows progress toasts)
+ *   - "Configure MCPBrowser"  → writes config + optionally pre-installs package
  *   - "Remove MCPBrowser"     → deletes MCPBrowser entry from mcp.json
  *
  * VERSION STRATEGY
@@ -327,10 +326,10 @@ async function removeMcpBrowser() {
  *   2. Register "Configure" and "Remove" commands
  *   3. Check if MCPBrowser is already configured in mcp.json:
  *      a. YES → silently update npm package if extension version changed (fire-and-forget)
- *      b. NO  → silently install + configure (fire-and-forget), unless user opted out
+ *      b. NO  → configure immediately, then silently pre-install the package
  *
- * IMPORTANT: Steps 3a and 3b are fire-and-forget (not awaited) so they don't block
- * editor activation. Errors are caught and logged to console.
+ * Package installation is fire-and-forget so it does not block editor activation.
+ * Configuration is awaited so mcp.json is present when activation completes.
  */
 async function activate(context) {
     console.log('MCPBrowser extension is now active');
@@ -370,17 +369,17 @@ async function activate(context) {
                 return;
             }
 
-            // Step 1: Install npm package
-            const installed = await installMcpBrowser(context);
-            if (!installed) {
-                return; // Installation failed, abort
-            }
-
-            // Step 2: Configure mcp.json
+            // Write the configuration first. The entry uses npx, so the optional
+            // global pre-install must not prevent MCPBrowser from being configured.
             await configureMcpBrowser();
 
-            // Track the extension version that completed setup.
-            context.globalState.update('mcpbrowser.installedVersion', getExtensionVersion(context));
+            const installed = await installMcpBrowser(context);
+            if (installed) {
+                await context.globalState.update(
+                    'mcpbrowser.installedVersion',
+                    getExtensionVersion(context)
+                );
+            }
 
             vscode.window.showInformationMessage('✓ MCPBrowser configured successfully!');
         } catch (error) {
@@ -425,12 +424,21 @@ async function activate(context) {
     context.subscriptions.push(removeCommand);
 
     // ── Auto-update or first-time setup ──────────────────────────────────────
-    // Both paths are fire-and-forget (not awaited) so they never block activation.
+    // Package updates are fire-and-forget so they never block activation.
     // Race note: if a user triggers "Configure MCPBrowser" command while the
     // background install is still running, both may write mcp.json. This is safe
     // because configureMcpBrowser() is idempotent — the last write wins with
     // identical content.
-    const configured = await isMcpBrowserConfigured();
+    let configured;
+    try {
+        configured = await isMcpBrowserConfigured();
+    } catch (error) {
+        console.error('MCPBrowser: Could not read mcp.json:', error.message);
+        vscode.window.showErrorMessage(
+            `MCPBrowser could not read mcp.json: ${error.message}`
+        );
+        return;
+    }
     if (configured) {
         // PATH A — Already configured: silently update npm package when the
         // extension version changes (e.g., marketplace auto-updated the extension).
@@ -455,15 +463,25 @@ async function activate(context) {
         if (!dontAskAgain) {
             const nodeInstalled = await checkNodeInstalled();
             if (nodeInstalled) {
-                installMcpBrowser(context, { silent: true }).then(async installed => {
+                try {
+                    // The configured command uses npx, so writing mcp.json must not
+                    // depend on the optional global package pre-install succeeding.
+                    await configureMcpBrowser();
+                    console.log('MCPBrowser: Auto-configured successfully.');
+                } catch (err) {
+                    console.error('MCPBrowser: Auto-configure failed:', err.message);
+                    vscode.window.showErrorMessage(
+                        `Failed to configure MCPBrowser automatically: ${err.message}`
+                    );
+                    return;
+                }
+
+                installMcpBrowser(context, { silent: true }).then(installed => {
                     if (installed) {
-                        try {
-                            await configureMcpBrowser();
-                            context.globalState.update('mcpbrowser.installedVersion', getExtensionVersion(context));
-                            console.log('MCPBrowser: Auto-configured successfully.');
-                        } catch (err) {
-                            console.error('MCPBrowser: Auto-configure failed:', err.message);
-                        }
+                        context.globalState.update(
+                            'mcpbrowser.installedVersion',
+                            getExtensionVersion(context)
+                        );
                     }
                 });
             }
