@@ -59,6 +59,7 @@ Puppeteer and Playwright are browser automation libraries — their MCP servers 
   - [browser_scroll_page](#browser_scroll_page)
   - [browser_take_screenshot](#browser_take_screenshot)
   - [browser_close_tab](#browser_close_tab)
+- [Microsoft Word Online Plugin](#microsoft-word-online-plugin)
 - [CLI Mode](#cli-mode)
 - [Configuration](#configuration-optional)
 - [Troubleshooting](#troubleshooting)
@@ -417,6 +418,44 @@ Closes the browser tab for the given URL's hostname. Removes the page from the t
 - Clear authentication/session state
 - Free up browser memory
 - Reset to fresh state before new login
+
+## Microsoft Word Online Plugin
+
+The enabled `word` plugin reads and replaces content in authenticated Word Online documents hosted by SharePoint or OneDrive. Open the document with `browser_fetch_webpage`, then discover or run actions through `browser_plugin_info` and `browser_plugin_action`.
+
+| Action | Purpose |
+|---|---|
+| `open_document` | Open a document URL, safely promote the SharePoint-hosted editor, and verify edit/view mode |
+| `read_document` | Return bounded rendered document text and structural metadata |
+| `replace_document_text` | Replace the entire document with plain text |
+| `replace_document_html` | Replace the entire document with sanitized rich HTML and a plain-text fallback |
+| `insert_document_text` | Prepend or append plain text without replacing existing content |
+| `insert_document_html` | Prepend or append sanitized rich HTML without replacing existing content |
+| `find_text` | Search the full document with optional case and whole-word matching |
+| `replace_text` | Surgically replace one occurrence or every occurrence using Word's native document model |
+| `get_document_info` | Read title, mode, word count, rendered layout, and save state |
+| `get_outline` | Read Word's native heading outline |
+| `read_range` | Navigate to a heading and read rendered paragraph ranges |
+| `get_text_context` | Inspect native search context for one occurrence |
+| `insert_at` | Insert text before or after an exact occurrence |
+| `replace_range` / `delete_range` | Replace or delete one anchored occurrence |
+| `format_range` | Apply bold, italic, underline, or strikethrough to anchored text |
+| `list_tables` / `read_table` / `update_table_cell` | Inspect and safely update rendered tables |
+| `list_links` / `add_link` / `update_link` / `remove_link` | Inspect and edit rendered hyperlinks |
+| `list_comments` / `add_comment` / `resolve_comment` | Work with Word comments |
+| `get_state` | Report editor mode, layout counts, bounded text checks, and Word's save signal |
+| `wait_for_save` | Require stable layout, optional prefix/suffix matches, and Word's confirmed `Saved` state |
+| `close_document` | Confirm save, then close the Word tab |
+
+Supported entry points include `https://word.cloud.microsoft/`, HTTPS SharePoint/OneDrive Word links, and Word editor hosts under `*.officeapps.live.com`. The plugin uses the existing browser session; complete sign-in, MFA, or consent directly in the browser.
+
+Rich HTML updates remove active content, event handlers, embedded resources, forms, images, and unsafe URL schemes before dispatch. Payload size and document element counts are bounded. The plugin never reads or returns the SharePoint WOPI access token, cookies, or authorization headers.
+
+`read_document` supports `offset` and `maxCharacters` for chunked reading. It reflects Word's currently rendered pages and reports `mayBePartial: true` because Word virtualizes large documents. `wait_for_save` fails rather than assuming persistence when Word's save indicator is unavailable.
+
+For large documents, prefer `find_text` and `replace_text` over reading and rebuilding the file. `replace_text` preserves unaffected content and formatting, supports a 1-based occurrence or `replaceAll`, and can require `expectedMatchCount` so ambiguous or stale edits fail without changing the document.
+
+Table and link enumeration is limited to currently rendered pages because Word virtualizes large documents. Use `get_outline`, `read_range`, or `find_text` to navigate the relevant area first. Anchored mutations fail when a locator is ambiguous unless an occurrence or expected match count is supplied.
 
 
 ## CLI Mode

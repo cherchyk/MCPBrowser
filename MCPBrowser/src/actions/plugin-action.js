@@ -127,16 +127,21 @@ export async function pluginAction({ plugin: pluginName, action: actionName, par
     
     // Find a page matching any of the plugin's URL patterns
     let matchedPage = null;
+    let highestConfidence = -1;
     for (const p of pages) {
       try {
         const pageUrl = p.url();
         for (const pattern of pluginInstance.manifest.urlPatterns) {
           if (pageUrl.includes(pattern)) {
-            matchedPage = p;
+            const detection = pluginInstance.matchesPage(pageUrl, '');
+            const confidence = detection?.matched ? (detection.confidence ?? 0.5) : 0.5;
+            if (confidence > highestConfidence) {
+              matchedPage = p;
+              highestConfidence = confidence;
+            }
             break;
           }
         }
-        if (matchedPage) break;
       } catch { /* skip closed/errored pages */ }
     }
 
