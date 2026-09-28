@@ -5,6 +5,7 @@
   "description": "MCPBrowser workspace — MCP server and VS Code extension providing a real browser with full JavaScript execution and login/authentication support for AI agents",
   "scripts": {
     "install:all": "npm ci && cd MCPBrowser && npm ci && cd ../VSCodeExtension && npm ci && cd ..",
+    "build": "npm pack ./MCPBrowser && npm --prefix VSCodeExtension run package -- --no-dependencies",
     "test": "cd MCPBrowser && npm test && cd ../VSCodeExtension && npm test",
     "test:ci": "cd MCPBrowser && npm run test:unit && cd ../VSCodeExtension && npm test",
     "test:unit": "cd MCPBrowser && npm run test:unit",

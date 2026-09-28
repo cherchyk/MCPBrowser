@@ -21,6 +21,8 @@ infra/
 # Generated / binary
 *.tsbuildinfo
 *.log
+*.tgz
+*.vsix
 
 # Cache
 .cache/

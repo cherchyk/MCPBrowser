@@ -808,6 +808,13 @@ npm run test:mcp
 npm run test:extension
 ```
 
+**Build and format both projects:**
+
+```bash
+pnpm build   # Creates the MCP server .tgz and VS Code extension .vsix
+pnpm format  # Formats the entire workspace
+```
+
 ## Links
 
 - [GitHub](https://github.com/cherchyk/MCPBrowser)
