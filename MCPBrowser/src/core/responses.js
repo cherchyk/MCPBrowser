@@ -47,24 +47,29 @@ export class MCPResponse {
    * - Success responses have structuredContent (validated against outputSchema)
    * - Error responses have text content only, no structuredContent
    * - isError flag indicates success/error at protocol level
-   * @returns {Object} MCP-compliant response with content, isError, and optionally structuredContent
+   * @param {Object} [options]
+   * @param {boolean} [options.includeSerializedContent=true] - Include structured data as a JSON text block
+   * @returns {Object} MCP-compliant response with content, isError, and structuredContent
    */
-  toMcpFormat() {
+  toMcpFormat({ includeSerializedContent = true } = {}) {
     const structured = this.toJSON();
+    const content = [
+      {
+        type: 'text',
+        text: this.getTextSummary(),
+      },
+    ];
+    if (includeSerializedContent) {
+      content.push({
+        // Per MCP spec (2025-11-25): a tool returning structured content SHOULD
+        // also return the serialized JSON in a TextContent block, so clients
+        // that do not consume structuredContent still receive the full data.
+        type: 'text',
+        text: JSON.stringify(structured),
+      });
+    }
     return {
-      content: [
-        {
-          type: 'text',
-          text: this.getTextSummary(),
-        },
-        {
-          // Per MCP spec (2025-11-25): a tool returning structured content SHOULD
-          // also return the serialized JSON in a TextContent block, so clients
-          // that do not consume structuredContent still receive the full data.
-          type: 'text',
-          text: JSON.stringify(structured),
-        },
-      ],
+      content,
       isError: false,
       structuredContent: structured,
     };

@@ -111,6 +111,67 @@ export function validateSearchValue(value, name, maxCharacters = 10_000) {
   return value;
 }
 
+function getPageFrames(page) {
+  try {
+    const frames = page.frames?.();
+    if (Array.isArray(frames) && frames.length > 0) return frames;
+  } catch {
+    // Fall back to the page for tests and older browser adapters.
+  }
+  return [page];
+}
+
+function frameMatchesUrl(frame, predicate) {
+  try {
+    return predicate(new URL(frame.url()).hostname);
+  } catch {
+    return false;
+  }
+}
+
+async function inspectWordEditor(frame) {
+  try {
+    return await frame.evaluate((selector) => {
+      const element = document.querySelector(selector);
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      return {
+        editable: element.getAttribute('contenteditable') === 'true',
+        visible: rect.width >= 100 && rect.height >= 100,
+      };
+    }, WORD_EDITOR_SELECTOR);
+  } catch {
+    return null;
+  }
+}
+
+async function findWordEditorContext(page) {
+  const frames = [...getPageFrames(page)].sort(
+    (left, right) =>
+      Number(frameMatchesUrl(right, isOfficeEditorHost)) -
+      Number(frameMatchesUrl(left, isOfficeEditorHost)),
+  );
+  let hiddenEditor = null;
+  for (const frame of frames) {
+    const editor = await inspectWordEditor(frame);
+    if (!editor) continue;
+    const result = { frame, editor };
+    if (editor.visible) return result;
+    hiddenEditor ??= result;
+  }
+  return hiddenEditor;
+}
+
+async function waitForWordEditorContext(page, timeout = DEFAULT_NAVIGATION_TIMEOUT) {
+  const deadline = Date.now() + timeout;
+  let result = null;
+  do {
+    result = await findWordEditorContext(page);
+    if (result?.editor.visible || Date.now() >= deadline) return result;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  } while (true);
+}
+
 export async function ensureWordEditor(page, { url, mode = 'edit' } = {}) {
   if (!['edit', 'view'].includes(mode)) {
     throw new Error("mode must be either 'edit' or 'view'");
@@ -135,9 +196,13 @@ export async function ensureWordEditor(page, { url, mode = 'edit' } = {}) {
   }
 
   let currentUrl = new URL(page.url());
+  let editorContext = await findWordEditorContext(page);
+  let editorFrameExpected = false;
   if (!isOfficeEditorHost(currentUrl.hostname)) {
-    const existingEditor = await page.$(WORD_EDITOR_SELECTOR);
-    if (!existingEditor) {
+    const hasOfficeFrame = getPageFrames(page).some((frame) =>
+      frameMatchesUrl(frame, isOfficeEditorHost),
+    );
+    if (!editorContext && !hasOfficeFrame) {
       const navigation = page
         .waitForNavigation({
           waitUntil: 'domcontentloaded',
@@ -168,9 +233,14 @@ export async function ensureWordEditor(page, { url, mode = 'edit' } = {}) {
             return { status: 'read_only' };
           }
 
-          form.target = '_self';
+          const targetFrameExists =
+            form.target &&
+            Array.from(document.querySelectorAll('iframe, frame')).some(
+              (frame) => frame.getAttribute('name') === form.target,
+            );
+          if (!targetFrameExists) form.target = '_self';
           form.submit();
-          return { status: 'submitted' };
+          return { status: 'submitted', targetFrameExists };
         },
         { requestedMode: mode },
       );
@@ -178,7 +248,8 @@ export async function ensureWordEditor(page, { url, mode = 'edit' } = {}) {
       if (promotion.status !== 'submitted') {
         return promotion;
       }
-      await navigation;
+      editorFrameExpected = promotion.targetFrameExists;
+      if (!promotion.targetFrameExists) await navigation;
     }
 
     if (isAuthenticationUrl(page.url())) {
@@ -187,29 +258,22 @@ export async function ensureWordEditor(page, { url, mode = 'edit' } = {}) {
     currentUrl = new URL(page.url());
   }
 
-  if (!isOfficeEditorHost(currentUrl.hostname) && !(await page.$(WORD_EDITOR_SELECTOR))) {
+  const hasOfficeFrame = getPageFrames(page).some((frame) =>
+    frameMatchesUrl(frame, isOfficeEditorHost),
+  );
+  if (
+    !isOfficeEditorHost(currentUrl.hostname) &&
+    !hasOfficeFrame &&
+    !editorContext &&
+    !editorFrameExpected
+  ) {
     return { status: 'unexpected_editor_origin' };
   }
 
-  try {
-    await page.waitForSelector(WORD_EDITOR_SELECTOR, {
-      visible: true,
-      timeout: DEFAULT_NAVIGATION_TIMEOUT,
-    });
-  } catch {
-    return { status: 'editor_missing' };
-  }
+  editorContext = await waitForWordEditorContext(page);
+  const editor = editorContext?.editor;
 
-  const editor = await page.evaluate((selector) => {
-    const element = document.querySelector(selector);
-    if (!element) return null;
-    const rect = element.getBoundingClientRect();
-    return {
-      editable: element.getAttribute('contenteditable') === 'true',
-      visible: rect.width >= 100 && rect.height >= 100,
-    };
-  }, WORD_EDITOR_SELECTOR);
-
+  if (!editor) return { status: 'editor_missing' };
   if (!editor?.visible) {
     return { status: 'editor_not_visible' };
   }
@@ -231,7 +295,9 @@ export async function getDocumentState(page, options = {}) {
     throw new Error('expectedTextSuffix must be a string');
   }
 
-  return page.evaluate(
+  const editorContext = await findWordEditorContext(page);
+  const context = editorContext?.frame ?? page;
+  return context.evaluate(
     ({ selector, includeText, maxChars, textOffset, prefix, suffix }) => {
       const editor = document.querySelector(selector);
       if (!editor) {
@@ -375,9 +441,11 @@ export async function updateDocumentContent(page, { html, plainText, placement =
     }
   }
 
-  await page.click(EDITABLE_WORD_EDITOR_SELECTOR);
+  const editorContext = await findWordEditorContext(page);
+  const context = editorContext?.frame ?? page;
+  await context.click(EDITABLE_WORD_EDITOR_SELECTOR);
 
-  const result = await page.evaluate(
+  const result = await context.evaluate(
     async ({ selector, richHtml, text, sanitization, targetPlacement }) => {
       const editor = document.querySelector(selector);
       if (!editor) return { accepted: false, reason: 'editor_missing' };
@@ -476,7 +544,9 @@ export async function updateDocumentContent(page, { html, plainText, placement =
 }
 
 async function openFindReplacePane(page) {
-  const findVisible = await page
+  const editorContext = await findWordEditorContext(page);
+  const context = editorContext?.frame ?? page;
+  const findVisible = await context
     .$eval('#FindSearchBoxV2', (element) => {
       const rect = element.getBoundingClientRect();
       return rect.width > 0 && rect.height > 0;
@@ -484,7 +554,7 @@ async function openFindReplacePane(page) {
     .catch(() => false);
 
   if (!findVisible) {
-    await page.click(EDITABLE_WORD_EDITOR_SELECTOR);
+    await context.click(EDITABLE_WORD_EDITOR_SELECTOR);
     const modifier = await page.evaluate(() =>
       /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? 'Meta' : 'Control',
     );
@@ -493,28 +563,29 @@ async function openFindReplacePane(page) {
     await page.keyboard.up(modifier);
   }
 
-  await page.waitForSelector('#FindSearchBoxV2', {
+  await context.waitForSelector('#FindSearchBoxV2', {
     visible: true,
     timeout: 10_000,
   });
 
-  const replaceVisible = await page
+  const replaceVisible = await context
     .$eval('#ReplaceSearchBoxV2', (element) => {
       const rect = element.getBoundingClientRect();
       return rect.width > 0 && rect.height > 0;
     })
     .catch(() => false);
   if (!replaceVisible) {
-    await page.click('#navigationTab3');
+    await context.click('#navigationTab3');
   }
-  await page.waitForSelector('#ReplaceSearchBoxV2', {
+  await context.waitForSelector('#ReplaceSearchBoxV2', {
     visible: true,
     timeout: 10_000,
   });
+  return context;
 }
 
-async function replaceInputValue(page, selector, value) {
-  await page.click(selector);
+async function replaceInputValue(page, context, selector, value) {
+  await context.click(selector);
   const modifier = await page.evaluate(() =>
     /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? 'Meta' : 'Control',
   );
@@ -524,10 +595,10 @@ async function replaceInputValue(page, selector, value) {
   await page.keyboard.type(value);
 }
 
-async function setFindFilter(page, label, enabled) {
+async function setFindFilter(page, context, label, enabled) {
   const filterButton = '#navigationTab3-panel button[aria-label="Filter"]';
   async function findTarget() {
-    const handles = await page.$$('[role="menuitemcheckbox"]');
+    const handles = await context.$$('[role="menuitemcheckbox"]');
     for (const handle of handles) {
       const text = await handle.evaluate((element) => (element.textContent || '').trim());
       if (text === label || text.endsWith(label)) {
@@ -539,14 +610,14 @@ async function setFindFilter(page, label, enabled) {
 
   let target = await findTarget();
   if (!target) {
-    const expanded = await page
+    const expanded = await context
       .$eval(filterButton, (element) => element.getAttribute('aria-expanded') === 'true')
       .catch(() => false);
     if (expanded) {
-      await page.click(filterButton);
+      await context.click(filterButton);
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    await page.click(filterButton);
+    await context.click(filterButton);
     await new Promise((resolve) => setTimeout(resolve, 500));
     target = await findTarget();
   }
@@ -562,13 +633,17 @@ async function setFindFilter(page, label, enabled) {
   }
 }
 
-async function configureFindFilters(page, { matchCase = false, wholeWords = false } = {}) {
-  await setFindFilter(page, 'Match case', matchCase);
-  await setFindFilter(page, 'Whole words only', wholeWords);
+async function configureFindFilters(
+  page,
+  context,
+  { matchCase = false, wholeWords = false } = {},
+) {
+  await setFindFilter(page, context, 'Match case', matchCase);
+  await setFindFilter(page, context, 'Whole words only', wholeWords);
 }
 
-async function readFindResults(page) {
-  return page.evaluate(() => {
+async function readFindResults(context) {
+  return context.evaluate(() => {
     const panel = document.querySelector('#navigationTab3-panel');
     if (!panel) return { ready: false, matchCount: 0, currentMatch: 0, snippets: [] };
     const text = panel.innerText || '';
@@ -591,9 +666,9 @@ async function readFindResults(page) {
 
 export async function findDocumentText(page, options) {
   const query = validateSearchValue(options?.query, 'query', 5_000);
-  await openFindReplacePane(page);
-  await configureFindFilters(page, options);
-  await replaceInputValue(page, '#FindSearchBoxV2', query);
+  const context = await openFindReplacePane(page);
+  await configureFindFilters(page, context, options);
+  await replaceInputValue(page, context, '#FindSearchBoxV2', query);
 
   await new Promise((resolve) => setTimeout(resolve, 750));
   const deadline = Date.now() + 10_000;
@@ -601,7 +676,7 @@ export async function findDocumentText(page, options) {
   let previousSignature;
   let stableObservations = 0;
   while (Date.now() < deadline) {
-    results = await readFindResults(page);
+    results = await readFindResults(context);
     const signature = JSON.stringify([results.currentMatch, results.matchCount, results.snippets]);
     stableObservations =
       results.ready && signature === previousSignature ? stableObservations + 1 : 0;
@@ -678,17 +753,19 @@ export async function replaceDocumentTextSurgically(page, options) {
     };
   }
 
+  const editorContext = await findWordEditorContext(page);
+  const context = editorContext?.frame ?? page;
   if (occurrence !== undefined) {
     for (let current = found.currentMatch || 1; current < occurrence; current++) {
-      await page.click('#NextSearchResult');
+      await context.click('#NextSearchResult');
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
-  await replaceInputValue(page, '#ReplaceSearchBoxV2', replacement);
-  await page.click(options?.replaceAll === true ? '#ReplaceAllButton' : '#ReplaceButton');
+  await replaceInputValue(page, context, '#ReplaceSearchBoxV2', replacement);
+  await context.click(options?.replaceAll === true ? '#ReplaceAllButton' : '#ReplaceButton');
   await new Promise((resolve) => setTimeout(resolve, 500));
-  const after = await readFindResults(page);
+  const after = await readFindResults(context);
 
   return {
     changed: true,

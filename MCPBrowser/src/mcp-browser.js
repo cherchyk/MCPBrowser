@@ -183,8 +183,11 @@ async function main() {
       logger.clearProgressToken();
     }
 
-    // Transform result into MCP-compliant response using instance method
-    return result.toMcpFormat();
+    // Plugin results are consumed as structured data; avoid duplicating their
+    // potentially large payloads as serialized JSON text.
+    return result.toMcpFormat({
+      includeSerializedContent: !pluginActionNames.has(name),
+    });
   });
 
   const transport = new StdioServerTransport();

@@ -169,8 +169,10 @@ test('[US6] browser_plugin_info: does NOT expose CSS selectors or JS code', () =
 
 test('[US6] toMcpFormat conforms to MCPResponse', () => {
   const result = pluginInfo({ plugin: loadedPluginName });
-  const mcpFormat = result.toMcpFormat();
+  const mcpFormat = result.toMcpFormat({ includeSerializedContent: false });
   assert.ok(mcpFormat.content, 'Must have content');
+  assert.strictEqual(mcpFormat.content.length, 1, 'Must not duplicate JSON as text');
+  assert.ok(!mcpFormat.content[0].text.startsWith('{'), 'Content must remain a readable summary');
   assert.strictEqual(mcpFormat.isError, false);
   assert.ok(mcpFormat.structuredContent, 'Must have structuredContent');
   assert.ok(Array.isArray(mcpFormat.structuredContent.nextSteps));
