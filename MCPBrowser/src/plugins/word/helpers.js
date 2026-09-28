@@ -10,11 +10,7 @@ export const MAX_HTML_BYTES = 200_000;
 export const MAX_TEXT_CHARACTERS = 100_000;
 export const MAX_READ_CHARACTERS = 100_000;
 
-const WORD_HOSTS = new Set([
-  'word.cloud.microsoft',
-  'word.office.com',
-  'onedrive.live.com'
-]);
+const WORD_HOSTS = new Set(['word.cloud.microsoft', 'word.office.com', 'onedrive.live.com']);
 
 export class WordActionResponse extends MCPResponse {
   constructor(data, summary, nextSteps = []) {
@@ -43,10 +39,11 @@ export function isSharePointHost(hostname) {
 export function isAllowedWordUrl(value) {
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' && (
-      WORD_HOSTS.has(url.hostname) ||
-      isSharePointHost(url.hostname) ||
-      isOfficeEditorHost(url.hostname)
+    return (
+      url.protocol === 'https:' &&
+      (WORD_HOSTS.has(url.hostname) ||
+        isSharePointHost(url.hostname) ||
+        isOfficeEditorHost(url.hostname))
     );
   } catch {
     return false;
@@ -56,10 +53,12 @@ export function isAllowedWordUrl(value) {
 export function isAuthenticationUrl(value) {
   try {
     const hostname = new URL(value).hostname;
-    return hostname === 'login.microsoftonline.com' ||
+    return (
+      hostname === 'login.microsoftonline.com' ||
       hostname.endsWith('.login.microsoftonline.com') ||
       hostname === 'login.live.com' ||
-      hostname === 'account.live.com';
+      hostname === 'account.live.com'
+    );
   } catch {
     return false;
   }
@@ -119,12 +118,14 @@ export async function ensureWordEditor(page, { url, mode = 'edit' } = {}) {
 
   if (url !== undefined) {
     if (!isAllowedWordUrl(url)) {
-      throw new Error('url must be an HTTPS Word, OneDrive, SharePoint, or Office Online document URL');
+      throw new Error(
+        'url must be an HTTPS Word, OneDrive, SharePoint, or Office Online document URL',
+      );
     }
     if (page.url() !== url) {
       await page.goto(url, {
         waitUntil: 'domcontentloaded',
-        timeout: DEFAULT_NAVIGATION_TIMEOUT
+        timeout: DEFAULT_NAVIGATION_TIMEOUT,
       });
     }
   }
@@ -137,35 +138,42 @@ export async function ensureWordEditor(page, { url, mode = 'edit' } = {}) {
   if (!isOfficeEditorHost(currentUrl.hostname)) {
     const existingEditor = await page.$(WORD_EDITOR_SELECTOR);
     if (!existingEditor) {
-      const navigation = page.waitForNavigation({
-        waitUntil: 'domcontentloaded',
-        timeout: DEFAULT_NAVIGATION_TIMEOUT
-      }).catch(() => null);
+      const navigation = page
+        .waitForNavigation({
+          waitUntil: 'domcontentloaded',
+          timeout: DEFAULT_NAVIGATION_TIMEOUT,
+        })
+        .catch(() => null);
 
-      const promotion = await page.evaluate(({ requestedMode }) => {
-        const form = document.querySelector('form[target^="WacFrame"]');
-        if (!form) {
-          return { status: 'launch_form_missing' };
-        }
+      const promotion = await page.evaluate(
+        ({ requestedMode }) => {
+          const form = document.querySelector('form[target^="WacFrame"]');
+          if (!form) {
+            return { status: 'launch_form_missing' };
+          }
 
-        const destination = new URL(form.action);
-        const allowedHost = destination.hostname === 'officeapps.live.com' ||
-          destination.hostname.endsWith('.officeapps.live.com');
-        if (destination.protocol !== 'https:' || !allowedHost) {
-          return { status: 'unexpected_editor_origin' };
-        }
+          const destination = new URL(form.action);
+          const allowedHost =
+            destination.hostname === 'officeapps.live.com' ||
+            destination.hostname.endsWith('.officeapps.live.com');
+          if (destination.protocol !== 'https:' || !allowedHost) {
+            return { status: 'unexpected_editor_origin' };
+          }
 
-        const readonly = destination.searchParams.get('readonly') === '1' ||
-          destination.searchParams.get('ro') === '1' ||
-          destination.searchParams.get('action') === 'view';
-        if (requestedMode === 'edit' && readonly) {
-          return { status: 'read_only' };
-        }
+          const readonly =
+            destination.searchParams.get('readonly') === '1' ||
+            destination.searchParams.get('ro') === '1' ||
+            destination.searchParams.get('action') === 'view';
+          if (requestedMode === 'edit' && readonly) {
+            return { status: 'read_only' };
+          }
 
-        form.target = '_self';
-        form.submit();
-        return { status: 'submitted' };
-      }, { requestedMode: mode });
+          form.target = '_self';
+          form.submit();
+          return { status: 'submitted' };
+        },
+        { requestedMode: mode },
+      );
 
       if (promotion.status !== 'submitted') {
         return promotion;
@@ -186,7 +194,7 @@ export async function ensureWordEditor(page, { url, mode = 'edit' } = {}) {
   try {
     await page.waitForSelector(WORD_EDITOR_SELECTOR, {
       visible: true,
-      timeout: DEFAULT_NAVIGATION_TIMEOUT
+      timeout: DEFAULT_NAVIGATION_TIMEOUT,
     });
   } catch {
     return { status: 'editor_missing' };
@@ -198,7 +206,7 @@ export async function ensureWordEditor(page, { url, mode = 'edit' } = {}) {
     const rect = element.getBoundingClientRect();
     return {
       editable: element.getAttribute('contenteditable') === 'true',
-      visible: rect.width >= 100 && rect.height >= 100
+      visible: rect.width >= 100 && rect.height >= 100,
     };
   }, WORD_EDITOR_SELECTOR);
 
@@ -223,74 +231,89 @@ export async function getDocumentState(page, options = {}) {
     throw new Error('expectedTextSuffix must be a string');
   }
 
-  return page.evaluate(({ selector, includeText, maxChars, textOffset, prefix, suffix }) => {
-    const editor = document.querySelector(selector);
-    if (!editor) {
-      return {
-        editorFound: false,
-        mode: 'unknown',
-        pageCount: 0,
-        paragraphCount: 0,
-        textLength: 0,
-        saveState: 'unknown'
+  return page.evaluate(
+    ({ selector, includeText, maxChars, textOffset, prefix, suffix }) => {
+      const editor = document.querySelector(selector);
+      if (!editor) {
+        return {
+          editorFound: false,
+          mode: 'unknown',
+          pageCount: 0,
+          paragraphCount: 0,
+          textLength: 0,
+          saveState: 'unknown',
+        };
+      }
+
+      const renderedParagraphs = Array.from(editor.querySelectorAll('.ParagraphTextContent')).map(
+        (paragraph) => paragraph.innerText || paragraph.textContent || '',
+      );
+      const text = (
+        renderedParagraphs.length > 0
+          ? renderedParagraphs.join('\n\n')
+          : editor.innerText || editor.textContent || ''
+      )
+        .replace(/\u200B/g, '')
+        .replace(/\u00A0/g, ' ')
+        .replace(/[ \t]+\n/g, '\n')
+        .trim();
+      const signals = [];
+      const signalElements = document.querySelectorAll(
+        '#SaveStatusButton, [aria-label], [title], [role="status"]',
+      );
+      for (const element of Array.from(signalElements).slice(0, 3000)) {
+        const value = [
+          element.getAttribute('aria-label'),
+          element.getAttribute('title'),
+          element.getAttribute('role') === 'status' ? element.textContent : '',
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+        if (value && value.length <= 200) signals.push(value.toLowerCase());
+      }
+
+      let saveState = 'unknown';
+      if (
+        signals.some((value) =>
+          /\b(save failed|unable to save|couldn['’]t save|upload failed)\b/.test(value),
+        )
+      ) {
+        saveState = 'error';
+      } else if (signals.some((value) => /\b(saving|uploading|syncing)\b/.test(value))) {
+        saveState = 'saving';
+      } else if (signals.some((value) => /\b(saved|saved to|all changes saved)\b/.test(value))) {
+        saveState = 'saved';
+      }
+
+      const result = {
+        editorFound: true,
+        mode: editor.getAttribute('contenteditable') === 'true' ? 'edit' : 'view',
+        pageCount: editor.querySelectorAll('.Page').length,
+        paragraphCount: editor.querySelectorAll('.CanvasParagraph').length,
+        textLength: text.length,
+        saveState,
       };
-    }
-
-    const renderedParagraphs = Array.from(editor.querySelectorAll('.ParagraphTextContent'))
-      .map(paragraph => paragraph.innerText || paragraph.textContent || '');
-    const text = (renderedParagraphs.length > 0
-      ? renderedParagraphs.join('\n\n')
-      : editor.innerText || editor.textContent || '')
-      .replace(/\u200B/g, '')
-      .replace(/\u00A0/g, ' ')
-      .replace(/[ \t]+\n/g, '\n')
-      .trim();
-    const signals = [];
-    const signalElements = document.querySelectorAll('#SaveStatusButton, [aria-label], [title], [role="status"]');
-    for (const element of Array.from(signalElements).slice(0, 3000)) {
-      const value = [
-        element.getAttribute('aria-label'),
-        element.getAttribute('title'),
-        element.getAttribute('role') === 'status' ? element.textContent : ''
-      ].filter(Boolean).join(' ').trim();
-      if (value && value.length <= 200) signals.push(value.toLowerCase());
-    }
-
-    let saveState = 'unknown';
-    if (signals.some(value => /\b(save failed|unable to save|couldn['’]t save|upload failed)\b/.test(value))) {
-      saveState = 'error';
-    } else if (signals.some(value => /\b(saving|uploading|syncing)\b/.test(value))) {
-      saveState = 'saving';
-    } else if (signals.some(value => /\b(saved|saved to|all changes saved)\b/.test(value))) {
-      saveState = 'saved';
-    }
-
-    const result = {
-      editorFound: true,
-      mode: editor.getAttribute('contenteditable') === 'true' ? 'edit' : 'view',
-      pageCount: editor.querySelectorAll('.Page').length,
-      paragraphCount: editor.querySelectorAll('.CanvasParagraph').length,
-      textLength: text.length,
-      saveState
-    };
-    if (includeText) {
-      result.text = text.slice(textOffset, textOffset + maxChars);
-      result.offset = textOffset;
-      result.nextOffset = Math.min(textOffset + result.text.length, text.length);
-      result.hasMore = result.nextOffset < text.length;
-      result.truncated = textOffset > 0 || result.hasMore;
-    }
-    if (prefix !== undefined) result.textPrefixMatches = text.startsWith(prefix);
-    if (suffix !== undefined) result.textSuffixMatches = text.endsWith(suffix);
-    return result;
-  }, {
-    selector: WORD_EDITOR_SELECTOR,
-    includeText: options.includeText === true,
-    maxChars: maxCharacters,
-    textOffset: offset,
-    prefix: expectedTextPrefix,
-    suffix: expectedTextSuffix
-  });
+      if (includeText) {
+        result.text = text.slice(textOffset, textOffset + maxChars);
+        result.offset = textOffset;
+        result.nextOffset = Math.min(textOffset + result.text.length, text.length);
+        result.hasMore = result.nextOffset < text.length;
+        result.truncated = textOffset > 0 || result.hasMore;
+      }
+      if (prefix !== undefined) result.textPrefixMatches = text.startsWith(prefix);
+      if (suffix !== undefined) result.textSuffixMatches = text.endsWith(suffix);
+      return result;
+    },
+    {
+      selector: WORD_EDITOR_SELECTOR,
+      includeText: options.includeText === true,
+      maxChars: maxCharacters,
+      textOffset: offset,
+      prefix: expectedTextPrefix,
+      suffix: expectedTextSuffix,
+    },
+  );
 }
 
 export async function updateDocumentContent(page, { html, plainText, placement = 'replace' }) {
@@ -304,12 +327,16 @@ export async function updateDocumentContent(page, { html, plainText, placement =
     try {
       sanitized = await sanitizerPage.evaluate((richHtml) => {
         const documentFragment = new DOMParser().parseFromString(richHtml, 'text/html');
-        const blocked = 'script,style,link,meta,iframe,frame,object,embed,form,input,button,textarea,select,option,video,audio,source,canvas,svg,math,img';
-        documentFragment.querySelectorAll(blocked).forEach(element => element.remove());
+        const blocked =
+          'script,style,link,meta,iframe,frame,object,embed,form,input,button,textarea,select,option,video,audio,source,canvas,svg,math,img';
+        documentFragment.querySelectorAll(blocked).forEach((element) => element.remove());
         for (const element of documentFragment.body.querySelectorAll('*')) {
           for (const attribute of Array.from(element.attributes)) {
             const name = attribute.name.toLowerCase();
-            if (name.startsWith('on') || ['style', 'src', 'srcset', 'action', 'formaction', 'poster'].includes(name)) {
+            if (
+              name.startsWith('on') ||
+              ['style', 'src', 'srcset', 'action', 'formaction', 'poster'].includes(name)
+            ) {
               element.removeAttribute(attribute.name);
               continue;
             }
@@ -330,7 +357,7 @@ export async function updateDocumentContent(page, { html, plainText, placement =
           html: documentFragment.body.innerHTML,
           nodeCount: documentFragment.body.querySelectorAll('*').length,
           tableCount: documentFragment.body.querySelectorAll('table').length,
-          linkCount: documentFragment.body.querySelectorAll('a[href]').length
+          linkCount: documentFragment.body.querySelectorAll('a[href]').length,
         };
       }, html);
     } finally {
@@ -350,106 +377,116 @@ export async function updateDocumentContent(page, { html, plainText, placement =
 
   await page.click(EDITABLE_WORD_EDITOR_SELECTOR);
 
-  const result = await page.evaluate(async ({ selector, richHtml, text, sanitization, targetPlacement }) => {
-    const editor = document.querySelector(selector);
-    if (!editor) return { accepted: false, reason: 'editor_missing' };
-    if (editor.getAttribute('contenteditable') !== 'true') {
-      return { accepted: false, reason: 'read_only' };
-    }
+  const result = await page.evaluate(
+    async ({ selector, richHtml, text, sanitization, targetPlacement }) => {
+      const editor = document.querySelector(selector);
+      if (!editor) return { accepted: false, reason: 'editor_missing' };
+      if (editor.getAttribute('contenteditable') !== 'true') {
+        return { accepted: false, reason: 'read_only' };
+      }
 
-    editor.focus();
-    if (!document.hasFocus() || document.activeElement !== editor) {
-      return { accepted: false, reason: 'editor_not_focused' };
-    }
+      editor.focus();
+      if (!document.hasFocus() || document.activeElement !== editor) {
+        return { accepted: false, reason: 'editor_not_focused' };
+      }
 
-    const keyConfig = targetPlacement === 'replace'
-      ? { key: 'a', code: 'KeyA', keyCode: 65 }
-      : targetPlacement === 'start'
-        ? { key: 'Home', code: 'Home', keyCode: 36 }
-        : { key: 'End', code: 'End', keyCode: 35 };
-    const keyOptions = {
-      ...keyConfig,
-      which: keyConfig.keyCode,
-      ctrlKey: !/Mac|iPhone|iPad|iPod/.test(navigator.platform),
-      metaKey: /Mac|iPhone|iPad|iPod/.test(navigator.platform),
-      bubbles: true,
-      cancelable: true
-    };
-    let navigationHandled = false;
-    const eventTypes = targetPlacement === 'replace'
-      ? ['keydown', 'keypress', 'keyup']
-      : ['keydown', 'keyup'];
-    for (const type of eventTypes) {
-      const event = new KeyboardEvent(type, keyOptions);
-      editor.dispatchEvent(event);
-      if (type === 'keydown') navigationHandled = event.defaultPrevented;
-    }
-    if (!navigationHandled) {
-      return {
-        accepted: false,
-        reason: targetPlacement === 'replace' ? 'select_all_not_handled' : 'document_navigation_not_handled'
+      const keyConfig =
+        targetPlacement === 'replace'
+          ? { key: 'a', code: 'KeyA', keyCode: 65 }
+          : targetPlacement === 'start'
+            ? { key: 'Home', code: 'Home', keyCode: 36 }
+            : { key: 'End', code: 'End', keyCode: 35 };
+      const keyOptions = {
+        ...keyConfig,
+        which: keyConfig.keyCode,
+        ctrlKey: !/Mac|iPhone|iPad|iPod/.test(navigator.platform),
+        metaKey: /Mac|iPhone|iPad|iPod/.test(navigator.platform),
+        bubbles: true,
+        cancelable: true,
       };
-    }
-    await new Promise(resolve => setTimeout(resolve, 100));
+      let navigationHandled = false;
+      const eventTypes =
+        targetPlacement === 'replace' ? ['keydown', 'keypress', 'keyup'] : ['keydown', 'keyup'];
+      for (const type of eventTypes) {
+        const event = new KeyboardEvent(type, keyOptions);
+        editor.dispatchEvent(event);
+        if (type === 'keydown') navigationHandled = event.defaultPrevented;
+      }
+      if (!navigationHandled) {
+        return {
+          accepted: false,
+          reason:
+            targetPlacement === 'replace'
+              ? 'select_all_not_handled'
+              : 'document_navigation_not_handled',
+        };
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-    if (richHtml === undefined) {
-      const inserted = document.execCommand('insertText', false, text);
+      if (richHtml === undefined) {
+        const inserted = document.execCommand('insertText', false, text);
+        return {
+          accepted: inserted,
+          reason: inserted ? undefined : 'text_insertion_rejected',
+          format: 'text',
+          placement: targetPlacement,
+        };
+      }
+
+      const data = new DataTransfer();
+      data.setData('text/html', richHtml);
+      data.setData('text/plain', text);
+      const paste = new ClipboardEvent('paste', {
+        clipboardData: data,
+        bubbles: true,
+        cancelable: true,
+      });
+      editor.dispatchEvent(paste);
       return {
-        accepted: inserted,
-        reason: inserted ? undefined : 'text_insertion_rejected',
-        format: 'text',
-        placement: targetPlacement
+        accepted: paste.defaultPrevented,
+        reason: paste.defaultPrevented ? undefined : 'paste_not_handled',
+        format: 'html',
+        sanitized: sanitization.changed,
+        nodeCount: sanitization.nodeCount,
+        tableCount: sanitization.tableCount,
+        linkCount: sanitization.linkCount,
+        placement: targetPlacement,
       };
-    }
-
-    const data = new DataTransfer();
-    data.setData('text/html', richHtml);
-    data.setData('text/plain', text);
-    const paste = new ClipboardEvent('paste', {
-      clipboardData: data,
-      bubbles: true,
-      cancelable: true
-    });
-    editor.dispatchEvent(paste);
-    return {
-      accepted: paste.defaultPrevented,
-      reason: paste.defaultPrevented ? undefined : 'paste_not_handled',
-      format: 'html',
-      sanitized: sanitization.changed,
-      nodeCount: sanitization.nodeCount,
-      tableCount: sanitization.tableCount,
-      linkCount: sanitization.linkCount,
-      placement: targetPlacement
-    };
-  }, {
-    selector: EDITABLE_WORD_EDITOR_SELECTOR,
-    richHtml: sanitized?.html,
-    text: plainText,
-    targetPlacement: placement,
-    sanitization: sanitized ? {
-      changed: sanitized.html !== html,
-      nodeCount: sanitized.nodeCount,
-      tableCount: sanitized.tableCount,
-      linkCount: sanitized.linkCount
-    } : null
-  });
+    },
+    {
+      selector: EDITABLE_WORD_EDITOR_SELECTOR,
+      richHtml: sanitized?.html,
+      text: plainText,
+      targetPlacement: placement,
+      sanitization: sanitized
+        ? {
+            changed: sanitized.html !== html,
+            nodeCount: sanitized.nodeCount,
+            tableCount: sanitized.tableCount,
+            linkCount: sanitized.linkCount,
+          }
+        : null,
+    },
+  );
 
   return {
     ...result,
-    operationId: randomUUID()
+    operationId: randomUUID(),
   };
 }
 
 async function openFindReplacePane(page) {
-  const findVisible = await page.$eval('#FindSearchBoxV2', element => {
-    const rect = element.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0;
-  }).catch(() => false);
+  const findVisible = await page
+    .$eval('#FindSearchBoxV2', (element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    })
+    .catch(() => false);
 
   if (!findVisible) {
     await page.click(EDITABLE_WORD_EDITOR_SELECTOR);
     const modifier = await page.evaluate(() =>
-      /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? 'Meta' : 'Control'
+      /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? 'Meta' : 'Control',
     );
     await page.keyboard.down(modifier);
     await page.keyboard.press('h');
@@ -458,26 +495,28 @@ async function openFindReplacePane(page) {
 
   await page.waitForSelector('#FindSearchBoxV2', {
     visible: true,
-    timeout: 10_000
+    timeout: 10_000,
   });
 
-  const replaceVisible = await page.$eval('#ReplaceSearchBoxV2', element => {
-    const rect = element.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0;
-  }).catch(() => false);
+  const replaceVisible = await page
+    .$eval('#ReplaceSearchBoxV2', (element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    })
+    .catch(() => false);
   if (!replaceVisible) {
     await page.click('#navigationTab3');
   }
   await page.waitForSelector('#ReplaceSearchBoxV2', {
     visible: true,
-    timeout: 10_000
+    timeout: 10_000,
   });
 }
 
 async function replaceInputValue(page, selector, value) {
   await page.click(selector);
   const modifier = await page.evaluate(() =>
-    /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? 'Meta' : 'Control'
+    /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? 'Meta' : 'Control',
   );
   await page.keyboard.down(modifier);
   await page.keyboard.press('a');
@@ -490,7 +529,7 @@ async function setFindFilter(page, label, enabled) {
   async function findTarget() {
     const handles = await page.$$('[role="menuitemcheckbox"]');
     for (const handle of handles) {
-      const text = await handle.evaluate(element => (element.textContent || '').trim());
+      const text = await handle.evaluate((element) => (element.textContent || '').trim());
       if (text === label || text.endsWith(label)) {
         return handle;
       }
@@ -500,20 +539,22 @@ async function setFindFilter(page, label, enabled) {
 
   let target = await findTarget();
   if (!target) {
-    const expanded = await page.$eval(filterButton, element =>
-      element.getAttribute('aria-expanded') === 'true'
-    ).catch(() => false);
+    const expanded = await page
+      .$eval(filterButton, (element) => element.getAttribute('aria-expanded') === 'true')
+      .catch(() => false);
     if (expanded) {
       await page.click(filterButton);
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
     await page.click(filterButton);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     target = await findTarget();
   }
   if (!target) throw new Error(`Word find option is unavailable: ${label}`);
 
-  const checked = await target.evaluate(element => element.getAttribute('aria-checked') === 'true');
+  const checked = await target.evaluate(
+    (element) => element.getAttribute('aria-checked') === 'true',
+  );
   if (checked !== enabled) {
     await target.click();
   } else {
@@ -537,13 +578,13 @@ async function readFindResults(page) {
       .slice(0, 20)
       .map((element, index) => ({
         occurrence: index + 1,
-        text: (element.textContent || '').trim().slice(0, 300)
+        text: (element.textContent || '').trim().slice(0, 300),
       }));
     return {
       ready: Boolean(countMatch || noMatches),
       currentMatch: countMatch ? Number(countMatch[1]) : 0,
       matchCount: countMatch ? Number(countMatch[2]) : 0,
-      snippets
+      snippets,
     };
   });
 }
@@ -554,24 +595,19 @@ export async function findDocumentText(page, options) {
   await configureFindFilters(page, options);
   await replaceInputValue(page, '#FindSearchBoxV2', query);
 
-  await new Promise(resolve => setTimeout(resolve, 750));
+  await new Promise((resolve) => setTimeout(resolve, 750));
   const deadline = Date.now() + 10_000;
   let results;
   let previousSignature;
   let stableObservations = 0;
   while (Date.now() < deadline) {
     results = await readFindResults(page);
-    const signature = JSON.stringify([
-      results.currentMatch,
-      results.matchCount,
-      results.snippets
-    ]);
-    stableObservations = results.ready && signature === previousSignature
-      ? stableObservations + 1
-      : 0;
+    const signature = JSON.stringify([results.currentMatch, results.matchCount, results.snippets]);
+    stableObservations =
+      results.ready && signature === previousSignature ? stableObservations + 1 : 0;
     previousSignature = signature;
     if (stableObservations >= 1) return { queryLength: query.length, ...results };
-    await new Promise(resolve => setTimeout(resolve, 250));
+    await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error('Word did not finish searching the document before the timeout');
 }
@@ -588,29 +624,33 @@ export async function replaceDocumentTextSurgically(page, options) {
   if (options?.replaceAll === true && options?.occurrence !== undefined) {
     throw new Error('occurrence cannot be combined with replaceAll');
   }
-  if (options?.occurrence !== undefined && (
-    !Number.isInteger(options.occurrence) || options.occurrence < 1
-  )) {
+  if (
+    options?.occurrence !== undefined &&
+    (!Number.isInteger(options.occurrence) || options.occurrence < 1)
+  ) {
     throw new Error('occurrence must be a positive integer');
   }
-  if (options?.expectedMatchCount !== undefined && (
-    !Number.isInteger(options.expectedMatchCount) || options.expectedMatchCount < 0
-  )) {
+  if (
+    options?.expectedMatchCount !== undefined &&
+    (!Number.isInteger(options.expectedMatchCount) || options.expectedMatchCount < 0)
+  ) {
     throw new Error('expectedMatchCount must be a non-negative integer');
   }
 
   const found = await findDocumentText(page, {
     query,
     matchCase: options?.matchCase,
-    wholeWords: options?.wholeWords
+    wholeWords: options?.wholeWords,
   });
-  if (options?.expectedMatchCount !== undefined &&
-      found.matchCount !== options.expectedMatchCount) {
+  if (
+    options?.expectedMatchCount !== undefined &&
+    found.matchCount !== options.expectedMatchCount
+  ) {
     return {
       changed: false,
       reason: 'unexpected_match_count',
       expectedMatchCount: options.expectedMatchCount,
-      actualMatchCount: found.matchCount
+      actualMatchCount: found.matchCount,
     };
   }
   if (found.matchCount === 0) {
@@ -624,7 +664,7 @@ export async function replaceDocumentTextSurgically(page, options) {
         changed: false,
         reason: 'ambiguous_match',
         matchCount: found.matchCount,
-        snippets: found.snippets
+        snippets: found.snippets,
       };
     }
     occurrence = 1;
@@ -634,20 +674,20 @@ export async function replaceDocumentTextSurgically(page, options) {
       changed: false,
       reason: 'occurrence_out_of_range',
       occurrence,
-      matchCount: found.matchCount
+      matchCount: found.matchCount,
     };
   }
 
   if (occurrence !== undefined) {
     for (let current = found.currentMatch || 1; current < occurrence; current++) {
       await page.click('#NextSearchResult');
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
   await replaceInputValue(page, '#ReplaceSearchBoxV2', replacement);
   await page.click(options?.replaceAll === true ? '#ReplaceAllButton' : '#ReplaceButton');
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 500));
   const after = await readFindResults(page);
 
   return {
@@ -658,21 +698,23 @@ export async function replaceDocumentTextSurgically(page, options) {
     matchCountAfter: after.matchCount,
     occurrence: options?.replaceAll === true ? undefined : occurrence,
     matchCase: options?.matchCase === true,
-    wholeWords: options?.wholeWords === true
+    wholeWords: options?.wholeWords === true,
   };
 }
 
 async function keyboardModifier(page) {
   return page.evaluate(() =>
-    /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? 'Meta' : 'Control'
+    /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? 'Meta' : 'Control',
   );
 }
 
 async function openNavigationPane(page) {
-  const headingsTabVisible = await page.$eval(sel.NAVIGATION_HEADINGS_TAB, element => {
-    const rect = element.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0;
-  }).catch(() => false);
+  const headingsTabVisible = await page
+    .$eval(sel.NAVIGATION_HEADINGS_TAB, (element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    })
+    .catch(() => false);
   if (!headingsTabVisible) {
     await page.click(sel.WORD_EDITOR);
     const modifier = await keyboardModifier(page);
@@ -685,20 +727,24 @@ async function openNavigationPane(page) {
 
 export async function getDocumentInfo(page) {
   const state = await getDocumentState(page, { maxCharacters: 1 });
-  const metadata = await page.evaluate(({ titleSelector, wordCountSelector, modeSelector }) => {
-    const titleElement = document.querySelector(titleSelector);
-    const wordCountLabel = document.querySelector(wordCountSelector)?.getAttribute('aria-label') || '';
-    const wordCountMatch = wordCountLabel.match(/([\d,]+)\s+words?/i);
-    return {
-      title: titleElement?.textContent?.trim() || null,
-      wordCount: wordCountMatch ? Number(wordCountMatch[1].replace(/,/g, '')) : null,
-      modeLabel: document.querySelector(modeSelector)?.getAttribute('aria-label') || null
-    };
-  }, {
-    titleSelector: sel.DOCUMENT_TITLE,
-    wordCountSelector: sel.WORD_COUNT,
-    modeSelector: sel.MODE_SWITCHER
-  });
+  const metadata = await page.evaluate(
+    ({ titleSelector, wordCountSelector, modeSelector }) => {
+      const titleElement = document.querySelector(titleSelector);
+      const wordCountLabel =
+        document.querySelector(wordCountSelector)?.getAttribute('aria-label') || '';
+      const wordCountMatch = wordCountLabel.match(/([\d,]+)\s+words?/i);
+      return {
+        title: titleElement?.textContent?.trim() || null,
+        wordCount: wordCountMatch ? Number(wordCountMatch[1].replace(/,/g, '')) : null,
+        modeLabel: document.querySelector(modeSelector)?.getAttribute('aria-label') || null,
+      };
+    },
+    {
+      titleSelector: sel.DOCUMENT_TITLE,
+      wordCountSelector: sel.WORD_COUNT,
+      modeSelector: sel.MODE_SWITCHER,
+    },
+  );
   return { ...metadata, ...state };
 }
 
@@ -706,13 +752,18 @@ export async function getDocumentOutline(page) {
   await openNavigationPane(page);
   await page.click(sel.NAVIGATION_HEADINGS_TAB);
   await page.waitForSelector(sel.NAVIGATION_HEADINGS_PANEL, { visible: true, timeout: 10_000 });
-  await new Promise(resolve => setTimeout(resolve, 300));
-  return page.evaluate((headingSelector) =>
-    Array.from(document.querySelectorAll(headingSelector)).map((element, index) => ({
-      index,
-      level: Number(element.getAttribute('aria-level')) || 1,
-      text: (element.textContent || '').trim()
-    })).filter(heading => heading.text), sel.NAVIGATION_HEADING);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  return page.evaluate(
+    (headingSelector) =>
+      Array.from(document.querySelectorAll(headingSelector))
+        .map((element, index) => ({
+          index,
+          level: Number(element.getAttribute('aria-level')) || 1,
+          text: (element.textContent || '').trim(),
+        }))
+        .filter((heading) => heading.text),
+    sel.NAVIGATION_HEADING,
+  );
 }
 
 export async function navigateToHeading(page, headingText, occurrence = 1) {
@@ -721,20 +772,24 @@ export async function navigateToHeading(page, headingText, occurrence = 1) {
     throw new Error('occurrence must be a positive integer');
   }
   const outline = await getDocumentOutline(page);
-  const matches = outline.filter(heading => heading.text === headingText);
+  const matches = outline.filter((heading) => heading.text === headingText);
   if (matches.length < occurrence) {
     return { navigated: false, reason: 'heading_not_found', matches: matches.length };
   }
   const targetIndex = matches[occurrence - 1].index;
   const headings = await page.$$(sel.NAVIGATION_HEADING);
   await headings[targetIndex].click();
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 500));
   return { navigated: true, heading: matches[occurrence - 1] };
 }
 
 export async function readRenderedParagraphRange(page, options = {}) {
   if (options.heading !== undefined) {
-    const navigation = await navigateToHeading(page, options.heading, options.headingOccurrence ?? 1);
+    const navigation = await navigateToHeading(
+      page,
+      options.heading,
+      options.headingOccurrence ?? 1,
+    );
     if (!navigation.navigated) return { ...navigation, paragraphs: [] };
   }
   const startParagraph = options.startParagraph ?? 0;
@@ -746,34 +801,41 @@ export async function readRenderedParagraphRange(page, options = {}) {
   if (!Number.isInteger(paragraphCount) || paragraphCount < 1 || paragraphCount > 500) {
     throw new Error('paragraphCount must be an integer between 1 and 500');
   }
-  return page.evaluate(({ paragraphSelector, pageSelector, start, count, heading, anchorToHeading }) => {
-    const pages = Array.from(document.querySelectorAll(pageSelector));
-    const all = Array.from(document.querySelectorAll(paragraphSelector)).map((element, index) => ({
-      index,
-      page: Math.max(1, pages.indexOf(element.closest(pageSelector)) + 1),
-      text: (element.innerText || element.textContent || '')
-        .replace(/\u200B/g, '')
-        .replace(/\u00A0/g, ' ')
-        .trim()
-    })).filter(paragraph => paragraph.text);
-    const headingIndex = anchorToHeading ? all.findIndex(paragraph => paragraph.text === heading) : -1;
-    const effectiveStart = headingIndex >= 0 ? headingIndex : start;
-    const paragraphs = all.slice(effectiveStart, effectiveStart + count);
-    return {
-      renderedParagraphCount: all.length,
-      startParagraph: effectiveStart,
-      nextParagraph: effectiveStart + paragraphs.length,
-      hasMoreRendered: effectiveStart + paragraphs.length < all.length,
-      paragraphs
-    };
-  }, {
-    paragraphSelector: sel.RENDERED_PARAGRAPH,
-    pageSelector: sel.RENDERED_PAGE,
-    start: startParagraph,
-    count: paragraphCount,
-    heading: options.heading,
-    anchorToHeading: useHeadingStart
-  });
+  return page.evaluate(
+    ({ paragraphSelector, pageSelector, start, count, heading, anchorToHeading }) => {
+      const pages = Array.from(document.querySelectorAll(pageSelector));
+      const all = Array.from(document.querySelectorAll(paragraphSelector))
+        .map((element, index) => ({
+          index,
+          page: Math.max(1, pages.indexOf(element.closest(pageSelector)) + 1),
+          text: (element.innerText || element.textContent || '')
+            .replace(/\u200B/g, '')
+            .replace(/\u00A0/g, ' ')
+            .trim(),
+        }))
+        .filter((paragraph) => paragraph.text);
+      const headingIndex = anchorToHeading
+        ? all.findIndex((paragraph) => paragraph.text === heading)
+        : -1;
+      const effectiveStart = headingIndex >= 0 ? headingIndex : start;
+      const paragraphs = all.slice(effectiveStart, effectiveStart + count);
+      return {
+        renderedParagraphCount: all.length,
+        startParagraph: effectiveStart,
+        nextParagraph: effectiveStart + paragraphs.length,
+        hasMoreRendered: effectiveStart + paragraphs.length < all.length,
+        paragraphs,
+      };
+    },
+    {
+      paragraphSelector: sel.RENDERED_PARAGRAPH,
+      pageSelector: sel.RENDERED_PAGE,
+      start: startParagraph,
+      count: paragraphCount,
+      heading: options.heading,
+      anchorToHeading: useHeadingStart,
+    },
+  );
 }
 
 export async function getDocumentTextContext(page, options) {
@@ -781,16 +843,22 @@ export async function getDocumentTextContext(page, options) {
   if (found.matchCount === 0) return { found: false, matchCount: 0 };
   const occurrence = options?.occurrence ?? (found.matchCount === 1 ? 1 : undefined);
   if (occurrence === undefined) {
-    return { found: false, reason: 'ambiguous_match', matchCount: found.matchCount, snippets: found.snippets };
+    return {
+      found: false,
+      reason: 'ambiguous_match',
+      matchCount: found.matchCount,
+      snippets: found.snippets,
+    };
   }
   if (!Number.isInteger(occurrence) || occurrence < 1 || occurrence > found.matchCount) {
     return { found: false, reason: 'occurrence_out_of_range', matchCount: found.matchCount };
   }
-  const snippet = found.snippets.find(item => item.occurrence === occurrence);
-  if (snippet) return { found: true, matchCount: found.matchCount, occurrence, context: snippet.text };
+  const snippet = found.snippets.find((item) => item.occurrence === occurrence);
+  if (snippet)
+    return { found: true, matchCount: found.matchCount, occurrence, context: snippet.text };
   for (let current = found.currentMatch || 1; current < occurrence; current++) {
     await page.click(sel.NEXT_FIND_RESULT);
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
   return { found: true, matchCount: found.matchCount, occurrence, context: null };
 }
@@ -800,25 +868,30 @@ export async function selectDocumentText(page, options) {
   if (found.matchCount === 0) return { selected: false, reason: 'no_matches', matchCount: 0 };
   const occurrence = options?.occurrence ?? (found.matchCount === 1 ? 1 : undefined);
   if (occurrence === undefined) {
-    return { selected: false, reason: 'ambiguous_match', matchCount: found.matchCount, snippets: found.snippets };
+    return {
+      selected: false,
+      reason: 'ambiguous_match',
+      matchCount: found.matchCount,
+      snippets: found.snippets,
+    };
   }
   if (!Number.isInteger(occurrence) || occurrence < 1 || occurrence > found.matchCount) {
     return { selected: false, reason: 'occurrence_out_of_range', matchCount: found.matchCount };
   }
   for (let current = found.currentMatch || 1; current < occurrence; current++) {
     await page.click(sel.NEXT_FIND_RESULT);
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
   const resultButton = await page.$(`${sel.FIND_RESULT}[data-unique-id="${occurrence}"]`);
   if (resultButton) {
     await resultButton.click();
-    await new Promise(resolve => setTimeout(resolve, 150));
+    await new Promise((resolve) => setTimeout(resolve, 150));
   }
   if (options?.closePane !== false) {
     const close = await page.$(sel.NAVIGATION_CLOSE);
     if (close) {
       await close.click();
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
   }
   return { selected: true, occurrence, matchCount: found.matchCount };
@@ -849,47 +922,63 @@ export async function applySelectedFormatting(page, options) {
 }
 
 export async function listRenderedTables(page) {
-  return page.evaluate((tableSelector) =>
-    Array.from(document.querySelectorAll(tableSelector)).map((table, index) => {
-      const rows = Array.from(table.querySelectorAll('tr'));
-      const cells = rows.map(row => Array.from(row.querySelectorAll('th,td,[role="cell"],[role="columnheader"]'))
-        .map(cell => (cell.innerText || cell.textContent || '').replace(/\u00A0/g, ' ').trim()));
-      return {
-        index,
-        rowCount: cells.length,
-        columnCount: cells.reduce((max, row) => Math.max(max, row.length), 0),
-        preview: cells.slice(0, 3)
-      };
-    }), sel.RENDERED_TABLE);
+  return page.evaluate(
+    (tableSelector) =>
+      Array.from(document.querySelectorAll(tableSelector)).map((table, index) => {
+        const rows = Array.from(table.querySelectorAll('tr'));
+        const cells = rows.map((row) =>
+          Array.from(row.querySelectorAll('th,td,[role="cell"],[role="columnheader"]')).map(
+            (cell) => (cell.innerText || cell.textContent || '').replace(/\u00A0/g, ' ').trim(),
+          ),
+        );
+        return {
+          index,
+          rowCount: cells.length,
+          columnCount: cells.reduce((max, row) => Math.max(max, row.length), 0),
+          preview: cells.slice(0, 3),
+        };
+      }),
+    sel.RENDERED_TABLE,
+  );
 }
 
 export async function readRenderedTable(page, tableIndex) {
   if (!Number.isInteger(tableIndex) || tableIndex < 0) {
     throw new Error('tableIndex must be a non-negative integer');
   }
-  return page.evaluate(({ tableSelector, index }) => {
-    const table = document.querySelectorAll(tableSelector)[index];
-    if (!table) return null;
-    const rows = Array.from(table.querySelectorAll('tr')).map((row, rowIndex) => ({
-      rowIndex,
-      cells: Array.from(row.querySelectorAll('th,td,[role="cell"],[role="columnheader"]')).map((cell, columnIndex) => ({
-        columnIndex,
-        text: (cell.innerText || cell.textContent || '').replace(/\u00A0/g, ' ').trim(),
-        header: cell.tagName === 'TH' || cell.getAttribute('role') === 'columnheader'
-      }))
-    }));
-    return { index, rows };
-  }, { tableSelector: sel.RENDERED_TABLE, index: tableIndex });
+  return page.evaluate(
+    ({ tableSelector, index }) => {
+      const table = document.querySelectorAll(tableSelector)[index];
+      if (!table) return null;
+      const rows = Array.from(table.querySelectorAll('tr')).map((row, rowIndex) => ({
+        rowIndex,
+        cells: Array.from(row.querySelectorAll('th,td,[role="cell"],[role="columnheader"]')).map(
+          (cell, columnIndex) => ({
+            columnIndex,
+            text: (cell.innerText || cell.textContent || '').replace(/\u00A0/g, ' ').trim(),
+            header: cell.tagName === 'TH' || cell.getAttribute('role') === 'columnheader',
+          }),
+        ),
+      }));
+      return { index, rows };
+    },
+    { tableSelector: sel.RENDERED_TABLE, index: tableIndex },
+  );
 }
 
 export async function listRenderedLinks(page) {
-  return page.evaluate((linkSelector) =>
-    Array.from(document.querySelectorAll(linkSelector)).map((link, index) => ({
-      index,
-      text: (link.textContent || '').trim(),
-      url: link.href || link.getAttribute('href') || '',
-      title: link.getAttribute('title') || null
-    })).filter(link => link.text || link.url), sel.RENDERED_LINK);
+  return page.evaluate(
+    (linkSelector) =>
+      Array.from(document.querySelectorAll(linkSelector))
+        .map((link, index) => ({
+          index,
+          text: (link.textContent || '').trim(),
+          url: link.href || link.getAttribute('href') || '',
+          title: link.getAttribute('title') || null,
+        }))
+        .filter((link) => link.text || link.url),
+    sel.RENDERED_LINK,
+  );
 }
 
 export async function addLinkToSelection(page, options) {
@@ -904,25 +993,36 @@ export async function addLinkToSelection(page, options) {
   if (!['http:', 'https:', 'mailto:'].includes(url.protocol)) {
     throw new Error('url must use http, https, or mailto');
   }
-  const inserted = await page.evaluate(({ editorSelector, text, href }) => {
-    const editor = document.querySelector(editorSelector);
-    if (!editor) return false;
-    editor.focus();
-    const escapedText = text.replace(/[&<>"']/g, character => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    })[character]);
-    const escapedHref = href.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-    const data = new DataTransfer();
-    data.setData('text/html', `<a href="${escapedHref}">${escapedText}</a>`);
-    data.setData('text/plain', text);
-    const event = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true });
-    editor.dispatchEvent(event);
-    return event.defaultPrevented;
-  }, { editorSelector: sel.EDITABLE_WORD_EDITOR, text: options.query, href: url.toString() });
+  const inserted = await page.evaluate(
+    ({ editorSelector, text, href }) => {
+      const editor = document.querySelector(editorSelector);
+      if (!editor) return false;
+      editor.focus();
+      const escapedText = text.replace(
+        /[&<>"']/g,
+        (character) =>
+          ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+          })[character],
+      );
+      const escapedHref = href.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      const data = new DataTransfer();
+      data.setData('text/html', `<a href="${escapedHref}">${escapedText}</a>`);
+      data.setData('text/plain', text);
+      const event = new ClipboardEvent('paste', {
+        clipboardData: data,
+        bubbles: true,
+        cancelable: true,
+      });
+      editor.dispatchEvent(event);
+      return event.defaultPrevented;
+    },
+    { editorSelector: sel.EDITABLE_WORD_EDITOR, text: options.query, href: url.toString() },
+  );
   if (!inserted) throw new Error('Word rejected the hyperlink paste');
   return { ...selected, linked: true, url: url.toString(), operationId: randomUUID() };
 }
@@ -930,16 +1030,23 @@ export async function addLinkToSelection(page, options) {
 export async function removeLinkFromSelection(page, options) {
   const selected = await selectDocumentText(page, { ...options, closePane: false });
   if (!selected.selected) return selected;
-  const removed = await page.evaluate(({ editorSelector, text }) => {
-    const editor = document.querySelector(editorSelector);
-    if (!editor) return false;
-    editor.focus();
-    const data = new DataTransfer();
-    data.setData('text/plain', text);
-    const event = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true });
-    editor.dispatchEvent(event);
-    return event.defaultPrevented;
-  }, { editorSelector: sel.EDITABLE_WORD_EDITOR, text: options.query });
+  const removed = await page.evaluate(
+    ({ editorSelector, text }) => {
+      const editor = document.querySelector(editorSelector);
+      if (!editor) return false;
+      editor.focus();
+      const data = new DataTransfer();
+      data.setData('text/plain', text);
+      const event = new ClipboardEvent('paste', {
+        clipboardData: data,
+        bubbles: true,
+        cancelable: true,
+      });
+      editor.dispatchEvent(event);
+      return event.defaultPrevented;
+    },
+    { editorSelector: sel.EDITABLE_WORD_EDITOR, text: options.query },
+  );
   if (!removed) throw new Error('Word rejected the plain-text unlink paste');
   return { ...selected, linkRemoved: true, operationId: randomUUID() };
 }
@@ -948,14 +1055,16 @@ export async function listDocumentComments(page) {
   const button = await page.$(sel.COMMENTS_BUTTON);
   if (!button) return [];
   await button.click();
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 500));
   return page.evaluate(() => {
     const candidates = document.querySelectorAll('[role="comment"]');
-    return Array.from(candidates).map((element, index) => ({
-      index,
-      author: element.getAttribute('aria-label')?.match(/^Comment from (.*?) on /i)?.[1] || null,
-      text: (element.innerText || element.textContent || '').trim().slice(0, 2_000)
-    })).filter(comment => comment.text);
+    return Array.from(candidates)
+      .map((element, index) => ({
+        index,
+        author: element.getAttribute('aria-label')?.match(/^Comment from (.*?) on /i)?.[1] || null,
+        text: (element.innerText || element.textContent || '').trim().slice(0, 2_000),
+      }))
+      .filter((comment) => comment.text);
   });
 }
 
@@ -971,7 +1080,7 @@ export async function addCommentToSelection(page, options) {
   await page.keyboard.up(modifier);
   const editor = await page.waitForSelector(
     '[contenteditable="true"][aria-label*="comment" i], textarea[aria-label*="comment" i]',
-    { visible: true, timeout: 5_000 }
+    { visible: true, timeout: 5_000 },
   );
   await editor.click();
   await page.keyboard.type(options.comment);
@@ -988,19 +1097,21 @@ export async function resolveDocumentComment(page, commentIndex) {
   const button = await page.$(sel.COMMENTS_BUTTON);
   if (!button) return { resolved: false, reason: 'comments_unavailable' };
   await button.click();
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 500));
   const candidates = await page.$$('[role="comment"]');
   const candidate = candidates[commentIndex];
   if (!candidate) return { resolved: false, reason: 'comment_not_found' };
-  const cardHandle = await candidate.evaluateHandle(element => element.closest('[role="treeitem"]'));
+  const cardHandle = await candidate.evaluateHandle((element) =>
+    element.closest('[role="treeitem"]'),
+  );
   const card = cardHandle.asElement();
   const menu = await card?.$('button[aria-label="More thread actions"]');
   if (!menu) return { resolved: false, reason: 'resolve_action_unavailable' };
   await menu.click();
-  await new Promise(resolve => setTimeout(resolve, 200));
+  await new Promise((resolve) => setTimeout(resolve, 200));
   const menuItems = await page.$$('[role="menuitem"]');
   for (const item of menuItems) {
-    const text = await item.evaluate(element => (element.textContent || '').trim());
+    const text = await item.evaluate((element) => (element.textContent || '').trim());
     if (/^resolve\b/i.test(text)) {
       await item.click();
       return { resolved: true, commentIndex, operationId: randomUUID() };
@@ -1027,26 +1138,26 @@ export async function waitForDocumentSave(page, options = {}) {
     lastState = await getDocumentState(page, {
       maxCharacters: 1,
       expectedTextPrefix: options.expectedTextPrefix,
-      expectedTextSuffix: options.expectedTextSuffix
+      expectedTextSuffix: options.expectedTextSuffix,
     });
     const signature = `${lastState.pageCount}:${lastState.paragraphCount}:${lastState.textLength}`;
     stableObservations = signature === previousSignature ? stableObservations + 1 : 0;
     previousSignature = signature;
 
-    const contentMatches = lastState.textPrefixMatches !== false &&
-      lastState.textSuffixMatches !== false;
+    const contentMatches =
+      lastState.textPrefixMatches !== false && lastState.textSuffixMatches !== false;
     if (lastState.saveState === 'saved' && stableObservations >= 2 && contentMatches) {
       return { saved: true, stableObservations, state: lastState };
     }
     if (lastState.saveState === 'error') {
       return { saved: false, reason: 'save_error', stableObservations, state: lastState };
     }
-    await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
   }
   return {
     saved: false,
     reason: lastState?.saveState === 'unknown' ? 'save_state_unavailable' : 'timeout',
     stableObservations,
-    state: lastState
+    state: lastState,
   };
 }

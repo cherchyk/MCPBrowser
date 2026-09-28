@@ -6,12 +6,25 @@
 
 import assert from 'assert';
 import { MCPResponse, ErrorResponse } from '../../src/core/responses.js';
-import { FetchPageSuccessResponse } from '../../src/actions/fetch-page.js';
-import { ClickWithFallbackResponse } from '../../src/actions/click-element.js';
-import { TypeTextSuccessResponse } from '../../src/actions/type-text.js';
-import { CloseTabSuccessResponse } from '../../src/actions/close-tab.js';
-import { GetCurrentHtmlSuccessResponse } from '../../src/actions/get-current-html.js';
-import { NavigateHistorySuccessResponse } from '../../src/actions/navigate-history.js';
+import { ACTIONS as CORE_ACTIONS } from '../../src/actions/index.js';
+
+const FETCH_WEBPAGE_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_fetch_webpage');
+const CLICK_ELEMENT_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_click_element');
+const TYPE_TEXT_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_type_text');
+const CLOSE_TAB_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_close_tab');
+const GET_CURRENT_HTML_ACTION = CORE_ACTIONS.find(
+  (action) => action.id === 'browser_get_current_html',
+);
+const NAVIGATE_HISTORY_ACTION = CORE_ACTIONS.find(
+  (action) => action.id === 'browser_navigate_history',
+);
+
+const FetchPageSuccessResponse = FETCH_WEBPAGE_ACTION.response;
+const ClickWithFallbackResponse = CLICK_ELEMENT_ACTION.response;
+const TypeTextSuccessResponse = TYPE_TEXT_ACTION.response;
+const CloseTabSuccessResponse = CLOSE_TAB_ACTION.response;
+const GetCurrentHtmlSuccessResponse = GET_CURRENT_HTML_ACTION.response;
+const NavigateHistorySuccessResponse = NAVIGATE_HISTORY_ACTION.response;
 
 console.log('🧪 Testing Response Classes (MCP Spec Compliant)');
 console.log();
@@ -33,56 +46,87 @@ function test(name, fn) {
 
 // Test 1: FetchPageSuccessResponse validates required fields
 test('FetchPageSuccessResponse requires string parameters', () => {
-  assert.throws(() => {
-    new FetchPageSuccessResponse(123, '<html></html>', []);
-  }, TypeError, 'Should throw TypeError for non-string currentUrl');
-  
-  assert.throws(() => {
-    new FetchPageSuccessResponse('https://example.com', 123, []);
-  }, TypeError, 'Should throw TypeError for non-string html');
+  assert.throws(
+    () => {
+      new FetchPageSuccessResponse(123, '<html></html>', []);
+    },
+    TypeError,
+    'Should throw TypeError for non-string currentUrl',
+  );
+
+  assert.throws(
+    () => {
+      new FetchPageSuccessResponse('https://example.com', 123, []);
+    },
+    TypeError,
+    'Should throw TypeError for non-string html',
+  );
 });
 
 // Test 2: ErrorResponse validates message
 test('ErrorResponse requires string message', () => {
-  assert.throws(() => {
-    new ErrorResponse(null, []);
-  }, TypeError, 'Should throw TypeError for null message');
-  
-  assert.throws(() => {
-    new ErrorResponse(123, []);
-  }, TypeError, 'Should throw TypeError for non-string message');
+  assert.throws(
+    () => {
+      new ErrorResponse(null, []);
+    },
+    TypeError,
+    'Should throw TypeError for null message',
+  );
+
+  assert.throws(
+    () => {
+      new ErrorResponse(123, []);
+    },
+    TypeError,
+    'Should throw TypeError for non-string message',
+  );
 });
 
 // Test 3: nextSteps must be an array
 test('All responses validate nextSteps is an array', () => {
-  assert.throws(() => {
-    new ErrorResponse('Error', 'not an array');
-  }, TypeError, 'Should throw TypeError for non-array nextSteps');
-  
-  assert.throws(() => {
-    new FetchPageSuccessResponse('https://example.com', '<html></html>', 'not an array');
-  }, TypeError, 'Should throw TypeError for non-array nextSteps');
+  assert.throws(
+    () => {
+      new ErrorResponse('Error', 'not an array');
+    },
+    TypeError,
+    'Should throw TypeError for non-array nextSteps',
+  );
+
+  assert.throws(
+    () => {
+      new FetchPageSuccessResponse('https://example.com', '<html></html>', 'not an array');
+    },
+    TypeError,
+    'Should throw TypeError for non-array nextSteps',
+  );
 });
 
 // Test 4: nextSteps array must contain only strings
 test('nextSteps array must contain only strings', () => {
-  assert.throws(() => {
-    new ErrorResponse('Error', [123, 'valid string']);
-  }, TypeError, 'Should throw TypeError for non-string in nextSteps');
-  
-  assert.throws(() => {
-    new FetchPageSuccessResponse('https://example.com', '<html></html>', ['valid', null]);
-  }, TypeError, 'Should throw TypeError for null in nextSteps');
+  assert.throws(
+    () => {
+      new ErrorResponse('Error', [123, 'valid string']);
+    },
+    TypeError,
+    'Should throw TypeError for non-string in nextSteps',
+  );
+
+  assert.throws(
+    () => {
+      new FetchPageSuccessResponse('https://example.com', '<html></html>', ['valid', null]);
+    },
+    TypeError,
+    'Should throw TypeError for null in nextSteps',
+  );
 });
 
 // Test 5: FetchPageSuccessResponse creates valid object
 test('FetchPageSuccessResponse creates correct structure', () => {
-  const response = new FetchPageSuccessResponse(
-    'https://example.com',
-    '<html>test</html>',
-    ['Step 1', 'Step 2']
-  );
-  
+  const response = new FetchPageSuccessResponse('https://example.com', '<html>test</html>', [
+    'Step 1',
+    'Step 2',
+  ]);
+
   assert.ok(response instanceof MCPResponse, 'Should be instance of MCPResponse');
   assert.strictEqual(response.currentUrl, 'https://example.com');
   assert.strictEqual(response.html, '<html>test</html>');
@@ -91,11 +135,8 @@ test('FetchPageSuccessResponse creates correct structure', () => {
 
 // Test 6: ErrorResponse creates valid object
 test('ErrorResponse creates correct structure', () => {
-  const response = new ErrorResponse(
-    'Something went wrong',
-    ['Try again', 'Check logs']
-  );
-  
+  const response = new ErrorResponse('Something went wrong', ['Try again', 'Check logs']);
+
   assert.ok(response instanceof ErrorResponse, 'Should be instance of ErrorResponse');
   assert.strictEqual(response.message, 'Something went wrong');
   assert.deepStrictEqual(response.nextSteps, ['Try again', 'Check logs']);
@@ -103,14 +144,12 @@ test('ErrorResponse creates correct structure', () => {
 
 // Test 7: toJSON() converts to plain object
 test('toJSON() converts response to plain object', () => {
-  const response = new FetchPageSuccessResponse(
-    'https://example.com',
-    '<html>test</html>',
-    ['Step 1']
-  );
-  
+  const response = new FetchPageSuccessResponse('https://example.com', '<html>test</html>', [
+    'Step 1',
+  ]);
+
   const json = response.toJSON();
-  
+
   assert.strictEqual(typeof json, 'object');
   assert.strictEqual(json.currentUrl, 'https://example.com');
   assert.strictEqual(json.html, '<html>test</html>');
@@ -128,7 +167,7 @@ test('ClickWithFallbackResponse serializes metadata', () => {
     currentUrl: 'https://example.com',
     html: null,
     message: 'Clicked with fallback',
-    nextSteps: ['Next step']
+    nextSteps: ['Next step'],
   });
 
   const json = response.toJSON();
@@ -154,7 +193,7 @@ test('ClickWithFallbackResponse accepts html string', () => {
     currentUrl: 'https://example.com',
     html: '<html></html>',
     message: 'Click failed',
-    nextSteps: []
+    nextSteps: [],
   });
 
   const json = response.toJSON();
@@ -164,25 +203,24 @@ test('ClickWithFallbackResponse accepts html string', () => {
 
 // Test 10: TypeTextSuccessResponse validates message
 test('TypeTextSuccessResponse requires string message', () => {
-  assert.throws(() => {
-    new TypeTextSuccessResponse(
-      'https://example.com',
-      123,
-      '<html></html>',
-      ['Next']
-    );
-  }, TypeError, 'Should throw TypeError for non-string message');
+  assert.throws(
+    () => {
+      new TypeTextSuccessResponse('https://example.com', 123, '<html></html>', ['Next']);
+    },
+    TypeError,
+    'Should throw TypeError for non-string message',
+  );
 });
 
 // Test 11: CloseTabSuccessResponse validates hostname
 test('CloseTabSuccessResponse requires string hostname', () => {
-  assert.throws(() => {
-    new CloseTabSuccessResponse(
-      'Tab closed',
-      123,
-      ['Next']
-    );
-  }, TypeError, 'Should throw TypeError for non-string hostname');
+  assert.throws(
+    () => {
+      new CloseTabSuccessResponse('Tab closed', 123, ['Next']);
+    },
+    TypeError,
+    'Should throw TypeError for non-string hostname',
+  );
 });
 
 // Test 12: GetCurrentHtmlSuccessResponse creates valid structure
@@ -190,9 +228,9 @@ test('GetCurrentHtmlSuccessResponse creates correct structure', () => {
   const response = new GetCurrentHtmlSuccessResponse(
     'https://example.com',
     '<html>current</html>',
-    ['Step 1']
+    ['Step 1'],
   );
-  
+
   assert.ok(response instanceof MCPResponse, 'Should be instance of MCPResponse');
   assert.strictEqual(response.currentUrl, 'https://example.com');
   assert.strictEqual(response.html, '<html>current</html>');
@@ -208,22 +246,20 @@ test('Type errors are caught at response creation', () => {
   } catch (err) {
     error = err;
   }
-  
+
   assert.ok(error instanceof TypeError, 'Should throw TypeError immediately');
   assert.ok(error.message.includes('currentUrl'), 'Error message should mention field name');
 });
 
 // Test 14: JSON serialization works correctly
 test('Response serializes to JSON correctly', () => {
-  const response = new CloseTabSuccessResponse(
-    'Tab closed successfully',
-    'example.com',
-    ['Use browser_fetch_webpage to open new page']
-  );
-  
+  const response = new CloseTabSuccessResponse('Tab closed successfully', 'example.com', [
+    'Use browser_fetch_webpage to open new page',
+  ]);
+
   const json = JSON.stringify(response);
   const parsed = JSON.parse(json);
-  
+
   assert.strictEqual(parsed.message, 'Tab closed successfully');
   assert.strictEqual(parsed.hostname, 'example.com');
   assert.deepStrictEqual(parsed.nextSteps, ['Use browser_fetch_webpage to open new page']);
@@ -236,9 +272,9 @@ test('NavigateHistorySuccessResponse creates correct structure', () => {
     'https://example.com/page2',
     'https://example.com/page1',
     '<html>page1</html>',
-    ['Step 1']
+    ['Step 1'],
   );
-  
+
   assert.ok(response instanceof MCPResponse, 'Should be instance of MCPResponse');
   assert.strictEqual(response.direction, 'back');
   assert.strictEqual(response.previousUrl, 'https://example.com/page2');
@@ -248,13 +284,21 @@ test('NavigateHistorySuccessResponse creates correct structure', () => {
 
 // Test 16: NavigateHistorySuccessResponse validates types
 test('NavigateHistorySuccessResponse validates types', () => {
-  assert.throws(() => {
-    new NavigateHistorySuccessResponse(123, 'url1', 'url2', null, []);
-  }, TypeError, 'Should throw TypeError for non-string direction');
+  assert.throws(
+    () => {
+      new NavigateHistorySuccessResponse(123, 'url1', 'url2', null, []);
+    },
+    TypeError,
+    'Should throw TypeError for non-string direction',
+  );
 
-  assert.throws(() => {
-    new NavigateHistorySuccessResponse('back', 'url1', 'url2', 123, []);
-  }, TypeError, 'Should throw TypeError for non-string, non-null html');
+  assert.throws(
+    () => {
+      new NavigateHistorySuccessResponse('back', 'url1', 'url2', 123, []);
+    },
+    TypeError,
+    'Should throw TypeError for non-string, non-null html',
+  );
 });
 
 // Test 17: NavigateHistorySuccessResponse accepts null html
@@ -264,7 +308,7 @@ test('NavigateHistorySuccessResponse accepts null html', () => {
     'https://a.com',
     'https://b.com',
     null,
-    []
+    [],
   );
   assert.strictEqual(response.html, null);
 });

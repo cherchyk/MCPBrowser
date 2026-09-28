@@ -5,7 +5,11 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { listEvents } from '../../../src/plugins/gcal/actions/list-events.js';
+import { ACTIONS as GCAL_ACTIONS } from '../../../src/plugins/gcal/actions/index.js';
+
+const listEventsAction = GCAL_ACTIONS.find((action) => action.id === 'list_events');
+
+const listEvents = listEventsAction.handler;
 
 describe('listEvents', () => {
   it('is an async function', () => {
@@ -15,7 +19,7 @@ describe('listEvents', () => {
 
   it('returns error when page is not on Google Calendar', async () => {
     const mockPage = {
-      url: () => 'https://example.com'
+      url: () => 'https://example.com',
     };
     const result = await listEvents({ page: mockPage, params: {} });
     assert.equal(result.constructor.name, 'ErrorResponse');

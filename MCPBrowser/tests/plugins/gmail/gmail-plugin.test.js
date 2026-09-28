@@ -6,14 +6,22 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { manifest, matchesPage, getActions, getInfo } from '../../../src/plugins/gmail/index.js';
+import * as pluginModule from '../../../src/plugins/gmail/index.js';
+
+const { GMAIL_PLUGIN } = pluginModule;
+const { manifest, matchesPage, getInfo } = GMAIL_PLUGIN;
+const getActions = () => GMAIL_PLUGIN.getActions();
 
 describe('Gmail Plugin — manifest', () => {
+  it('exports only its CorePlugin descriptor', () => {
+    assert.deepEqual(Object.keys(pluginModule), ['GMAIL_PLUGIN']);
+  });
+
   it('has required fields', () => {
     assert.equal(manifest.name, 'gmail');
     assert.equal(typeof manifest.version, 'string');
     assert.equal(typeof manifest.description, 'string');
-    assert.equal(manifest.interfaceVersion, 1);
+    assert.equal(manifest.interfaceVersion, 2);
     assert.ok(Array.isArray(manifest.urlPatterns));
     assert.ok(manifest.urlPatterns.length > 0);
   });
@@ -71,24 +79,35 @@ describe('Gmail Plugin — getActions', () => {
   it('all actions have required fields', () => {
     for (const action of actions) {
       assert.equal(typeof action.name, 'string', `action name must be string`);
-      assert.equal(typeof action.description, 'string', `${action.name}: description must be string`);
+      assert.equal(
+        typeof action.description,
+        'string',
+        `${action.name}: description must be string`,
+      );
       assert.ok(Array.isArray(action.params), `${action.name}: params must be array`);
       assert.equal(typeof action.execute, 'function', `${action.name}: execute must be function`);
     }
   });
 
   it('action names are unique', () => {
-    const names = actions.map(a => a.name);
+    const names = actions.map((a) => a.name);
     assert.equal(new Set(names).size, names.length, 'Duplicate action names found');
   });
 
   it('includes all expected action names', () => {
-    const names = actions.map(a => a.name);
+    const names = actions.map((a) => a.name);
     const expected = [
-      'list_emails', 'read_email', 'search_emails',
-      'compose_email', 'reply_email', 'forward_email',
-      'archive_email', 'delete_email', 'label_email',
-      'mark_read', 'mark_unread'
+      'list_emails',
+      'read_email',
+      'search_emails',
+      'compose_email',
+      'reply_email',
+      'forward_email',
+      'archive_email',
+      'delete_email',
+      'label_email',
+      'mark_read',
+      'mark_unread',
     ];
     for (const name of expected) {
       assert.ok(names.includes(name), `Missing action: ${name}`);

@@ -5,6 +5,7 @@
  */
 
 import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import { CoreAction } from '../core/actions.js';
 import { getLoadedPlugins, getPlugin } from '../core/plugin-loader.js';
 import logger from '../core/logger.js';
 
@@ -17,34 +18,46 @@ import logger from '../core/logger.js';
 // ============================================================================
 
 /** Response listing all loaded plugins */
-export class PluginListResponse extends MCPResponse {
+class PluginListResponse extends MCPResponse {
   constructor(plugins, nextSteps) {
     super(nextSteps);
     this.plugins = plugins;
   }
-  _getAdditionalFields() { return { plugins: this.plugins }; }
-  getTextSummary() { return `${this.plugins.length} plugin(s) loaded`; }
+  _getAdditionalFields() {
+    return { plugins: this.plugins };
+  }
+  getTextSummary() {
+    return `${this.plugins.length} plugin(s) loaded`;
+  }
 }
 
 /** Response with plugin detail (action catalog + site context) */
-export class PluginInfoResponse extends MCPResponse {
+class PluginInfoResponse extends MCPResponse {
   constructor(info, nextSteps) {
     super(nextSteps);
     this.pluginInfo = info;
   }
-  _getAdditionalFields() { return { ...this.pluginInfo }; }
-  getTextSummary() { return `Plugin "${this.pluginInfo.name}": ${this.pluginInfo.actions?.length || 0} action(s)`; }
+  _getAdditionalFields() {
+    return { ...this.pluginInfo };
+  }
+  getTextSummary() {
+    return `Plugin "${this.pluginInfo.name}": ${this.pluginInfo.actions?.length || 0} action(s)`;
+  }
 }
 
 /** Response with single action detail */
-export class PluginActionDetailResponse extends MCPResponse {
+class PluginActionDetailResponse extends MCPResponse {
   constructor(plugin, action, nextSteps) {
     super(nextSteps);
     this.plugin = plugin;
     this.action = action;
   }
-  _getAdditionalFields() { return { plugin: this.plugin, action: this.action }; }
-  getTextSummary() { return `Action "${this.action.name}" from plugin "${this.plugin}"`; }
+  _getAdditionalFields() {
+    return { plugin: this.plugin, action: this.action };
+  }
+  getTextSummary() {
+    return `Action "${this.action.name}" from plugin "${this.plugin}"`;
+  }
 }
 
 // ============================================================================
@@ -52,44 +65,51 @@ export class PluginActionDetailResponse extends MCPResponse {
 // ============================================================================
 
 /** @type {Tool} */
-export const PLUGIN_INFO_TOOL = {
-  name: "browser_plugin_info",
-  title: "Plugin Info",
-  description: "List available site-specific plugins and their actions. Use when: browser_fetch_webpage suggests a plugin in nextSteps, or you want to check what optimized actions are available for the current site. Call with no arguments to list all plugins, or with a plugin name for details.",
+const PLUGIN_INFO_TOOL = {
+  name: 'browser_plugin_info',
+  title: 'Plugin Info',
+  description:
+    'List available site-specific plugins and their actions. Use when: browser_fetch_webpage suggests a plugin in nextSteps, or you want to check what optimized actions are available for the current site. Call with no arguments to list all plugins, or with a plugin name for details.',
   inputSchema: {
-    type: "object",
+    type: 'object',
     properties: {
       plugin: {
-        type: "string",
-        description: "Plugin name to get info for. Omit to list all loaded plugins."
+        type: 'string',
+        description: 'Plugin name to get info for. Omit to list all loaded plugins.',
       },
       action: {
-        type: "string",
-        description: "Optional. Specific action name to get detailed info for."
-      }
+        type: 'string',
+        description: 'Optional. Specific action name to get detailed info for.',
+      },
     },
-    additionalProperties: false
+    additionalProperties: false,
   },
   outputSchema: {
-    type: "object",
+    type: 'object',
     properties: {
       nextSteps: {
-        type: "array",
-        items: { type: "string" },
-        description: "Suggested next actions"
-      }
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Suggested next actions',
+      },
     },
-    required: ["nextSteps"],
-    additionalProperties: true
+    required: ['nextSteps'],
+    additionalProperties: true,
   },
   annotations: {
-    title: "Plugin Info",
+    title: 'Plugin Info',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
-    openWorldHint: false
-  }
+    openWorldHint: false,
+  },
 };
+
+export const PLUGIN_INFO_ACTION = new CoreAction({
+  tool: PLUGIN_INFO_TOOL,
+  response: MCPResponse,
+  handler: pluginInfo,
+});
 
 // ============================================================================
 // ACTION FUNCTION
@@ -102,8 +122,10 @@ export const PLUGIN_INFO_TOOL = {
  * @param {string} [params.action] - Action name (requires plugin)
  * @returns {MCPResponse}
  */
-export function pluginInfo({ plugin, action } = {}) {
-  logger.info(`browser_plugin_info called: plugin=${plugin || '(all)'} action=${action || '(all)'}`);
+function pluginInfo({ plugin, action } = {}) {
+  logger.info(
+    `browser_plugin_info called: plugin=${plugin || '(all)'} action=${action || '(all)'}`,
+  );
 
   const loadedPlugins = getLoadedPlugins();
 
@@ -114,13 +136,19 @@ export function pluginInfo({ plugin, action } = {}) {
       plugins.push({
         name,
         description: p.manifest.description,
-        actionCount: p.getActions().length
+        actionCount: p.getActions().length,
       });
     }
 
-    const nextSteps = plugins.length > 0
-      ? plugins.map(p => `Call browser_plugin_info({ plugin: '${p.name}' }) to see ${p.name}'s available actions`)
-      : ["No plugins are currently loaded. Add plugin names to plugins.json and restart the server."];
+    const nextSteps =
+      plugins.length > 0
+        ? plugins.map(
+            (p) =>
+              `Call browser_plugin_info({ plugin: '${p.name}' }) to see ${p.name}'s available actions`,
+          )
+        : [
+            'No plugins are currently loaded. Add plugins to src/plugins/index.js and restart the server.',
+          ];
 
     return new PluginListResponse(plugins, nextSteps);
   }
@@ -133,27 +161,27 @@ export function pluginInfo({ plugin, action } = {}) {
       `Unknown plugin: '${plugin}'. Available plugins: ${available}`,
       loadedPlugins.size > 0
         ? [`Call browser_plugin_info() with no arguments to list all plugins`]
-        : ["No plugins are currently loaded. Add plugin names to plugins.json and restart the server."]
+        : [
+            'No plugins are currently loaded. Add plugins to src/plugins/index.js and restart the server.',
+          ],
     );
   }
 
   // Mode 3: Single action detail
   if (action) {
     const actions = pluginInstance.getActions();
-    const actionDef = actions.find(a => a.name === action);
+    const actionDef = actions.find((a) => a.name === action);
     if (!actionDef) {
-      const validActions = actions.map(a => a.name).join(', ');
+      const validActions = actions.map((a) => a.name).join(', ');
       return new ErrorResponse(
         `Unknown action '${action}' for plugin '${plugin}'. Available actions: ${validActions}`,
-        [`Call browser_plugin_info({ plugin: '${plugin}' }) to see all available actions`]
+        [`Call browser_plugin_info({ plugin: '${plugin}' }) to see all available actions`],
       );
     }
 
-    return new PluginActionDetailResponse(
-      plugin,
-      { name: actionDef.name, description: actionDef.description, params: actionDef.params },
-      [`Call browser_plugin_action({ plugin: '${plugin}', action: '${action}', params: { ... } })`]
-    );
+    return new PluginActionDetailResponse(plugin, actionDef.toInfo(), [
+      `Call browser_plugin_action({ plugin: '${plugin}', action: '${action}', params: { ... } })`,
+    ]);
   }
 
   // Mode 2: Plugin detail with full action catalog
@@ -163,14 +191,17 @@ export function pluginInfo({ plugin, action } = {}) {
     description: info.description,
     targetPages: info.targetPages,
     ...(info.authFlow ? { authFlow: info.authFlow } : {}),
-    actions: info.actions || []
+    actions: info.actions || [],
   };
 
   const nextSteps = [
-    ...(info.actions || []).slice(0, 3).map(a =>
-      `Use browser_plugin_action({ plugin: '${plugin}', action: '${a.name}' }) to ${a.description.toLowerCase()}`
-    ),
-    "Use browser_fetch_webpage to navigate to the target site first if not already there"
+    ...(info.actions || [])
+      .slice(0, 3)
+      .map(
+        (a) =>
+          `Use browser_plugin_action({ plugin: '${plugin}', action: '${a.name}' }) to ${a.description.toLowerCase()}`,
+      ),
+    'Use browser_fetch_webpage to navigate to the target site first if not already there',
   ];
 
   return new PluginInfoResponse(pluginDetail, nextSteps);

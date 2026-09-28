@@ -15,9 +15,10 @@ import {
   buildViewPath,
   waitForCalendar,
   extractVisibleEvents,
-  GCalActionResponse
+  GCalActionResponse,
 } from '../helpers.js';
 import { EVENT_CHIP } from '../selectors.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /**
  * Parse HH:MM time string to total minutes since midnight.
@@ -50,25 +51,22 @@ function minutesToTime(minutes) {
  * @param {string} opts.params.endTime - Window end time in HH:MM (required)
  * @returns {Promise<GCalActionResponse|ErrorResponse>}
  */
-export async function checkAvailability({ page, params }) {
+async function checkAvailability({ page, params }) {
   // Validate required params
   if (!params.date) {
-    return new ErrorResponse(
-      'The "date" parameter is required to check availability.',
-      ['Provide a date: check_availability({ date: "2026-04-10", startTime: "09:00", endTime: "17:00" })']
-    );
+    return new ErrorResponse('The "date" parameter is required to check availability.', [
+      'Provide a date: check_availability({ date: "2026-04-10", startTime: "09:00", endTime: "17:00" })',
+    ]);
   }
   if (!params.startTime) {
-    return new ErrorResponse(
-      'The "startTime" parameter is required to check availability.',
-      ['Provide a start time: check_availability({ date: "2026-04-10", startTime: "09:00", endTime: "17:00" })']
-    );
+    return new ErrorResponse('The "startTime" parameter is required to check availability.', [
+      'Provide a start time: check_availability({ date: "2026-04-10", startTime: "09:00", endTime: "17:00" })',
+    ]);
   }
   if (!params.endTime) {
-    return new ErrorResponse(
-      'The "endTime" parameter is required to check availability.',
-      ['Provide an end time: check_availability({ date: "2026-04-10", startTime: "09:00", endTime: "17:00" })']
-    );
+    return new ErrorResponse('The "endTime" parameter is required to check availability.', [
+      'Provide an end time: check_availability({ date: "2026-04-10", startTime: "09:00", endTime: "17:00" })',
+    ]);
   }
 
   // Validate startTime < endTime
@@ -77,7 +75,7 @@ export async function checkAvailability({ page, params }) {
   if (windowStart >= windowEnd) {
     return new ErrorResponse(
       `startTime (${params.startTime}) must be earlier than endTime (${params.endTime}).`,
-      ['Ensure the start time is before the end time, e.g. startTime: "09:00", endTime: "17:00"']
+      ['Ensure the start time is before the end time, e.g. startTime: "09:00", endTime: "17:00"'],
     );
   }
 
@@ -85,7 +83,8 @@ export async function checkAvailability({ page, params }) {
   const pre = await checkPrecondition(page, 'on_calendar');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to open Google Calendar first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to open Google Calendar first.",
     ]);
   }
 
@@ -123,7 +122,7 @@ export async function checkAvailability({ page, params }) {
         busySlots.push({
           title: event.title,
           startTime: event.startTime,
-          endTime: event.endTime
+          endTime: event.endTime,
         });
       }
     }
@@ -143,7 +142,7 @@ export async function checkAvailability({ page, params }) {
       freeSlots.push({
         startTime: minutesToTime(cursor),
         endTime: minutesToTime(Math.min(busyStart, windowEnd)),
-        durationMinutes: Math.min(busyStart, windowEnd) - cursor
+        durationMinutes: Math.min(busyStart, windowEnd) - cursor,
       });
     }
     cursor = Math.max(cursor, busyEnd);
@@ -154,7 +153,7 @@ export async function checkAvailability({ page, params }) {
     freeSlots.push({
       startTime: minutesToTime(cursor),
       endTime: minutesToTime(windowEnd),
-      durationMinutes: windowEnd - cursor
+      durationMinutes: windowEnd - cursor,
     });
   }
 
@@ -171,15 +170,39 @@ export async function checkAvailability({ page, params }) {
       isFree,
       busySlots,
       freeSlots,
-      conflictCount: busySlots.length
+      conflictCount: busySlots.length,
     },
     summary,
     isFree
-      ? [`Use create_event({ date: "${params.date}", startTime: "${params.startTime}" }) to book this slot`]
+      ? [
+          `Use create_event({ date: "${params.date}", startTime: "${params.startTime}" }) to book this slot`,
+        ]
       : [
           'Use create_event to book one of the free slots',
           'Use check_availability with a different time range to find open slots',
-          'Use list_events to see all events on this date'
-        ]
+          'Use list_events to see all events on this date',
+        ],
   );
 }
+
+export const checkAvailabilityAction = new PluginAction({
+  name: 'check_availability',
+  description: 'Check whether a time slot is free or busy on the calendar',
+  params: [
+    { name: 'date', type: 'string', description: 'ISO date to check (required)', required: true },
+    {
+      name: 'startTime',
+      type: 'string',
+      description: 'Window start time in HH:MM format (required)',
+      required: true,
+    },
+    {
+      name: 'endTime',
+      type: 'string',
+      description: 'Window end time in HH:MM format (required)',
+      required: true,
+    },
+  ],
+  response: GCalActionResponse,
+  handler: checkAvailability,
+});

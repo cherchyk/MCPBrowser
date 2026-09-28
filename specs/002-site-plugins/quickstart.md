@@ -7,6 +7,7 @@
 MCPBrowser plugins enable site-specific automation for UI-heavy websites. Each plugin provides targeted actions that are faster and more reliable than generic DOM interaction.
 
 **What you'll create**:
+
 - A plugin folder under `MCPBrowser/plugins/<name>/`
 - An entry point (`index.js`) exporting the plugin interface
 - Registration in `plugins.json`
@@ -29,18 +30,18 @@ import { MCPResponse } from '../../src/core/responses.js';
 
 // 1. Manifest — declares identity and detection patterns
 export const manifest = {
-  name: "my-site",
-  version: "1.0.0",
-  description: "Automation for My Site",
+  name: 'my-site',
+  version: '1.0.0',
+  description: 'Automation for My Site',
   interfaceVersion: 1,
-  urlPatterns: ["mysite.example.com"],
-  domPatterns: []  // optional: CSS selectors for embedded content detection
+  urlPatterns: ['mysite.example.com'],
+  domPatterns: [], // optional: CSS selectors for embedded content detection
 };
 
 // 2. Detection — called after page fetch to check if this plugin applies
 export function matchesPage(url, html) {
   // Fast URL check first
-  if (url.includes("mysite.example.com")) {
+  if (url.includes('mysite.example.com')) {
     return { matched: true, confidence: 1.0 };
   }
   return { matched: false };
@@ -50,10 +51,10 @@ export function matchesPage(url, html) {
 export function getActions() {
   return [
     {
-      name: "list_items",
+      name: 'list_items',
       description: "List items from My Site's main page",
       params: [
-        { name: "limit", type: "number", description: "Max items", required: false, default: 10 }
+        { name: 'limit', type: 'number', description: 'Max items', required: false, default: 10 },
       ],
       execute: async ({ page, params }) => {
         const limit = params?.limit ?? 10;
@@ -61,28 +62,30 @@ export function getActions() {
         // Run site-specific JavaScript on the page
         const items = await page.evaluate((lim) => {
           const rows = document.querySelectorAll('.item-row');
-          return Array.from(rows).slice(0, lim).map(row => ({
-            title: row.querySelector('.title')?.textContent?.trim(),
-            date: row.querySelector('.date')?.textContent?.trim()
-          }));
+          return Array.from(rows)
+            .slice(0, lim)
+            .map((row) => ({
+              title: row.querySelector('.title')?.textContent?.trim(),
+              date: row.querySelector('.date')?.textContent?.trim(),
+            }));
         }, limit);
 
         // Return MCPResponse-compatible result
         return new PluginActionResponse(items, [
-          "Call browser_plugin_action with action 'read_item' to read a specific item"
+          "Call browser_plugin_action with action 'read_item' to read a specific item",
         ]);
-      }
-    }
+      },
+    },
   ];
 }
 
 // 4. Info — high-level context for the AI agent
 export function getInfo() {
   return {
-    description: "Automate My Site — list items, read details, perform actions",
-    targetPages: ["My Site dashboard (mysite.example.com)"],
-    authFlow: "Standard login — navigate to mysite.example.com and authenticate in browser",
-    actions: getActions().map(({ name, description, params }) => ({ name, description, params }))
+    description: 'Automate My Site — list items, read details, perform actions',
+    targetPages: ['My Site dashboard (mysite.example.com)'],
+    authFlow: 'Standard login — navigate to mysite.example.com and authenticate in browser',
+    actions: getActions().map(({ name, description, params }) => ({ name, description, params })),
   };
 }
 
@@ -92,8 +95,12 @@ class PluginActionResponse extends MCPResponse {
     super(nextSteps);
     this.data = data;
   }
-  _getAdditionalFields() { return { data: this.data }; }
-  getTextSummary() { return `Found ${this.data.length} items`; }
+  _getAdditionalFields() {
+    return { data: this.data };
+  }
+  getTextSummary() {
+    return `Found ${this.data.length} items`;
+  }
 }
 ```
 
@@ -112,6 +119,7 @@ Add your plugin name to `MCPBrowser/plugins.json`:
 Restart the MCPBrowser server. Your plugin is now loaded.
 
 **Verify via agent**:
+
 1. Call `browser_plugin_info({ plugin: "my-site" })` → should return your action catalog
 2. Navigate to `mysite.example.com` using `browser_fetch_webpage`
 3. The response `nextSteps` should recommend your plugin

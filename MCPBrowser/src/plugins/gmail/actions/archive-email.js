@@ -13,8 +13,9 @@ import {
   detectView,
   selectEmailRow,
   VIEW,
-  GmailActionResponse
+  GmailActionResponse,
 } from '../helpers.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /**
  * Archive an email from thread view or list view.
@@ -25,12 +26,13 @@ import {
  * @param {string} [opts.params.id] - Email ID in list view
  * @returns {Promise<GmailActionResponse|ErrorResponse>}
  */
-export async function archiveEmail({ page, params }) {
+async function archiveEmail({ page, params }) {
   // Precondition: must be on Gmail
   const pre = await checkPrecondition(page, 'on_gmail');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first.",
     ]);
   }
 
@@ -45,7 +47,7 @@ export async function archiveEmail({ page, params }) {
     const sel = await selectEmailRow(page, { index: params.index, id: params.id });
     if (!sel.selected) {
       return new ErrorResponse(sel.error || 'Could not select email to archive.', [
-        'Provide an index or id parameter to target a specific email.'
+        'Provide an index or id parameter to target a specific email.',
       ]);
     }
     await page.keyboard.press('e');
@@ -53,13 +55,22 @@ export async function archiveEmail({ page, params }) {
   } else {
     return new ErrorResponse(
       'Cannot archive from the current view. Navigate to inbox or open an email first.',
-      ["Use list_emails to view the inbox, or read_email to open a thread."]
+      ['Use list_emails to view the inbox, or read_email to open a thread.'],
     );
   }
 
-  return new GmailActionResponse(
-    { archived: true },
-    'Email archived successfully.',
-    ['Use list_emails to return to inbox']
-  );
+  return new GmailActionResponse({ archived: true }, 'Email archived successfully.', [
+    'Use list_emails to return to inbox',
+  ]);
 }
+
+export const archiveEmailAction = new PluginAction({
+  name: 'archive_email',
+  description: 'Archive an email via keyboard shortcut (remove from inbox, keep in All Mail)',
+  params: [
+    { name: 'index', type: 'number', description: '0-based index in email list', required: false },
+    { name: 'id', type: 'string', description: 'Gmail message/thread ID', required: false },
+  ],
+  response: GmailActionResponse,
+  handler: archiveEmail,
+});

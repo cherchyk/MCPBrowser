@@ -12,8 +12,9 @@ import {
   checkPrecondition,
   checkKeyboardShortcuts,
   waitForGmail,
-  GmailActionResponse
+  GmailActionResponse,
 } from '../helpers.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /**
  * Forward the currently open email thread.
@@ -25,12 +26,13 @@ import {
  * @param {boolean} [opts.params.send] - If true, send immediately
  * @returns {Promise<GmailActionResponse|ErrorResponse>}
  */
-export async function forwardEmail({ page, params }) {
+async function forwardEmail({ page, params }) {
   // Precondition: must be on Gmail
   const pre = await checkPrecondition(page, 'on_gmail');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first.",
     ]);
   }
 
@@ -38,7 +40,7 @@ export async function forwardEmail({ page, params }) {
   const threadPre = await checkPrecondition(page, 'thread_open');
   if (!threadPre.met) {
     return new ErrorResponse(threadPre.error, [
-      threadPre.suggestion || "Use read_email to open an email thread first."
+      threadPre.suggestion || 'Use read_email to open an email thread first.',
     ]);
   }
 
@@ -46,7 +48,7 @@ export async function forwardEmail({ page, params }) {
   const kb = await checkKeyboardShortcuts(page);
   if (!kb.enabled) {
     return new ErrorResponse(kb.error, [
-      'Enable keyboard shortcuts in Gmail Settings → General → Keyboard shortcuts → ON, then reload Gmail.'
+      'Enable keyboard shortcuts in Gmail Settings → General → Keyboard shortcuts → ON, then reload Gmail.',
     ]);
   }
 
@@ -90,6 +92,35 @@ export async function forwardEmail({ page, params }) {
     summary,
     params.send
       ? ['Use list_emails to return to inbox']
-      : ['Review and send the forward draft manually in Gmail']
+      : ['Review and send the forward draft manually in Gmail'],
   );
 }
+
+export const forwardEmailAction = new PluginAction({
+  name: 'forward_email',
+  description: 'Forward the currently open email thread via keyboard shortcut',
+  params: [
+    {
+      name: 'to',
+      type: 'string',
+      description: 'Recipient email address to forward to',
+      required: true,
+    },
+    {
+      name: 'body',
+      type: 'string',
+      description: 'Additional body text above forwarded content',
+      required: false,
+      default: '',
+    },
+    {
+      name: 'send',
+      type: 'boolean',
+      description: 'If true, send immediately via Ctrl+Enter. Default: leave as draft',
+      required: false,
+      default: false,
+    },
+  ],
+  response: GmailActionResponse,
+  handler: forwardEmail,
+});

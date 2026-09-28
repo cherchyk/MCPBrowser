@@ -115,6 +115,6 @@ export function getEulaStatus() {
   return {
     accepted: eulaAccepted,
     acceptedAt: config.eulaAcceptedAt || null,
-    eulaUrl: EULA_URL
+    eulaUrl: EULA_URL,
   };
 }

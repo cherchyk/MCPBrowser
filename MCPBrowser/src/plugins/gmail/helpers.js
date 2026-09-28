@@ -27,12 +27,19 @@ export const VIEW = Object.freeze({
   SEARCH_RESULTS: 'search_results',
   LOADING: 'loading',
   NOT_GMAIL: 'not_gmail',
-  NOT_READY: 'not_ready'
+  NOT_READY: 'not_ready',
 });
 
 /** Standard Gmail folder hashes */
 const STANDARD_FOLDERS = new Set([
-  'inbox', 'sent', 'drafts', 'trash', 'spam', 'starred', 'all', 'important'
+  'inbox',
+  'sent',
+  'drafts',
+  'trash',
+  'spam',
+  'starred',
+  'all',
+  'important',
 ]);
 
 // ============================================================================
@@ -101,9 +108,11 @@ export async function detectView(page) {
   // Check for CAPTCHA / security interstitial (edge case)
   const hasInterstitial = await page.evaluate(() => {
     const body = document.body?.textContent || '';
-    return body.includes('Confirm it') ||
-           !!document.querySelector('iframe[src*="accounts.google.com"]') ||
-           !!document.querySelector('#captcha');
+    return (
+      body.includes('Confirm it') ||
+      !!document.querySelector('iframe[src*="accounts.google.com"]') ||
+      !!document.querySelector('#captcha')
+    );
   });
   if (hasInterstitial) {
     logger.debug('detectView: not_ready (interstitial/CAPTCHA)');
@@ -115,8 +124,8 @@ export async function detectView(page) {
   const hash = hashMatch ? hashMatch[1] : '';
 
   // Check for compose overlay via DOM (compose can appear over any view)
-  const hasComposeDialog = await page.evaluate(() =>
-    !!document.querySelector('div[role="dialog"]')
+  const hasComposeDialog = await page.evaluate(
+    () => !!document.querySelector('div[role="dialog"]'),
   );
   if (hasComposeDialog) {
     logger.debug('detectView: compose (dialog overlay)');
@@ -130,7 +139,9 @@ export async function detectView(page) {
   }
 
   // Thread view — hash contains folder/threadId pattern
-  if (/^(inbox|sent|all|drafts|trash|spam|starred|important|label\/[^/]+)\/[A-Za-z0-9]+/.test(hash)) {
+  if (
+    /^(inbox|sent|all|drafts|trash|spam|starred|important|label\/[^/]+)\/[A-Za-z0-9]+/.test(hash)
+  ) {
     logger.debug('detectView: thread');
     return VIEW.THREAD;
   }
@@ -138,9 +149,7 @@ export async function detectView(page) {
   // Standard folder or label view
   if (hash === '' || hash === 'inbox' || STANDARD_FOLDERS.has(hash) || hash.startsWith('label/')) {
     // Check if content has loaded
-    const hasMain = await page.evaluate(() =>
-      !!document.querySelector('div[role="main"]')
-    );
+    const hasMain = await page.evaluate(() => !!document.querySelector('div[role="main"]'));
     if (!hasMain) {
       logger.debug('detectView: loading');
       return VIEW.LOADING;
@@ -150,9 +159,7 @@ export async function detectView(page) {
   }
 
   // Fallback — check if main content exists
-  const hasMain = await page.evaluate(() =>
-    !!document.querySelector('div[role="main"]')
-  );
+  const hasMain = await page.evaluate(() => !!document.querySelector('div[role="main"]'));
   if (hasMain) {
     logger.debug('detectView: email_list (fallback)');
     return VIEW.EMAIL_LIST;
@@ -187,10 +194,9 @@ export async function checkKeyboardShortcuts(page) {
     await page.keyboard.up('Shift');
 
     // Wait briefly for the dialog
-    const dialog = await page.waitForSelector(
-      'div[role="dialog"]',
-      { timeout: 2000 }
-    ).catch(() => null);
+    const dialog = await page
+      .waitForSelector('div[role="dialog"]', { timeout: 2000 })
+      .catch(() => null);
 
     if (dialog) {
       // Close the help dialog
@@ -200,12 +206,13 @@ export async function checkKeyboardShortcuts(page) {
 
     return {
       enabled: false,
-      error: 'Gmail keyboard shortcuts are disabled. Enable them in Gmail Settings → General → Keyboard shortcuts → ON, then reload Gmail.'
+      error:
+        'Gmail keyboard shortcuts are disabled. Enable them in Gmail Settings → General → Keyboard shortcuts → ON, then reload Gmail.',
     };
   } catch {
     return {
       enabled: false,
-      error: 'Could not verify Gmail keyboard shortcuts. Ensure Gmail is fully loaded.'
+      error: 'Could not verify Gmail keyboard shortcuts. Ensure Gmail is fully loaded.',
     };
   }
 }
@@ -230,7 +237,8 @@ export async function checkPrecondition(page, requirement) {
         return {
           met: false,
           error: 'Gmail is not the active page.',
-          suggestion: "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to navigate to Gmail first."
+          suggestion:
+            "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to navigate to Gmail first.",
         };
       }
       return { met: true };
@@ -238,12 +246,16 @@ export async function checkPrecondition(page, requirement) {
 
     case 'thread_open': {
       const hash = url.match(/#(.+)/)?.[1] || '';
-      const isThread = /^(inbox|sent|all|drafts|trash|spam|starred|important|label\/[^/]+)\/[A-Za-z0-9]+/.test(hash);
+      const isThread =
+        /^(inbox|sent|all|drafts|trash|spam|starred|important|label\/[^/]+)\/[A-Za-z0-9]+/.test(
+          hash,
+        );
       if (!isThread) {
         return {
           met: false,
           error: 'No email thread is currently open.',
-          suggestion: "Use browser_plugin_action({ plugin: 'gmail', action: 'read_email', params: { index: 0 } }) to open an email first."
+          suggestion:
+            "Use browser_plugin_action({ plugin: 'gmail', action: 'read_email', params: { index: 0 } }) to open an email first.",
         };
       }
       return { met: true };
@@ -255,7 +267,8 @@ export async function checkPrecondition(page, requirement) {
         return {
           met: false,
           error: 'Not in email list view.',
-          suggestion: "Use browser_plugin_action({ plugin: 'gmail', action: 'list_emails' }) to return to the email list."
+          suggestion:
+            "Use browser_plugin_action({ plugin: 'gmail', action: 'list_emails' }) to return to the email list.",
         };
       }
       return { met: true };
@@ -285,8 +298,8 @@ export async function waitForGmail(page, selector, timeout = DEFAULT_TIMEOUT) {
   } catch {
     throw new Error(
       `Gmail content did not load within ${timeout}ms. ` +
-      `Selector that failed: "${selector}". ` +
-      `The page may still be loading or Gmail's UI may have changed.`
+        `Selector that failed: "${selector}". ` +
+        `The page may still be loading or Gmail's UI may have changed.`,
     );
   }
 }
@@ -331,7 +344,7 @@ export async function selectEmailRow(page, { index, id } = {}) {
     }
     return {
       selected: false,
-      error: `Email index ${index} is out of range. There are ${(await page.$$(sel.EMAIL_ROW)).length} visible emails.`
+      error: `Email index ${index} is out of range. There are ${(await page.$$(sel.EMAIL_ROW)).length} visible emails.`,
     };
   }
 
@@ -350,43 +363,47 @@ export async function selectEmailRow(page, { index, id } = {}) {
  * @returns {Promise<Array>} Array of EmailSummary objects per data-model.md
  */
 export async function extractEmailRows(page, limit = 25) {
-  return page.evaluate((selectors, lim) => {
-    const rows = document.querySelectorAll(selectors.emailRow);
-    const results = [];
-    const count = Math.min(rows.length, lim);
+  return page.evaluate(
+    (selectors, lim) => {
+      const rows = document.querySelectorAll(selectors.emailRow);
+      const results = [];
+      const count = Math.min(rows.length, lim);
 
-    for (let i = 0; i < count; i++) {
-      const row = rows[i];
-      // T3: span[email] for sender data
-      const senderEl = row.querySelector('span[email]');
-      // T4: CSS class selectors for subject, snippet, date
-      const subjectEl = row.querySelector(selectors.subjectSpan);
-      const snippetEl = row.querySelector(selectors.snippetSpan);
-      const dateEl = row.querySelector(selectors.dateCell);
-      // T4: Unread detection via class
-      const isUnread = row.classList.contains(selectors.unreadClass);
-      // T3: data attribute for ID
-      const id = row.getAttribute('data-legacy-message-id') || undefined;
+      for (let i = 0; i < count; i++) {
+        const row = rows[i];
+        // T3: span[email] for sender data
+        const senderEl = row.querySelector('span[email]');
+        // T4: CSS class selectors for subject, snippet, date
+        const subjectEl = row.querySelector(selectors.subjectSpan);
+        const snippetEl = row.querySelector(selectors.snippetSpan);
+        const dateEl = row.querySelector(selectors.dateCell);
+        // T4: Unread detection via class
+        const isUnread = row.classList.contains(selectors.unreadClass);
+        // T3: data attribute for ID
+        const id = row.getAttribute('data-legacy-message-id') || undefined;
 
-      results.push({
-        index: i,
-        id,
-        sender: senderEl?.getAttribute('name') || senderEl?.textContent?.trim() || '',
-        senderEmail: senderEl?.getAttribute('email') || '',
-        subject: subjectEl?.textContent?.trim() || '',
-        snippet: snippetEl?.textContent?.trim() || '',
-        date: dateEl?.getAttribute('title') || dateEl?.textContent?.trim() || '',
-        isUnread
-      });
-    }
-    return results;
-  }, {
-    emailRow: sel.EMAIL_ROW,
-    subjectSpan: sel.SUBJECT_SPAN,
-    snippetSpan: sel.SNIPPET_SPAN,
-    dateCell: sel.DATE_CELL,
-    unreadClass: sel.EMAIL_ROW_UNREAD
-  }, limit);
+        results.push({
+          index: i,
+          id,
+          sender: senderEl?.getAttribute('name') || senderEl?.textContent?.trim() || '',
+          senderEmail: senderEl?.getAttribute('email') || '',
+          subject: subjectEl?.textContent?.trim() || '',
+          snippet: snippetEl?.textContent?.trim() || '',
+          date: dateEl?.getAttribute('title') || dateEl?.textContent?.trim() || '',
+          isUnread,
+        });
+      }
+      return results;
+    },
+    {
+      emailRow: sel.EMAIL_ROW,
+      subjectSpan: sel.SUBJECT_SPAN,
+      snippetSpan: sel.SNIPPET_SPAN,
+      dateCell: sel.DATE_CELL,
+      unreadClass: sel.EMAIL_ROW_UNREAD,
+    },
+    limit,
+  );
 }
 
 // ============================================================================

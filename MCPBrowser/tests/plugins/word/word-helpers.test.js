@@ -11,7 +11,7 @@ import {
   validateMutationPayload,
   validateReadLimit,
   validateReadOffset,
-  validateSearchValue
+  validateSearchValue,
 } from '../../../src/plugins/word/helpers.js';
 
 describe('Word helpers — URL validation', () => {
@@ -32,7 +32,10 @@ describe('Word helpers — URL validation', () => {
   it('classifies SharePoint, Office editor, and authentication hosts', () => {
     assert.equal(isSharePointHost('tenant.sharepoint.com'), true);
     assert.equal(isOfficeEditorHost('ring-word-edit.officeapps.live.com'), true);
-    assert.equal(isAuthenticationUrl('https://login.microsoftonline.com/common/oauth2/authorize'), true);
+    assert.equal(
+      isAuthenticationUrl('https://login.microsoftonline.com/common/oauth2/authorize'),
+      true,
+    );
     assert.equal(isAuthenticationUrl('https://word.cloud.microsoft/'), false);
   });
 });
@@ -54,10 +57,12 @@ describe('Word helpers — input limits', () => {
   });
 
   it('accepts bounded mutation payloads', () => {
-    assert.doesNotThrow(() => validateMutationPayload({
-      html: '<p>Hello</p>',
-      plainText: 'Hello'
-    }));
+    assert.doesNotThrow(() =>
+      validateMutationPayload({
+        html: '<p>Hello</p>',
+        plainText: 'Hello',
+      }),
+    );
     assert.doesNotThrow(() => validateMutationPayload({ plainText: 'Hello' }));
   });
 
@@ -65,11 +70,11 @@ describe('Word helpers — input limits', () => {
     assert.throws(() => validateMutationPayload({ plainText: undefined }), /plainText/);
     assert.throws(
       () => validateMutationPayload({ plainText: 'x'.repeat(MAX_TEXT_CHARACTERS + 1) }),
-      /character limit/
+      /character limit/,
     );
     assert.throws(
       () => validateMutationPayload({ html: 'x'.repeat(MAX_HTML_BYTES + 1), plainText: '' }),
-      /byte limit/
+      /byte limit/,
     );
   });
 

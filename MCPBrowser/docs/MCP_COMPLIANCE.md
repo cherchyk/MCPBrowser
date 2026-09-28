@@ -8,20 +8,20 @@ Per the MCP spec, each tool definition must include:
 
 ### Required Fields
 
-| Field | Requirement | Status | Notes |
-|-------|-------------|--------|-------|
-| `name` | ✅ REQUIRED | ✅ Implemented | Unique identifier (1-128 chars, case-sensitive, alphanumeric + `_`, `-`, `.`) |
-| `description` | ✅ REQUIRED | ✅ Implemented | Human-readable functionality description |
-| `inputSchema` | ✅ REQUIRED | ✅ Implemented | JSON Schema (2020-12 default), must be valid object (not null) |
+| Field         | Requirement | Status         | Notes                                                                         |
+| ------------- | ----------- | -------------- | ----------------------------------------------------------------------------- |
+| `name`        | ✅ REQUIRED | ✅ Implemented | Unique identifier (1-128 chars, case-sensitive, alphanumeric + `_`, `-`, `.`) |
+| `description` | ✅ REQUIRED | ✅ Implemented | Human-readable functionality description                                      |
+| `inputSchema` | ✅ REQUIRED | ✅ Implemented | JSON Schema (2020-12 default), must be valid object (not null)                |
 
 ### Optional Fields
 
-| Field | Requirement | Status | Notes |
-|-------|-------------|--------|-------|
-| `title` | ⚪ Optional | ✅ Implemented | Human-readable display name (moved from annotations to top-level) |
-| `outputSchema` | ⚪ Optional | ✅ Implemented | JSON Schema for structured output validation |
-| `icons` | ⚪ Optional | ❌ Not used | Array of icons for UI display |
-| `annotations` | ⚪ Optional | ✅ Implemented | Risk hints: readOnlyHint, destructiveHint, idempotentHint, openWorldHint |
+| Field          | Requirement | Status         | Notes                                                                    |
+| -------------- | ----------- | -------------- | ------------------------------------------------------------------------ |
+| `title`        | ⚪ Optional | ✅ Implemented | Human-readable display name (moved from annotations to top-level)        |
+| `outputSchema` | ⚪ Optional | ✅ Implemented | JSON Schema for structured output validation                             |
+| `icons`        | ⚪ Optional | ❌ Not used    | Array of icons for UI display                                            |
+| `annotations`  | ⚪ Optional | ✅ Implemented | Risk hints: readOnlyHint, destructiveHint, idempotentHint, openWorldHint |
 
 ## Verified Tool Definitions
 
@@ -47,6 +47,7 @@ All 12 tools conform to the specification:
 ```
 
 **Compliance:**
+
 - ✅ Name: Valid (alphanumeric + underscore)
 - ✅ Title: Top-level field for display
 - ✅ Description: Clear, comprehensive
@@ -73,6 +74,7 @@ All 12 tools conform to the specification:
 ```
 
 **Compliance:**
+
 - ✅ Name: Valid format
 - ✅ Title: Human-readable display name
 - ✅ Description: Detailed usage instructions
@@ -99,6 +101,7 @@ All 12 tools conform to the specification:
 ```
 
 **Compliance:**
+
 - ✅ Name: Valid format
 - ✅ Title: Clear display name
 - ✅ Description: Comprehensive documentation
@@ -125,6 +128,7 @@ All 12 tools conform to the specification:
 ```
 
 **Compliance:**
+
 - ✅ Name: Valid format
 - ✅ Title: Descriptive
 - ✅ Description: Clear purpose and behavior
@@ -151,6 +155,7 @@ All 12 tools conform to the specification:
 ```
 
 **Compliance:**
+
 - ✅ Name: Valid format
 - ✅ Title: Clear purpose
 - ✅ Description: Distinguishes from browser_fetch_webpage
@@ -168,6 +173,7 @@ Per spec requirements:
 - ✅ No spaces/special chars: Compliant
 
 **Tool Names:**
+
 - `browser_fetch_webpage`
 - `browser_click_element`
 - `browser_type_text`
@@ -221,16 +227,19 @@ outputSchema: {
 Implements both error types per spec:
 
 ### 1. Protocol Errors
+
 - Handled by MCP server infrastructure
 - JSON-RPC error codes for malformed requests
 - Unknown tool names, etc.
 
 ### 2. Tool Execution Errors
+
 - Returned with `isError: true` in result
 - Actionable feedback for LLM self-correction
 - Examples: Invalid URL, missing page, selector not found
 
 **Example Error Response:**
+
 ```javascript
 {
   content: [
@@ -250,12 +259,14 @@ Implements both error types per spec:
 Following MCP security recommendations:
 
 ### Server Responsibilities
+
 - ✅ **Input validation**: All parameters validated before use
 - ✅ **Access controls**: Browser automation isolated per tool
 - ✅ **Rate limiting**: Single URL at a time (prevents abuse)
 - ✅ **Output sanitization**: HTML processing removes scripts
 
 ### Client Responsibilities (Recommended)
+
 - ⚠️ **User confirmation**: Should be implemented by MCP clients
 - ⚠️ **Tool visibility**: Clients should show which tools are exposed
 - ⚠️ **Visual indicators**: Clients should show when tools are invoked
@@ -266,20 +277,20 @@ Following MCP security recommendations:
 
 All 12 tools declare MCP risk annotations per the [Tool Annotations spec](https://modelcontextprotocol.io/specification/2025-11-25/server/tools#annotations):
 
-| Tool | readOnly | destructive | idempotent | openWorld |
-|------|----------|-------------|------------|-----------|
-| `browser_fetch_webpage` | ✅ true | false | ✅ true | ✅ true |
-| `browser_get_current_html` | ✅ true | false | ✅ true | false |
-| `browser_take_screenshot` | ✅ true | false | ✅ true | false |
-| `browser_detect_forms` | ✅ true | false | ✅ true | false |
-| `browser_plugin_info` | ✅ true | false | ✅ true | false |
-| `browser_scroll_page` | false | false | false | false |
-| `browser_click_element` | false | false | false | ✅ true |
-| `browser_type_text` | false | false | false | false |
-| `browser_navigate_history` | false | false | false | ✅ true |
-| `browser_plugin_action` | false | false | false | ✅ true |
-| `browser_execute_javascript` | false | ⚠️ true | false | ✅ true |
-| `browser_close_tab` | false | ⚠️ true | ✅ true | false |
+| Tool                         | readOnly | destructive | idempotent | openWorld |
+| ---------------------------- | -------- | ----------- | ---------- | --------- |
+| `browser_fetch_webpage`      | ✅ true  | false       | ✅ true    | ✅ true   |
+| `browser_get_current_html`   | ✅ true  | false       | ✅ true    | false     |
+| `browser_take_screenshot`    | ✅ true  | false       | ✅ true    | false     |
+| `browser_detect_forms`       | ✅ true  | false       | ✅ true    | false     |
+| `browser_plugin_info`        | ✅ true  | false       | ✅ true    | false     |
+| `browser_scroll_page`        | false    | false       | false      | false     |
+| `browser_click_element`      | false    | false       | false      | ✅ true   |
+| `browser_type_text`          | false    | false       | false      | false     |
+| `browser_navigate_history`   | false    | false       | false      | ✅ true   |
+| `browser_plugin_action`      | false    | false       | false      | ✅ true   |
+| `browser_execute_javascript` | false    | ⚠️ true     | false      | ✅ true   |
+| `browser_close_tab`          | false    | ⚠️ true     | ✅ true    | false     |
 
 Clients can use these hints to auto-approve read-only tools and prompt for confirmation on destructive ones.
 
@@ -287,11 +298,11 @@ Clients can use these hints to auto-approve read-only tools and prompt for confi
 
 MCPBrowser inherently combines all three legs of the "lethal trifecta" defined in the [MCP Tool Annotations blog post](https://blog.modelcontextprotocol.io/posts/2026-03-16-tool-annotations/):
 
-| Leg | Present | How |
-|-----|---------|-----|
-| **Private data access** | ✅ | Connects to user's existing browser with cookies, SSO sessions, and saved credentials |
-| **Untrusted content exposure** | ✅ | Loads and processes arbitrary web pages |
-| **External communication** | ✅ | Can navigate to any URL, execute JavaScript in page context |
+| Leg                            | Present | How                                                                                   |
+| ------------------------------ | ------- | ------------------------------------------------------------------------------------- |
+| **Private data access**        | ✅      | Connects to user's existing browser with cookies, SSO sessions, and saved credentials |
+| **Untrusted content exposure** | ✅      | Loads and processes arbitrary web pages                                               |
+| **External communication**     | ✅      | Can navigate to any URL, execute JavaScript in page context                           |
 
 This is **by design** — browser automation requires all three capabilities. The following mitigations are in place:
 
@@ -306,6 +317,7 @@ This is **by design** — browser automation requires all three capabilities. Th
 ## Testing
 
 All 12 tools verified with:
+
 - ✅ Unit tests passing
 - ✅ MCP compliance tests passing
 - ✅ Response format validation
@@ -316,6 +328,7 @@ All 12 tools verified with:
 **Full MCP 2025-11-25 Compliance Achieved ✅**
 
 All tool definitions:
+
 - Follow required field structure
 - Implement optional fields correctly (title, outputSchema, annotations)
 - Use valid JSON Schema format

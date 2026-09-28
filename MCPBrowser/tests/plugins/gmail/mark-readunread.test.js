@@ -4,9 +4,15 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { markRead } from '../../../src/plugins/gmail/actions/mark-read.js';
-import { markUnread } from '../../../src/plugins/gmail/actions/mark-unread.js';
+
 import { ErrorResponse } from '../../../src/core/responses.js';
+import { ACTIONS as GMAIL_ACTIONS } from '../../../src/plugins/gmail/actions/index.js';
+
+const markReadAction = GMAIL_ACTIONS.find((action) => action.id === 'mark_read');
+const markUnreadAction = GMAIL_ACTIONS.find((action) => action.id === 'mark_unread');
+
+const markRead = markReadAction.handler;
+const markUnread = markUnreadAction.handler;
 
 function mockPage(url) {
   return {
@@ -14,10 +20,15 @@ function mockPage(url) {
     evaluate: async () => false,
     $: async () => null,
     $$: async () => [],
-    keyboard: { press: async () => {}, down: async () => {}, up: async () => {}, type: async () => {} },
+    keyboard: {
+      press: async () => {},
+      down: async () => {},
+      up: async () => {},
+      type: async () => {},
+    },
     type: async () => {},
     click: async () => {},
-    waitForSelector: async () => null
+    waitForSelector: async () => null,
   };
 }
 

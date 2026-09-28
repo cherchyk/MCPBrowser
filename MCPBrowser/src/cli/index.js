@@ -10,11 +10,14 @@ import { CLI_REGISTRY, CMD_MAP } from './registry.js';
 import { getVersion, printHelp } from './help.js';
 import { getPrimaryText } from './utils.js';
 
-import { fetchPage } from '../actions/fetch-page.js';
+import { ACTIONS } from '../actions/index.js';
 import { closeBrowser } from '../core/browser.js';
 import logger from '../core/logger.js';
 
 logger.setConsoleOutput(false);
+
+const fetchPageAction = ACTIONS.find((action) => action.id === 'browser_fetch_webpage');
+if (!fetchPageAction) throw new Error('Core action not found: browser_fetch_webpage');
 
 export function isCliMode(argv) {
   return argv.length > 0;
@@ -41,9 +44,7 @@ async function executeCommand(entry, url, flags) {
   }
 
   // Build params
-  const params = entry.buildParams
-    ? entry.buildParams(url, coerced)
-    : { url, ...coerced };
+  const params = entry.buildParams ? entry.buildParams(url, coerced) : { url, ...coerced };
 
   // Call the MCP action
   const result = await entry.action(params);
@@ -58,7 +59,7 @@ async function executeCommand(entry, url, flags) {
   if (coerced.json) {
     const jsonOut = {
       content: mcp.content,
-      ...(mcp.structuredContent ? { structuredContent: mcp.structuredContent } : {})
+      ...(mcp.structuredContent ? { structuredContent: mcp.structuredContent } : {}),
     };
     process.stdout.write(JSON.stringify(jsonOut, null, 2) + '\n');
     return 0;
@@ -85,9 +86,18 @@ async function executeCommand(entry, url, flags) {
 export async function runCli(argv) {
   const { command, positional, flags } = parseArgs(argv);
 
-  if (flags.help) { printHelp(); return 0; }
-  if (flags.version) { process.stdout.write(getVersion() + '\n'); return 0; }
-  if (!command) { printHelp(); return 0; }
+  if (flags.help) {
+    printHelp();
+    return 0;
+  }
+  if (flags.version) {
+    process.stdout.write(getVersion() + '\n');
+    return 0;
+  }
+  if (!command) {
+    printHelp();
+    return 0;
+  }
 
   const entry = CMD_MAP.get(command);
   if (!entry) {
@@ -108,7 +118,11 @@ export async function runCli(argv) {
   try {
     // Auto-fetch for commands that declare it (e.g. screenshot)
     if (entry.autoFetch) {
-      const fetchResult = await fetchPage({ url, browser: flags.browser || '', removeUnnecessaryHTML: true });
+      const fetchResult = await fetchPageAction.execute({
+        url,
+        browser: flags.browser || '',
+        removeUnnecessaryHTML: true,
+      });
       const fetchMcp = fetchResult.toMcpFormat();
       if (fetchMcp.isError) {
         process.stderr.write(`Error loading page: ${getPrimaryText(fetchMcp)}\n`);
@@ -123,7 +137,11 @@ export async function runCli(argv) {
     process.stderr.write(`Error: ${err.message}\n`);
     exitCode = 1;
   } finally {
-    try { await closeBrowser(); } catch { /* ignore */ }
+    try {
+      await closeBrowser();
+    } catch {
+      /* ignore */
+    }
   }
 
   return exitCode;

@@ -20,19 +20,33 @@ const INTERACTION_LOG_INTERVAL_MS = 60000;
  */
 export function isLikelyAuthUrl(url) {
   const lowerUrl = url.toLowerCase();
-  
+
   // Path-based patterns (more strict - require / boundaries or end of path)
   const pathPatterns = [
-    '/login', '/signin', '/sign-in', '/auth', '/sso', '/oauth', 
-    '/authenticate', '/saml', '/openid'
+    '/login',
+    '/signin',
+    '/sign-in',
+    '/auth',
+    '/sso',
+    '/oauth',
+    '/authenticate',
+    '/saml',
+    '/openid',
   ];
-  
+
   // Subdomain patterns (require as subdomain at start)
   const subdomainPatterns = [
-    'login.', 'auth.', 'sso.', 'accounts.', 'id.', 'identity.',
-    'signin.', 'authentication.', 'idp.'
+    'login.',
+    'auth.',
+    'sso.',
+    'accounts.',
+    'id.',
+    'identity.',
+    'signin.',
+    'authentication.',
+    'idp.',
   ];
-  
+
   // Extract path from URL
   let pathname = '';
   try {
@@ -41,16 +55,18 @@ export function isLikelyAuthUrl(url) {
     // If URL parsing fails, check if any pattern exists in the string
     pathname = lowerUrl;
   }
-  
+
   // Check path patterns - ensure they're at path boundaries
-  const hasAuthPath = pathPatterns.some(pattern => {
+  const hasAuthPath = pathPatterns.some((pattern) => {
     // Check if pattern appears at start of path, followed by nothing, /, ?, or #
-    return pathname === pattern || 
-           pathname.startsWith(pattern + '/') ||
-           pathname.startsWith(pattern + '?') ||
-           lowerUrl.includes(pattern + '#');
+    return (
+      pathname === pattern ||
+      pathname.startsWith(pattern + '/') ||
+      pathname.startsWith(pattern + '?') ||
+      lowerUrl.includes(pattern + '#')
+    );
   });
-  
+
   // Check subdomain patterns (must be at start of hostname)
   const hostname = (() => {
     try {
@@ -59,8 +75,8 @@ export function isLikelyAuthUrl(url) {
       return '';
     }
   })();
-  const hasAuthSubdomain = subdomainPatterns.some(pattern => hostname.startsWith(pattern));
-  
+  const hasAuthSubdomain = subdomainPatterns.some((pattern) => hostname.startsWith(pattern));
+
   return hasAuthPath || hasAuthSubdomain;
 }
 
@@ -129,24 +145,32 @@ export async function pollUntilAuthDone(page, timeout, interval) {
         if (now - lastInteractionLog >= INTERACTION_LOG_INTERVAL_MS) {
           const waitedMs = now + interval - (deadline - timeout); // elapsed since start of this poll
           const waitedSeconds = Math.round(waitedMs / 1000);
-          logger.info(`User activity detected on auth page; waiting for user to finish... (waited ~${waitedSeconds}s)`);
+          logger.info(
+            `User activity detected on auth page; waiting for user to finish... (waited ~${waitedSeconds}s)`,
+          );
           lastInteractionLog = now;
         }
-        await new Promise(r => setTimeout(r, interval));
+        await new Promise((r) => setTimeout(r, interval));
         continue;
       }
     } catch {
       // Page not accessible — keep waiting
     }
-    await new Promise(r => setTimeout(r, interval));
+    await new Promise((r) => setTimeout(r, interval));
   }
 
-  const currentUrl = (() => { try { return page.url(); } catch { return 'unknown'; } })();
+  const currentUrl = (() => {
+    try {
+      return page.url();
+    } catch {
+      return 'unknown';
+    }
+  })();
   const minutes = Math.round(timeout / 60000);
   return {
     success: false,
     error: `Authentication timeout after ${minutes} minutes`,
-    hint: `Tab is left open at ${currentUrl}. Complete authentication and retry.`
+    hint: `Tab is left open at ${currentUrl}. Complete authentication and retry.`,
   };
 }
 
@@ -167,16 +191,23 @@ export async function detectLoginPage(page) {
       if (document.querySelectorAll('input[type="password"]').length > 0)
         indicators.push('password field');
 
-      if (document.querySelectorAll(
-        'input[type="email"], input[name*="user"], input[name*="email"], input[name*="login"], input[id*="user"], input[id*="email"]'
-      ).length > 0)
+      if (
+        document.querySelectorAll(
+          'input[type="email"], input[name*="user"], input[name*="email"], input[name*="login"], input[id*="user"], input[id*="email"]',
+        ).length > 0
+      )
         indicators.push('username/email field');
 
-      const loginBtn = Array.from(document.querySelectorAll('button, input[type="submit"]'))
-        .some(btn => /sign in|log in|login|submit|continue/i.test(btn.textContent || btn.value || ''));
+      const loginBtn = Array.from(document.querySelectorAll('button, input[type="submit"]')).some(
+        (btn) => /sign in|log in|login|submit|continue/i.test(btn.textContent || btn.value || ''),
+      );
       if (loginBtn) indicators.push('login button');
 
-      if (document.querySelectorAll('form[id*="login"], form[id*="signin"], form[class*="login"], form[class*="signin"]').length > 0)
+      if (
+        document.querySelectorAll(
+          'form[id*="login"], form[id*="signin"], form[class*="login"], form[class*="signin"]',
+        ).length > 0
+      )
         indicators.push('login form');
 
       const title = document.title.toLowerCase();
@@ -202,8 +233,10 @@ async function ensureInteractionTracker(page) {
   try {
     await page.evaluate(() => {
       if (window.__mcpAuthTrackerInstalled) return;
-      const updateInteraction = () => { window.__mcpAuthLastInteraction = Date.now(); };
-      ['pointerdown', 'keydown', 'input', 'paste'].forEach(evt => {
+      const updateInteraction = () => {
+        window.__mcpAuthLastInteraction = Date.now();
+      };
+      ['pointerdown', 'keydown', 'input', 'paste'].forEach((evt) => {
         window.addEventListener(evt, updateInteraction, { capture: true, passive: true });
       });
       window.__mcpAuthTrackerInstalled = true;
@@ -221,7 +254,7 @@ async function ensureInteractionTracker(page) {
 async function hasRecentInteraction(page) {
   try {
     const last = await page.evaluate(() => window.__mcpAuthLastInteraction || 0);
-    return last > 0 && (Date.now() - last) < INTERACTION_RECENT_MS;
+    return last > 0 && Date.now() - last < INTERACTION_RECENT_MS;
   } catch {
     return false;
   }

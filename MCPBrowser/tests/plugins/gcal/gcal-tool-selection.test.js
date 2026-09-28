@@ -6,11 +6,14 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { manifest, matchesPage, getActions, getInfo } from '../../../src/plugins/gcal/index.js';
+import { GCAL_PLUGIN } from '../../../src/plugins/gcal/index.js';
+
+const { manifest, matchesPage, getInfo } = GCAL_PLUGIN;
+const getActions = () => GCAL_PLUGIN.getActions();
 
 describe('GCal Tool Selection — Agent Workflow Scenarios', () => {
   const actions = getActions();
-  const actionMap = new Map(actions.map(a => [a.name, a]));
+  const actionMap = new Map(actions.map((a) => [a.name, a]));
   const info = getInfo();
 
   it('Scenario 1: "What meetings do I have today?" → plugin detects Calendar → list_events', () => {
@@ -21,8 +24,10 @@ describe('GCal Tool Selection — Agent Workflow Scenarios', () => {
     assert.equal(match.confidence, 1.0);
 
     // Step 3: Agent calls browser_plugin_info to discover actions
-    assert.ok(info.actions.find(a => a.name === 'list_events'),
-      'browser_plugin_info must list list_events action');
+    assert.ok(
+      info.actions.find((a) => a.name === 'list_events'),
+      'browser_plugin_info must list list_events action',
+    );
 
     // Step 4: Agent calls list_events (no params = current view)
     const listAction = actionMap.get('list_events');
@@ -30,9 +35,12 @@ describe('GCal Tool Selection — Agent Workflow Scenarios', () => {
     assert.equal(typeof listAction.execute, 'function');
 
     // Verify no required params for basic usage
-    const requiredParams = listAction.params.filter(p => p.required);
-    assert.equal(requiredParams.length, 0,
-      'list_events should have no required params for "today" usage');
+    const requiredParams = listAction.params.filter((p) => p.required);
+    assert.equal(
+      requiredParams.length,
+      0,
+      'list_events should have no required params for "today" usage',
+    );
   });
 
   it('Scenario 2: "Schedule a 1:1 with Alice at 2pm" → create_event with attendees', () => {
@@ -40,7 +48,7 @@ describe('GCal Tool Selection — Agent Workflow Scenarios', () => {
     assert.ok(createAction, 'create_event must be available');
 
     // Verify all needed params exist
-    const paramNames = createAction.params.map(p => p.name);
+    const paramNames = createAction.params.map((p) => p.name);
     assert.ok(paramNames.includes('title'), 'must accept title');
     assert.ok(paramNames.includes('date'), 'must accept date');
     assert.ok(paramNames.includes('startTime'), 'must accept startTime');
@@ -49,11 +57,11 @@ describe('GCal Tool Selection — Agent Workflow Scenarios', () => {
     assert.ok(paramNames.includes('save'), 'must accept save');
 
     // Only title is required
-    const titleParam = createAction.params.find(p => p.name === 'title');
+    const titleParam = createAction.params.find((p) => p.name === 'title');
     assert.equal(titleParam.required, true);
 
     // save defaults to false for safety (FR-015)
-    const saveParam = createAction.params.find(p => p.name === 'save');
+    const saveParam = createAction.params.find((p) => p.name === 'save');
     assert.equal(saveParam.default, false);
   });
 
@@ -62,11 +70,14 @@ describe('GCal Tool Selection — Agent Workflow Scenarios', () => {
     assert.ok(checkAction, 'check_availability must be available');
 
     // All three params required
-    const requiredParams = checkAction.params.filter(p => p.required);
-    assert.equal(requiredParams.length, 3,
-      'check_availability needs date, startTime, endTime (all required)');
+    const requiredParams = checkAction.params.filter((p) => p.required);
+    assert.equal(
+      requiredParams.length,
+      3,
+      'check_availability needs date, startTime, endTime (all required)',
+    );
 
-    const paramNames = requiredParams.map(p => p.name);
+    const paramNames = requiredParams.map((p) => p.name);
     assert.ok(paramNames.includes('date'), 'date must be required');
     assert.ok(paramNames.includes('startTime'), 'startTime must be required');
     assert.ok(paramNames.includes('endTime'), 'endTime must be required');

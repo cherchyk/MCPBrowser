@@ -12,9 +12,10 @@ import {
   gmailNavigate,
   waitForGmail,
   extractEmailRows,
-  GmailActionResponse
+  GmailActionResponse,
 } from '../helpers.js';
 import { EMAIL_ROW, NO_RESULTS } from '../selectors.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /**
  * Search emails by query string.
@@ -25,23 +26,21 @@ import { EMAIL_ROW, NO_RESULTS } from '../selectors.js';
  * @param {number} [opts.params.limit=25] - Maximum results to return
  * @returns {Promise<GmailActionResponse|ErrorResponse>}
  */
-export async function searchEmails({ page, params }) {
+async function searchEmails({ page, params }) {
   // Validate query
   if (!params.query || !params.query.trim()) {
-    return new ErrorResponse(
-      'Search query is required.',
-      [
-        'Provide a query string, e.g. search_emails({ query: "from:boss subject:urgent" })',
-        'Use list_emails to browse without a search query'
-      ]
-    );
+    return new ErrorResponse('Search query is required.', [
+      'Provide a query string, e.g. search_emails({ query: "from:boss subject:urgent" })',
+      'Use list_emails to browse without a search query',
+    ]);
   }
 
   // Precondition: must be on Gmail
   const pre = await checkPrecondition(page, 'on_gmail');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first.",
     ]);
   }
 
@@ -64,7 +63,7 @@ export async function searchEmails({ page, params }) {
       // Neither rows nor no-results — re-throw the timeout
       throw new Error(
         `Gmail search did not return results within the timeout. ` +
-        `Query: "${query}". The page may still be loading.`
+          `Query: "${query}". The page may still be loading.`,
       );
     }
   }
@@ -73,10 +72,7 @@ export async function searchEmails({ page, params }) {
     return new GmailActionResponse(
       { emails: [], query, resultCount: 0 },
       `No results found for "${query}".`,
-      [
-        'Try a different or broader search query',
-        'Use list_emails to browse the inbox instead'
-      ]
+      ['Try a different or broader search query', 'Use list_emails to browse the inbox instead'],
     );
   }
 
@@ -89,7 +85,29 @@ export async function searchEmails({ page, params }) {
     [
       'Use read_email to open a specific result',
       'Refine your search with Gmail search operators (from:, to:, subject:, has:attachment)',
-      'Use list_emails to return to the inbox'
-    ]
+      'Use list_emails to return to the inbox',
+    ],
   );
 }
+
+export const searchEmailsAction = new PluginAction({
+  name: 'search_emails',
+  description: 'Search Gmail using URL hash navigation and return matching emails',
+  params: [
+    {
+      name: 'query',
+      type: 'string',
+      description: 'Gmail search query (supports from:, to:, subject:, has:attachment, etc.)',
+      required: true,
+    },
+    {
+      name: 'limit',
+      type: 'number',
+      description: 'Maximum results to return (default: 25)',
+      required: false,
+      default: 25,
+    },
+  ],
+  response: GmailActionResponse,
+  handler: searchEmails,
+});

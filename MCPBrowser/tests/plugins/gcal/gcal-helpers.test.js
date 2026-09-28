@@ -10,7 +10,7 @@ import {
   getAccountIndex,
   buildViewPath,
   VIEW,
-  GCalActionResponse
+  GCalActionResponse,
 } from '../../../src/plugins/gcal/helpers.js';
 import { MCPResponse } from '../../../src/core/responses.js';
 
@@ -87,7 +87,9 @@ describe('VIEW enum', () => {
   });
 
   it('is frozen (immutable)', () => {
-    assert.throws(() => { VIEW.NEW_STATE = 'test'; }, TypeError);
+    assert.throws(() => {
+      VIEW.NEW_STATE = 'test';
+    }, TypeError);
   });
 
   it('has 11 states total', () => {
@@ -108,7 +110,7 @@ function mockPage(url, evalResults = {}) {
       if (fnStr.includes('role="dialog"')) return evalResults.hasEventDialog ?? false;
       if (fnStr.includes('role="main"')) return evalResults.hasMain ?? true;
       return false;
-    }
+    },
   };
 }
 
@@ -120,7 +122,9 @@ describe('detectView — with mock page', async () => {
     assert.equal(await detectView(page), VIEW.NOT_CALENDAR);
   });
   it('returns NOT_READY for interstitial/CAPTCHA', async () => {
-    const page = mockPage('https://calendar.google.com/calendar/u/0/r/week', { hasInterstitial: true });
+    const page = mockPage('https://calendar.google.com/calendar/u/0/r/week', {
+      hasInterstitial: true,
+    });
     assert.equal(await detectView(page), VIEW.NOT_READY);
   });
   it('returns EVENT_FORM for /r/eventedit path', async () => {

@@ -19,8 +19,8 @@ const browserTests = [
   'actions/browser.fetch-page.test.js',
   'actions/browser.take-screenshot.test.js',
   'actions/browser.scroll-page.test.js',
-  'verify-structured-output.test.js',    // Verifies MCP response structure
-  'verify-nextsteps.test.js'             // Verifies nextSteps in responses
+  'verify-structured-output.test.js', // Verifies MCP response structure
+  'verify-nextsteps.test.js', // Verifies nextSteps in responses
   // Note: tool-selection/ tests have their own runner (run-tool-selection-tests.js)
 ];
 
@@ -41,14 +41,14 @@ function runTest(testFile) {
     if (browserParam) {
       args.push(browserParam);
     }
-    
+
     const child = spawn('node', args, {
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
 
     let output = '';
-    child.stdout?.on('data', (data) => output += data.toString());
-    child.stderr?.on('data', (data) => output += data.toString());
+    child.stdout?.on('data', (data) => (output += data.toString()));
+    child.stderr?.on('data', (data) => (output += data.toString()));
 
     child.on('close', (code) => {
       resolve({ testFile, code, output });
@@ -63,19 +63,19 @@ function runTest(testFile) {
 
 async function runBrowserTests() {
   const startTime = Date.now();
-  
+
   console.log(`\n🚀 Running ${browserTests.length} browser tests sequentially...\n`);
-  
+
   for (const test of browserTests) {
     console.log(`▶️  ${test}`);
-    
+
     const { code, output } = await runTest(test);
 
     if (output) {
       const passMatch = output.match(/Tests Passed: (\d+)|pass (\d+)/i);
       const failMatch = output.match(/Tests Failed: (\d+)|fail (\d+)/i);
-      const passCount = passMatch ? (passMatch[1] || passMatch[2]) : '?';
-      const failCount = failMatch ? (failMatch[1] || failMatch[2]) : '?';
+      const passCount = passMatch ? passMatch[1] || passMatch[2] : '?';
+      const failCount = failMatch ? failMatch[1] || failMatch[2] : '?';
 
       console.log(`   Tests: ${passCount} passed, ${failCount} failed`);
 
@@ -85,7 +85,7 @@ async function runBrowserTests() {
         console.log(errorLines.join('\n'));
       }
     }
-    
+
     if (code === 0) {
       console.log(`   ✅ PASSED\n`);
       totalPassed++;
@@ -94,9 +94,9 @@ async function runBrowserTests() {
       totalFailed++;
     }
   }
-  
+
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-  
+
   console.log('='.repeat(60));
   console.log('\n📊 Browser Test Summary:');
   console.log(`   Total test suites: ${browserTests.length}`);

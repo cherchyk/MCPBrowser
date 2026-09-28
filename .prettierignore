@@ -1,0 +1,27 @@
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Lock files
+pnpm-lock.yaml
+
+# Docker
+**/Dockerfile
+**/Dockerfile.*
+
+# IaC
+infra/
+
+# Generated / binary
+*.tsbuildinfo
+*.log
+
+# Cache
+.cache/
+**/.cache/

@@ -232,14 +232,24 @@ test('Should return empty array for null recommendation', () => {
 });
 
 test('Should return empty array when recommendation lacks a selector', () => {
-  assert.deepStrictEqual(buildMainContentHint({ textLength: 500 }), [], 'No hint without a selector');
+  assert.deepStrictEqual(
+    buildMainContentHint({ textLength: 500 }),
+    [],
+    'No hint without a selector',
+  );
 });
 
 test('Should build a scoping hint from a recommendation', () => {
   const hints = buildMainContentHint({ selector: 'article.post', textLength: 4096 });
   assert.strictEqual(hints.length, 1, 'Should return exactly one hint');
-  assert.ok(hints[0].includes("selector: 'article.post'"), 'Hint should include the recommended selector');
-  assert.ok(hints[0].includes('browser_get_current_html'), 'Hint should recommend get_current_html (page already loaded)');
+  assert.ok(
+    hints[0].includes("selector: 'article.post'"),
+    'Hint should include the recommended selector',
+  );
+  assert.ok(
+    hints[0].includes('browser_get_current_html'),
+    'Hint should recommend get_current_html (page already loaded)',
+  );
   assert.ok(hints[0].includes('4KB'), 'Hint should include approximate text size');
 });
 

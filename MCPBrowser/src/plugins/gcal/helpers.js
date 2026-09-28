@@ -31,7 +31,7 @@ export const VIEW = Object.freeze({
   SEARCH_RESULTS: 'search_results',
   LOADING: 'loading',
   NOT_CALENDAR: 'not_calendar',
-  NOT_READY: 'not_ready'
+  NOT_READY: 'not_ready',
 });
 
 /** Map param view names to URL path segments. */
@@ -40,7 +40,7 @@ const VIEW_TO_PATH = {
   week: 'week',
   month: 'month',
   schedule: 'agenda',
-  custom: 'customday'
+  custom: 'customday',
 };
 
 // ============================================================================
@@ -108,9 +108,11 @@ export async function detectView(page) {
   // Check for interstitials / CAPTCHAs
   const hasInterstitial = await page.evaluate(() => {
     const body = document.body?.textContent || '';
-    return body.includes('Confirm it') ||
-           !!document.querySelector('iframe[src*="accounts.google.com"]') ||
-           !!document.querySelector('#captcha');
+    return (
+      body.includes('Confirm it') ||
+      !!document.querySelector('iframe[src*="accounts.google.com"]') ||
+      !!document.querySelector('#captcha')
+    );
   });
   if (hasInterstitial) {
     logger.debug('detectView: not_ready (interstitial/CAPTCHA)');
@@ -151,18 +153,14 @@ export async function detectView(page) {
   }
 
   // Check for event detail dialog overlay
-  const hasEventDialog = await page.evaluate(() =>
-    !!document.querySelector('div[role="dialog"]')
-  );
+  const hasEventDialog = await page.evaluate(() => !!document.querySelector('div[role="dialog"]'));
   if (hasEventDialog) {
     logger.debug('detectView: event_detail (dialog overlay)');
     return VIEW.EVENT_DETAIL;
   }
 
   // Default calendar view (e.g. /r or /r/)
-  const hasMain = await page.evaluate(() =>
-    !!document.querySelector('div[role="main"]')
-  );
+  const hasMain = await page.evaluate(() => !!document.querySelector('div[role="main"]'));
   if (hasMain) {
     logger.debug('detectView: week (default fallback)');
     return VIEW.WEEK;
@@ -194,10 +192,9 @@ export async function checkKeyboardShortcuts(page) {
     await page.keyboard.press('/');
     await page.keyboard.up('Shift');
 
-    const dialog = await page.waitForSelector(
-      'div[role="dialog"]',
-      { timeout: 2000 }
-    ).catch(() => null);
+    const dialog = await page
+      .waitForSelector('div[role="dialog"]', { timeout: 2000 })
+      .catch(() => null);
 
     if (dialog) {
       await page.keyboard.press('Escape');
@@ -206,12 +203,14 @@ export async function checkKeyboardShortcuts(page) {
 
     return {
       enabled: false,
-      error: 'Google Calendar keyboard shortcuts are not enabled. Enable them in Calendar Settings → Keyboard shortcuts → Enable keyboard shortcuts.'
+      error:
+        'Google Calendar keyboard shortcuts are not enabled. Enable them in Calendar Settings → Keyboard shortcuts → Enable keyboard shortcuts.',
     };
   } catch {
     return {
       enabled: false,
-      error: 'Could not verify Google Calendar keyboard shortcuts. Ensure Calendar is fully loaded.'
+      error:
+        'Could not verify Google Calendar keyboard shortcuts. Ensure Calendar is fully loaded.',
     };
   }
 }
@@ -235,7 +234,8 @@ export async function checkPrecondition(page, requirement) {
         return {
           met: false,
           error: 'Google Calendar is not the active page.',
-          suggestion: "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to navigate to Google Calendar first."
+          suggestion:
+            "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to navigate to Google Calendar first.",
         };
       }
       return { met: true };
@@ -247,7 +247,8 @@ export async function checkPrecondition(page, requirement) {
         return {
           met: false,
           error: 'Google Calendar is not ready.',
-          suggestion: "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to navigate to Google Calendar."
+          suggestion:
+            "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to navigate to Google Calendar.",
         };
       }
       return { met: true };
@@ -255,12 +256,19 @@ export async function checkPrecondition(page, requirement) {
 
     case 'list_view': {
       const view = await detectView(page);
-      const isListView = [VIEW.DAY, VIEW.WEEK, VIEW.MONTH, VIEW.SCHEDULE, VIEW.CUSTOM, VIEW.SEARCH_RESULTS].includes(view);
+      const isListView = [
+        VIEW.DAY,
+        VIEW.WEEK,
+        VIEW.MONTH,
+        VIEW.SCHEDULE,
+        VIEW.CUSTOM,
+        VIEW.SEARCH_RESULTS,
+      ].includes(view);
       if (!isListView) {
         return {
           met: false,
           error: 'Not in a calendar view with visible events.',
-          suggestion: "Use list_events to navigate to a calendar view."
+          suggestion: 'Use list_events to navigate to a calendar view.',
         };
       }
       return { met: true };
@@ -287,8 +295,8 @@ export async function waitForCalendar(page, selector, timeout = DEFAULT_TIMEOUT)
   } catch {
     throw new Error(
       `Google Calendar content did not load within ${timeout}ms. ` +
-      `Selector that failed: "${selector}". ` +
-      `The page may still be loading or Calendar's UI may have changed.`
+        `Selector that failed: "${selector}". ` +
+        `The page may still be loading or Calendar's UI may have changed.`,
     );
   }
 }
@@ -325,7 +333,7 @@ export async function selectEvent(page, { index, id } = {}) {
     }
     return {
       selected: false,
-      error: `Event index ${index} is out of range. The current view has ${events.length} events (indices 0-${events.length - 1}). Use list_events to refresh.`
+      error: `Event index ${index} is out of range. The current view has ${events.length} events (indices 0-${events.length - 1}). Use list_events to refresh.`,
     };
   }
 
@@ -344,50 +352,54 @@ export async function selectEvent(page, { index, id } = {}) {
  * @returns {Promise<Array>}
  */
 export async function extractVisibleEvents(page, limit = 25) {
-  return page.evaluate((selectors, lim) => {
-    const chips = document.querySelectorAll(selectors.eventChip);
-    const results = [];
-    const count = Math.min(chips.length, lim);
+  return page.evaluate(
+    (selectors, lim) => {
+      const chips = document.querySelectorAll(selectors.eventChip);
+      const results = [];
+      const count = Math.min(chips.length, lim);
 
-    for (let i = 0; i < count; i++) {
-      const chip = chips[i];
+      for (let i = 0; i < count; i++) {
+        const chip = chips[i];
 
-      // T3: aria-label is the primary extraction method for event data
-      const ariaLabel = chip.getAttribute('aria-label') || '';
+        // T3: aria-label is the primary extraction method for event data
+        const ariaLabel = chip.getAttribute('aria-label') || '';
 
-      // T3: data-eventid for stable identification
-      const eventId = chip.getAttribute('data-eventid') || null;
+        // T3: data-eventid for stable identification
+        const eventId = chip.getAttribute('data-eventid') || null;
 
-      // Parse aria-label — typically "Title, date, time – time, calendar"
-      // This is a best-effort parse; structure varies by locale
-      const title = ariaLabel.split(',')[0]?.trim() || '';
+        // Parse aria-label — typically "Title, date, time – time, calendar"
+        // This is a best-effort parse; structure varies by locale
+        const title = ariaLabel.split(',')[0]?.trim() || '';
 
-      // T4: CSS fallback for time and calendar info
-      const timeSpans = chip.querySelectorAll(selectors.timeSpan);
-      const timeText = timeSpans.length > 0 ? timeSpans[0]?.textContent?.trim() || '' : '';
+        // T4: CSS fallback for time and calendar info
+        const timeSpans = chip.querySelectorAll(selectors.timeSpan);
+        const timeText = timeSpans.length > 0 ? timeSpans[0]?.textContent?.trim() || '' : '';
 
-      // Detect all-day by checking if event lacks specific time text
-      const allDay = !timeText || timeText === '';
+        // Detect all-day by checking if event lacks specific time text
+        const allDay = !timeText || timeText === '';
 
-      results.push({
-        index: i,
-        eventId,
-        title,
-        startDate: '', // Populated from date context outside evaluate
-        startTime: allDay ? null : timeText.split('–')[0]?.trim() || null,
-        endDate: '',
-        endTime: allDay ? null : timeText.split('–')[1]?.trim() || null,
-        allDay,
-        location: null, // Only available in detail view
-        calendarName: '', // Extracted from color dot or aria-label suffix
-        calendarColor: null
-      });
-    }
-    return results;
-  }, {
-    eventChip: sel.EVENT_CHIP,
-    timeSpan: sel.EVENT_TIME_IN_CHIP
-  }, limit);
+        results.push({
+          index: i,
+          eventId,
+          title,
+          startDate: '', // Populated from date context outside evaluate
+          startTime: allDay ? null : timeText.split('–')[0]?.trim() || null,
+          endDate: '',
+          endTime: allDay ? null : timeText.split('–')[1]?.trim() || null,
+          allDay,
+          location: null, // Only available in detail view
+          calendarName: '', // Extracted from color dot or aria-label suffix
+          calendarColor: null,
+        });
+      }
+      return results;
+    },
+    {
+      eventChip: sel.EVENT_CHIP,
+      timeSpan: sel.EVENT_TIME_IN_CHIP,
+    },
+    limit,
+  );
 }
 
 // ============================================================================

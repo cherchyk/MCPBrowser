@@ -15,7 +15,7 @@ export async function getAllBrowsers() {
   const browsers = [
     { type: 'chrome', browser: new ChromeBrowser() },
     { type: 'edge', browser: new EdgeBrowser() },
-    { type: 'brave', browser: new BraveBrowser() }
+    { type: 'brave', browser: new BraveBrowser() },
   ];
 
   const results = [];
@@ -33,19 +33,19 @@ export async function getAllBrowsers() {
  */
 export async function getAvailableBrowsers() {
   const all = await getAllBrowsers();
-  const available = all.filter(b => b.available);
-  
+  const available = all.filter((b) => b.available);
+
   // Show warnings for unavailable browsers
-  const unavailable = all.filter(b => !b.available);
+  const unavailable = all.filter((b) => !b.available);
   for (const { type } of unavailable) {
     console.error(`⚠️  [WARNING] ${type} browser not detected - tests will be skipped`);
   }
-  
+
   if (available.length === 0) {
     console.error('⚠️  [WARNING] No browsers detected - using Chrome as fallback (tests may fail)');
     return [{ type: 'chrome', browser: new ChromeBrowser() }];
   }
-  
+
   return available.map(({ type, browser }) => ({ type, browser }));
 }
 
@@ -56,7 +56,7 @@ export async function getAvailableBrowsers() {
  */
 export async function forEachBrowser(testName, testFn) {
   const browsers = await getAvailableBrowsers();
-  
+
   for (const { type, browser } of browsers) {
     console.error(`\n🌐 Running ${testName} with ${type}...`);
     try {
@@ -75,6 +75,6 @@ export async function forEachBrowser(testName, testFn) {
  */
 export async function isBrowserAvailable(browserType) {
   const all = await getAllBrowsers();
-  const found = all.find(b => b.type === browserType);
+  const found = all.find((b) => b.type === browserType);
   return found ? found.available : false;
 }

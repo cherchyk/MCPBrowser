@@ -4,11 +4,16 @@
  * Updated to test with all available browsers
  */
 
-import { closeTab } from '../../src/actions/close-tab.js';
-import { fetchPage } from '../../src/actions/fetch-page.js';
 import { domainPages } from '../../src/core/browser.js';
 import { ErrorResponse } from '../../src/core/responses.js';
 import { runWithBrowsers } from '../browsers/browser-runner.js';
+import { ACTIONS as CORE_ACTIONS } from '../../src/actions/index.js';
+
+const CLOSE_TAB_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_close_tab');
+const FETCH_WEBPAGE_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_fetch_webpage');
+
+const closeTab = CLOSE_TAB_ACTION.handler;
+const fetchPage = FETCH_WEBPAGE_ACTION.handler;
 
 const browserParam = process.argv[2] || '';
 
@@ -17,45 +22,44 @@ const browserParam = process.argv[2] || '';
  */
 async function testCloseLoadedTab(browserType) {
   console.log(`\n=== Test: Close tab for a loaded domain (${browserType}) ===`);
-  
+
   try {
     // First, load a page
-    const fetchResult = await fetchPage({ 
+    const fetchResult = await fetchPage({
       url: 'https://example.com',
       browser: browserType,
-      removeUnnecessaryHTML: false 
+      removeUnnecessaryHTML: false,
     });
-    
+
     if (fetchResult instanceof ErrorResponse) {
       throw new Error(`Failed to load page: ${fetchResult.message}`);
     }
-    
+
     console.log('✓ Page loaded successfully');
-    
+
     // Verify tab is in the pool
     if (!domainPages.has('example.com')) {
       throw new Error('Domain not found in tab pool after loading');
     }
     console.log('✓ Tab exists in domain pool');
-    
+
     // Close the tab
     const closeResult = await closeTab({ url: 'https://example.com' });
-    
+
     if (closeResult instanceof ErrorResponse) {
       throw new Error(`Failed to close tab: ${closeResult.message}`);
     }
-    
+
     console.log(`✓ Close result: ${closeResult.message}`);
-    
+
     // Verify tab is removed from pool
     if (domainPages.has('example.com')) {
       throw new Error('Domain still in tab pool after closing');
     }
     console.log('✓ Tab removed from domain pool');
-    
+
     console.log('✅ Test passed: Close loaded tab');
     return true;
-    
   } catch (error) {
     console.error(`❌ Test failed: ${error.message}`);
     return false;
@@ -67,23 +71,22 @@ async function testCloseLoadedTab(browserType) {
  */
 async function testCloseNonExistentTab(browserType) {
   console.log(`\n=== Test: Close tab for non-existent domain (${browserType}) ===`);
-  
+
   try {
     // Try to close a tab that doesn't exist
     const closeResult = await closeTab({ url: 'https://never-loaded-domain.com' });
-    
+
     if (closeResult instanceof ErrorResponse) {
       throw new Error(`Close failed unexpectedly: ${closeResult.message}`);
     }
-    
+
     if (!closeResult.message.includes('No open tab found')) {
       throw new Error(`Expected message about no tab found, got: ${closeResult.message}`);
     }
-    
+
     console.log(`✓ Close result: ${closeResult.message}`);
     console.log('✅ Test passed: Close non-existent tab');
     return true;
-    
   } catch (error) {
     console.error(`❌ Test failed: ${error.message}`);
     return false;
@@ -95,45 +98,49 @@ async function testCloseNonExistentTab(browserType) {
  */
 async function testCloseSameDomainTwice(browserType) {
   console.log(`\n=== Test: Close same domain twice (${browserType}) ===`);
-  
+
   try {
     // Load a page
-    const fetchResult = await fetchPage({ 
+    const fetchResult = await fetchPage({
       url: 'https://example.org',
       browser: browserType,
-      removeUnnecessaryHTML: false 
+      removeUnnecessaryHTML: false,
     });
-    
+
     if (fetchResult instanceof ErrorResponse) {
       throw new Error(`Failed to load page: ${fetchResult.message}`);
     }
-    
+
     console.log('✓ Page loaded successfully');
-    
+
     // Close once
     const firstClose = await closeTab({ url: 'https://example.org/some/path' });
-    
+
     if (firstClose instanceof ErrorResponse) {
       throw new Error(`First close failed: ${firstClose.message}`);
     }
-    
+
     console.log(`✓ First close: ${firstClose.message}`);
-    
+
     // Close again - should handle gracefully
     const secondClose = await closeTab({ url: 'https://example.org' });
-    
+
     if (secondClose instanceof ErrorResponse) {
       throw new Error(`Second close failed: ${secondClose.message}`);
     }
-    
-    if (!secondClose.message.includes('No open tab found') && !secondClose.message.includes('already closed')) {
-      throw new Error(`Expected message about no tab or already closed, got: ${secondClose.message}`);
+
+    if (
+      !secondClose.message.includes('No open tab found') &&
+      !secondClose.message.includes('already closed')
+    ) {
+      throw new Error(
+        `Expected message about no tab or already closed, got: ${secondClose.message}`,
+      );
     }
-    
+
     console.log(`✓ Second close: ${secondClose.message}`);
     console.log('✅ Test passed: Close same domain twice');
     return true;
-    
   } catch (error) {
     console.error(`❌ Test failed: ${error.message}`);
     return false;
@@ -145,7 +152,7 @@ async function testCloseSameDomainTwice(browserType) {
  */
 async function testInvalidUrl(browserType) {
   console.log(`\n=== Test: Invalid URL parameter (${browserType}) ===`);
-  
+
   try {
     // Test with missing URL
     const result1 = await closeTab({});
@@ -153,24 +160,23 @@ async function testInvalidUrl(browserType) {
       throw new Error('Expected failure for missing URL');
     }
     console.log('✓ Correctly rejected missing URL');
-    
+
     // Test with null URL
     const result2 = await closeTab({ url: null });
     if (!(result2 instanceof ErrorResponse)) {
       throw new Error('Expected failure for null URL');
     }
     console.log('✓ Correctly rejected null URL');
-    
+
     // Test with empty string
     const result3 = await closeTab({ url: '' });
     if (!(result3 instanceof ErrorResponse)) {
       throw new Error('Expected failure for empty URL');
     }
     console.log('✓ Correctly rejected empty URL');
-    
+
     console.log(`✅ Test passed: Invalid URL parameter (${browserType})`);
     return true;
-    
   } catch (error) {
     console.error(`❌ Test failed: ${error.message}`);
     return false;
@@ -182,38 +188,37 @@ async function testInvalidUrl(browserType) {
  */
 async function testDomainExtraction(browserType) {
   console.log(`\n=== Test: Hostname extraction from various URLs (${browserType}) ===`);
-  
+
   try {
     // Load page with path and query
-    await fetchPage({ 
+    await fetchPage({
       url: 'https://www.example.net/path/to/page?query=value#hash',
       browser: browserType,
-      removeUnnecessaryHTML: false 
+      removeUnnecessaryHTML: false,
     });
-    
+
     console.log('✓ Loaded page with complex URL');
-    
+
     // Close using same hostname (must match exactly)
     const closeResult = await closeTab({ url: 'https://www.example.net' });
-    
+
     if (closeResult instanceof ErrorResponse) {
       throw new Error(`Close failed: ${closeResult.message}`);
     }
-    
+
     if (closeResult.hostname !== 'www.example.net') {
       throw new Error(`Expected hostname 'www.example.net', got '${closeResult.hostname}'`);
     }
-    
+
     console.log(`✓ Correctly extracted hostname: ${closeResult.hostname}`);
-    
+
     // Verify tab is closed
     if (domainPages.has('www.example.net')) {
       throw new Error('Tab still exists after close');
     }
-    
+
     console.log(`✅ Test passed: Hostname extraction (${browserType})`);
     return true;
-    
   } catch (error) {
     console.error(`❌ Test failed: ${error.message}`);
     return false;
@@ -225,62 +230,61 @@ async function testDomainExtraction(browserType) {
  */
 async function testFreshSessionAfterClose(browserType) {
   console.log(`\n=== Test: Fresh session after closing tab (${browserType}) ===`);
-  
+
   try {
     // Load page first time
-    const firstLoad = await fetchPage({ 
+    const firstLoad = await fetchPage({
       url: 'https://httpbin.org/html',
       browser: browserType,
-      removeUnnecessaryHTML: false 
+      removeUnnecessaryHTML: false,
     });
-    
+
     if (firstLoad instanceof ErrorResponse) {
       throw new Error('First load failed');
     }
-    
+
     console.log('✓ First load successful');
-    
+
     // Get page reference
     const firstPage = domainPages.get('httpbin.org');
-    
+
     // Close tab
     const closeResult = await closeTab({ url: 'https://httpbin.org' });
-    
+
     if (closeResult instanceof ErrorResponse) {
       throw new Error('Close failed');
     }
-    
+
     console.log('✓ Tab closed');
-    
+
     // Load again - should create new page
-    const secondLoad = await fetchPage({ 
+    const secondLoad = await fetchPage({
       url: 'https://httpbin.org/html',
       browser: browserType,
-      removeUnnecessaryHTML: false 
+      removeUnnecessaryHTML: false,
     });
-    
+
     if (secondLoad instanceof ErrorResponse) {
       throw new Error('Second load failed');
     }
-    
+
     console.log('✓ Second load successful');
-    
+
     // Get new page reference
     const secondPage = domainPages.get('httpbin.org');
-    
+
     // Verify it's a different page instance
     if (firstPage === secondPage) {
       throw new Error('Expected different page instance after close');
     }
-    
+
     console.log('✓ New page instance created (fresh session)');
-    
+
     // Clean up
     await closeTab({ url: 'https://httpbin.org' });
-    
+
     console.log(`✅ Test passed: Fresh session after close (${browserType})`);
     return true;
-    
   } catch (error) {
     console.error(`❌ Test failed: ${error.message}`);
     return false;
@@ -292,47 +296,46 @@ async function testFreshSessionAfterClose(browserType) {
  */
 async function testCloseAfterRedirect(browserType) {
   console.log(`\n=== Test: Close tab after redirect using final URL (${browserType}) ===`);
-  
+
   try {
     // Load a page that redirects (httpbin redirects)
-    const fetchResult = await fetchPage({ 
+    const fetchResult = await fetchPage({
       url: 'https://httpbin.org/redirect-to?url=https%3A%2F%2Fhttpbin.org%2Fhtml',
       browser: browserType,
-      removeUnnecessaryHTML: false 
+      removeUnnecessaryHTML: false,
     });
-    
+
     if (fetchResult instanceof ErrorResponse) {
       throw new Error('Failed to load page');
     }
-    
+
     const finalUrl = fetchResult.currentUrl;
     console.log(`✓ Page loaded: ${finalUrl}`);
-    
+
     // Tab is stored under original hostname
     if (!domainPages.has('httpbin.org')) {
       throw new Error('Tab not found under original hostname');
     }
-    
+
     console.log('✓ Tab stored under original hostname: httpbin.org');
-    
+
     // Close using final URL (should still work via URL search)
     const closeResult = await closeTab({ url: finalUrl });
-    
+
     if (closeResult instanceof ErrorResponse) {
       throw new Error(`Close failed: ${closeResult.message}`);
     }
-    
+
     console.log(`✓ Closed tab using final URL: ${fetchResult.currentUrl}`);
-    
+
     // Verify tab is removed
     if (domainPages.has('httpbin.org')) {
       throw new Error('Tab still exists after close');
     }
-    
+
     console.log('✓ Tab removed from pool');
     console.log(`✅ Test passed: Close after redirect using final URL (${browserType})`);
     return true;
-    
   } catch (error) {
     console.error(`❌ Test failed: ${error.message}`);
     return false;
@@ -344,7 +347,7 @@ async function testCloseAfterRedirect(browserType) {
  */
 async function runAllTests() {
   const results = [];
-  
+
   // Run tests across all available browsers
   await runWithBrowsers(async (browserType) => {
     results.push(await testCloseLoadedTab(browserType));
@@ -355,14 +358,14 @@ async function runAllTests() {
     results.push(await testFreshSessionAfterClose(browserType));
     results.push(await testCloseAfterRedirect(browserType));
   }, browserParam);
-  
-  const passed = results.filter(r => r).length;
+
+  const passed = results.filter((r) => r).length;
   const total = results.length;
-  
+
   console.log(`\n${'='.repeat(50)}`);
   console.log(`Tests completed: ${passed}/${total} passed`);
   console.log(`${'='.repeat(50)}`);
-  
+
   if (passed === total) {
     console.log('✅ All tests passed!');
     process.exit(0);
@@ -372,7 +375,7 @@ async function runAllTests() {
   }
 }
 
-runAllTests().catch(error => {
+runAllTests().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });

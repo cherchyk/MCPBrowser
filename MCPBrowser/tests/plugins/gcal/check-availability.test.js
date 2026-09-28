@@ -5,7 +5,11 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkAvailability } from '../../../src/plugins/gcal/actions/check-availability.js';
+import { ACTIONS as GCAL_ACTIONS } from '../../../src/plugins/gcal/actions/index.js';
+
+const checkAvailabilityAction = GCAL_ACTIONS.find((action) => action.id === 'check_availability');
+
+const checkAvailability = checkAvailabilityAction.handler;
 
 describe('checkAvailability', () => {
   it('is an async function', () => {
@@ -15,11 +19,11 @@ describe('checkAvailability', () => {
 
   it('returns error when page is not on Google Calendar', async () => {
     const mockPage = {
-      url: () => 'https://example.com'
+      url: () => 'https://example.com',
     };
     const result = await checkAvailability({
       page: mockPage,
-      params: { date: '2026-04-10', startTime: '09:00', endTime: '17:00' }
+      params: { date: '2026-04-10', startTime: '09:00', endTime: '17:00' },
     });
     assert.equal(result.constructor.name, 'ErrorResponse');
     assert.ok(result.message.includes('Google Calendar'));
@@ -28,11 +32,11 @@ describe('checkAvailability', () => {
 
   it('returns error when date is missing', async () => {
     const mockPage = {
-      url: () => 'https://calendar.google.com/calendar/u/0/r/week'
+      url: () => 'https://calendar.google.com/calendar/u/0/r/week',
     };
     const result = await checkAvailability({
       page: mockPage,
-      params: { startTime: '09:00', endTime: '17:00' }
+      params: { startTime: '09:00', endTime: '17:00' },
     });
     assert.equal(result.constructor.name, 'ErrorResponse');
     assert.ok(result.message.includes('date'));
@@ -41,11 +45,11 @@ describe('checkAvailability', () => {
 
   it('returns error when startTime is missing', async () => {
     const mockPage = {
-      url: () => 'https://calendar.google.com/calendar/u/0/r/week'
+      url: () => 'https://calendar.google.com/calendar/u/0/r/week',
     };
     const result = await checkAvailability({
       page: mockPage,
-      params: { date: '2026-04-10', endTime: '17:00' }
+      params: { date: '2026-04-10', endTime: '17:00' },
     });
     assert.equal(result.constructor.name, 'ErrorResponse');
     assert.ok(result.message.includes('startTime'));
@@ -54,11 +58,11 @@ describe('checkAvailability', () => {
 
   it('returns error when endTime is missing', async () => {
     const mockPage = {
-      url: () => 'https://calendar.google.com/calendar/u/0/r/week'
+      url: () => 'https://calendar.google.com/calendar/u/0/r/week',
     };
     const result = await checkAvailability({
       page: mockPage,
-      params: { date: '2026-04-10', startTime: '09:00' }
+      params: { date: '2026-04-10', startTime: '09:00' },
     });
     assert.equal(result.constructor.name, 'ErrorResponse');
     assert.ok(result.message.includes('endTime'));
@@ -67,11 +71,11 @@ describe('checkAvailability', () => {
 
   it('returns error when startTime >= endTime', async () => {
     const mockPage = {
-      url: () => 'https://calendar.google.com/calendar/u/0/r/week'
+      url: () => 'https://calendar.google.com/calendar/u/0/r/week',
     };
     const result = await checkAvailability({
       page: mockPage,
-      params: { date: '2026-04-10', startTime: '17:00', endTime: '09:00' }
+      params: { date: '2026-04-10', startTime: '17:00', endTime: '09:00' },
     });
     assert.equal(result.constructor.name, 'ErrorResponse');
     assert.ok(result.message.includes('startTime'));

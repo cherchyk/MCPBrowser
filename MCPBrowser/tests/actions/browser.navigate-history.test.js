@@ -4,10 +4,15 @@
  */
 
 import assert from 'assert';
-import { navigateHistory, fetchPage } from '../../src/mcp-browser.js';
+import { FETCH_WEBPAGE_ACTION } from '../../src/actions/fetch-page.js';
+import { NAVIGATE_HISTORY_ACTION } from '../../src/actions/navigate-history.js';
 import { ErrorResponse, InformationalResponse } from '../../src/core/responses.js';
-import { NavigateHistorySuccessResponse } from '../../src/actions/navigate-history.js';
+
 import { runWithBrowsers } from '../browsers/browser-runner.js';
+
+const navigateHistory = NAVIGATE_HISTORY_ACTION.execute;
+const fetchPage = FETCH_WEBPAGE_ACTION.execute;
+const NavigateHistorySuccessResponse = NAVIGATE_HISTORY_ACTION.response;
 const browserParam = process.argv[2] || '';
 console.log('🧪 Testing navigateHistory action\n');
 
@@ -40,7 +45,7 @@ console.log('📋 Testing NavigateHistorySuccessResponse class\n');
 (function runResponseTests() {
   let localPassed = 0;
   let localFailed = 0;
-  
+
   function unitTest(name, fn) {
     try {
       fn();
@@ -61,7 +66,7 @@ console.log('📋 Testing NavigateHistorySuccessResponse class\n');
       'https://example.com/page2',
       'https://example.com/page1',
       '<html>page1</html>',
-      ['Next step']
+      ['Next step'],
     );
 
     assert.strictEqual(response.direction, 'back');
@@ -77,7 +82,7 @@ console.log('📋 Testing NavigateHistorySuccessResponse class\n');
       'https://example.com/page1',
       'https://example.com/page2',
       null,
-      ['Step']
+      ['Step'],
     );
 
     assert.strictEqual(response.html, null);
@@ -85,33 +90,53 @@ console.log('📋 Testing NavigateHistorySuccessResponse class\n');
   });
 
   unitTest('NavigateHistorySuccessResponse requires string direction', () => {
-    assert.throws(() => {
-      new NavigateHistorySuccessResponse(123, 'url1', 'url2', null, []);
-    }, TypeError, 'Should throw TypeError for non-string direction');
+    assert.throws(
+      () => {
+        new NavigateHistorySuccessResponse(123, 'url1', 'url2', null, []);
+      },
+      TypeError,
+      'Should throw TypeError for non-string direction',
+    );
   });
 
   unitTest('NavigateHistorySuccessResponse requires string previousUrl', () => {
-    assert.throws(() => {
-      new NavigateHistorySuccessResponse('back', 123, 'url2', null, []);
-    }, TypeError, 'Should throw TypeError for non-string previousUrl');
+    assert.throws(
+      () => {
+        new NavigateHistorySuccessResponse('back', 123, 'url2', null, []);
+      },
+      TypeError,
+      'Should throw TypeError for non-string previousUrl',
+    );
   });
 
   unitTest('NavigateHistorySuccessResponse requires string currentUrl', () => {
-    assert.throws(() => {
-      new NavigateHistorySuccessResponse('back', 'url1', 123, null, []);
-    }, TypeError, 'Should throw TypeError for non-string currentUrl');
+    assert.throws(
+      () => {
+        new NavigateHistorySuccessResponse('back', 'url1', 123, null, []);
+      },
+      TypeError,
+      'Should throw TypeError for non-string currentUrl',
+    );
   });
 
   unitTest('NavigateHistorySuccessResponse rejects non-string, non-null html', () => {
-    assert.throws(() => {
-      new NavigateHistorySuccessResponse('back', 'url1', 'url2', 123, []);
-    }, TypeError, 'Should throw TypeError for non-string, non-null html');
+    assert.throws(
+      () => {
+        new NavigateHistorySuccessResponse('back', 'url1', 'url2', 123, []);
+      },
+      TypeError,
+      'Should throw TypeError for non-string, non-null html',
+    );
   });
 
   unitTest('NavigateHistorySuccessResponse validates nextSteps', () => {
-    assert.throws(() => {
-      new NavigateHistorySuccessResponse('back', 'url1', 'url2', null, 'not-array');
-    }, TypeError, 'Should throw TypeError for non-array nextSteps');
+    assert.throws(
+      () => {
+        new NavigateHistorySuccessResponse('back', 'url1', 'url2', null, 'not-array');
+      },
+      TypeError,
+      'Should throw TypeError for non-array nextSteps',
+    );
   });
 
   unitTest('NavigateHistorySuccessResponse toJSON() serializes correctly', () => {
@@ -120,7 +145,7 @@ console.log('📋 Testing NavigateHistorySuccessResponse class\n');
       'https://example.com/page2',
       'https://example.com/page1',
       '<html>content</html>',
-      ['Step 1']
+      ['Step 1'],
     );
 
     const json = response.toJSON();
@@ -137,7 +162,7 @@ console.log('📋 Testing NavigateHistorySuccessResponse class\n');
       'https://example.com/page2',
       'https://example.com/page1',
       null,
-      []
+      [],
     );
 
     const summary = response.getTextSummary();
@@ -176,38 +201,57 @@ await runWithBrowsers(async (browserType) => {
 
   await test(`[${browserType}] Should return informational response if page not loaded`, async () => {
     const result = await navigateHistory({ url: 'https://never-loaded-domain-99999.com' });
-    assert.strictEqual(result instanceof InformationalResponse, true, 'Should return InformationalResponse');
+    assert.strictEqual(
+      result instanceof InformationalResponse,
+      true,
+      'Should return InformationalResponse',
+    );
     assert.match(result.message, /No open page found/);
   });
 
   await test(`[${browserType}] Should return informational response when no back history`, async () => {
     // Load a fresh page (no back history)
     const fetchResult = await fetchPage({ url: 'https://example.com', browser: browserType });
-    assert.strictEqual(!(fetchResult instanceof ErrorResponse), true, 'Should fetch page successfully');
+    assert.strictEqual(
+      !(fetchResult instanceof ErrorResponse),
+      true,
+      'Should fetch page successfully',
+    );
 
     const result = await navigateHistory({ url: 'https://example.com', direction: 'back' });
-    assert.strictEqual(result instanceof InformationalResponse, true, 'Should return InformationalResponse for no history');
+    assert.strictEqual(
+      result instanceof InformationalResponse,
+      true,
+      'Should return InformationalResponse for no history',
+    );
     assert.match(result.message, /No back history/);
   });
 
   await test(`[${browserType}] Should default direction to back`, async () => {
     // Load a page
     await fetchPage({ url: 'https://example.com', browser: browserType });
-    
+
     // Navigate without direction param - should attempt back
     const result = await navigateHistory({ url: 'https://example.com' });
     // Since example.com has no back history, it should be informational
-    assert.strictEqual(result instanceof InformationalResponse, true, 'Default direction should be back');
+    assert.strictEqual(
+      result instanceof InformationalResponse,
+      true,
+      'Default direction should be back',
+    );
   });
 
   await test(`[${browserType}] Should return informational response when no forward history`, async () => {
     await fetchPage({ url: 'https://example.com', browser: browserType });
 
     const result = await navigateHistory({ url: 'https://example.com', direction: 'forward' });
-    assert.strictEqual(result instanceof InformationalResponse, true, 'Should return InformationalResponse for no forward history');
+    assert.strictEqual(
+      result instanceof InformationalResponse,
+      true,
+      'Should return InformationalResponse for no forward history',
+    );
     assert.match(result.message, /No forward history/);
   });
-
 }, browserParam);
 
 console.log('\n==================================================');

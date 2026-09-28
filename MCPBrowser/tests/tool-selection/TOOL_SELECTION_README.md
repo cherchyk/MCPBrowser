@@ -13,6 +13,7 @@ node tests/tool-selection/run-tool-selection-tests.js
 ## Output
 
 The test will:
+
 1. ✅ Load current tool descriptions from `src/mcp-browser.js`
 2. ✅ Run 12 test scenarios covering critical use cases
 3. ✅ Calculate weighted scores by priority
@@ -95,16 +96,19 @@ Ranking:
 ## What Gets Tested
 
 ### Critical Scenarios (Must be 100%)
+
 - ✅ Auth-required corporate sites (eng.ms, *.microsoft.com)
 - ✅ Multi-step workflows (login, navigation)
 - ✅ Tool sequencing (fetch → type → click)
 
 ### High Priority (90%+ accuracy)
+
 - ✅ Unknown corporate domains
 - ✅ JavaScript SPAs
 - ✅ State checking after interactions
 
 ### Medium/Low Priority
+
 - ✅ Simple pages, API endpoints, tab management
 
 ## Integration with CI/CD
@@ -119,13 +123,16 @@ Add to your GitHub Actions:
 ## Troubleshooting
 
 **Test fails with parsing error:**
+
 - Ensure `src/mcp-browser.js` has valid JavaScript syntax
 - Check that `const tools = [...]` array is properly formatted
 
 **All scenarios fail:**
+
 - Verify tool descriptions are loaded correctly
 - Check test scenarios in `tests/tool-selection-tests.json`
 
 **Unexpected results:**
+
 - The simulator uses keyword matching (deterministic)
 - For LLM-based testing, integrate OpenAI/Anthropic API

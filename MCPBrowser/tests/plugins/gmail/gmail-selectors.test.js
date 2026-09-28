@@ -30,7 +30,7 @@ describe('Gmail Selectors — exports', () => {
     'ATTACHMENT_NAME',
     'ATTACHMENT_SIZE',
     'LABEL_ITEM',
-    'NO_RESULTS'
+    'NO_RESULTS',
   ];
 
   for (const name of expectedSelectors) {
@@ -58,19 +58,25 @@ describe('Gmail Selectors — module integrity', () => {
   it('contains Tier 4 documentation', () => {
     assert.ok(
       source.includes('Tier 4') || source.includes('TIER 4'),
-      'selectors.js must document that it contains Tier 4 selectors'
+      'selectors.js must document that it contains Tier 4 selectors',
     );
   });
 
   it('does not contain function definitions (no action logic)', () => {
     // Should only have export const statements, no functions
     assert.ok(!source.includes('export function'), 'selectors.js must not export functions');
-    assert.ok(!source.includes('export async function'), 'selectors.js must not export async functions');
+    assert.ok(
+      !source.includes('export async function'),
+      'selectors.js must not export async functions',
+    );
     assert.ok(!source.includes('export class'), 'selectors.js must not export classes');
   });
 
   it('does not import page or browser modules', () => {
-    assert.ok(!source.includes("from '../../../core/browser"), 'selectors.js must not import browser');
+    assert.ok(
+      !source.includes("from '../../../core/browser"),
+      'selectors.js must not import browser',
+    );
     assert.ok(!source.includes("from 'puppeteer"), 'selectors.js must not import puppeteer');
   });
 

@@ -5,7 +5,11 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createEvent } from '../../../src/plugins/gcal/actions/create-event.js';
+import { ACTIONS as GCAL_ACTIONS } from '../../../src/plugins/gcal/actions/index.js';
+
+const createEventAction = GCAL_ACTIONS.find((action) => action.id === 'create_event');
+
+const createEvent = createEventAction.handler;
 
 describe('createEvent', () => {
   it('is an async function', () => {
@@ -15,7 +19,7 @@ describe('createEvent', () => {
 
   it('returns error when page is not on Google Calendar', async () => {
     const mockPage = {
-      url: () => 'https://example.com'
+      url: () => 'https://example.com',
     };
     const result = await createEvent({ page: mockPage, params: { title: 'Test' } });
     assert.equal(result.constructor.name, 'ErrorResponse');
@@ -25,7 +29,7 @@ describe('createEvent', () => {
 
   it('returns error when title is missing', async () => {
     const mockPage = {
-      url: () => 'https://calendar.google.com/calendar/u/0/r/week'
+      url: () => 'https://calendar.google.com/calendar/u/0/r/week',
     };
     const result = await createEvent({ page: mockPage, params: {} });
     assert.equal(result.constructor.name, 'ErrorResponse');

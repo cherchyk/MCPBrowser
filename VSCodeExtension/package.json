@@ -44,7 +44,10 @@
   "activationEvents": [
     "onStartupFinished"
   ],
-  "extensionKind": ["ui", "workspace"],
+  "extensionKind": [
+    "ui",
+    "workspace"
+  ],
   "main": "./src/extension.js",
   "contributes": {
     "commands": [

@@ -12,8 +12,9 @@ import {
   checkPrecondition,
   checkKeyboardShortcuts,
   selectEmailRow,
-  GmailActionResponse
+  GmailActionResponse,
 } from '../helpers.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /**
  * Mark an email as unread in list view.
@@ -24,12 +25,13 @@ import {
  * @param {string} [opts.params.id] - Email ID
  * @returns {Promise<GmailActionResponse|ErrorResponse>}
  */
-export async function markUnread({ page, params }) {
+async function markUnread({ page, params }) {
   // Precondition: must be on Gmail
   const pre = await checkPrecondition(page, 'on_gmail');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first.",
     ]);
   }
 
@@ -37,7 +39,7 @@ export async function markUnread({ page, params }) {
   const listPre = await checkPrecondition(page, 'list_view');
   if (!listPre.met) {
     return new ErrorResponse(listPre.error, [
-      listPre.suggestion || "Use list_emails to navigate to an email list first."
+      listPre.suggestion || 'Use list_emails to navigate to an email list first.',
     ]);
   }
 
@@ -45,7 +47,7 @@ export async function markUnread({ page, params }) {
   const kb = await checkKeyboardShortcuts(page);
   if (!kb.enabled) {
     return new ErrorResponse(kb.error, [
-      'Enable keyboard shortcuts in Gmail Settings → General → Keyboard shortcuts → ON, then reload Gmail.'
+      'Enable keyboard shortcuts in Gmail Settings → General → Keyboard shortcuts → ON, then reload Gmail.',
     ]);
   }
 
@@ -53,7 +55,7 @@ export async function markUnread({ page, params }) {
   const sel = await selectEmailRow(page, { index: params.index, id: params.id });
   if (!sel.selected) {
     return new ErrorResponse(sel.error || 'Could not select email.', [
-      'Provide an index or id parameter to target a specific email.'
+      'Provide an index or id parameter to target a specific email.',
     ]);
   }
 
@@ -63,9 +65,18 @@ export async function markUnread({ page, params }) {
   await page.keyboard.up('Shift');
   logger.debug('markUnread: pressed Shift+u');
 
-  return new GmailActionResponse(
-    { markedUnread: true },
-    'Email marked as unread.',
-    ['Use list_emails to refresh the email list']
-  );
+  return new GmailActionResponse({ markedUnread: true }, 'Email marked as unread.', [
+    'Use list_emails to refresh the email list',
+  ]);
 }
+
+export const markUnreadAction = new PluginAction({
+  name: 'mark_unread',
+  description: 'Mark an email as unread via keyboard shortcut (Shift+u)',
+  params: [
+    { name: 'index', type: 'number', description: '0-based index in email list', required: false },
+    { name: 'id', type: 'string', description: 'Gmail message/thread ID', required: false },
+  ],
+  response: GmailActionResponse,
+  handler: markUnread,
+});

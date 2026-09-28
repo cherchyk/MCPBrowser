@@ -6,137 +6,137 @@ on:
 
 permissions:
   contents: write
-  id-token: write  # Required for MCP Registry OIDC authentication
-    
+  id-token: write # Required for MCP Registry OIDC authentication
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        registry-url: 'https://registry.npmjs.org'
-    
-    - name: Install dependencies
-      run: |
-        npm ci
-        cd MCPBrowser && npm ci
-        cd ../VSCodeExtension && npm ci
-    
-    - name: Install vsce and ovsx
-      run: npm install -g @vscode/vsce ovsx
-    
-    - name: Verify version synchronization
-      id: version
-      run: |
-        MCP_VERSION=$(node -p "require('./MCPBrowser/package.json').version")
-        EXT_VERSION=$(node -p "require('./VSCodeExtension/package.json').version")
-        SERVER_VERSION=$(node -p "require('./server.json').version")
-        
-        if [ "$MCP_VERSION" != "$EXT_VERSION" ] || [ "$MCP_VERSION" != "$SERVER_VERSION" ]; then
-          echo "::error::Version mismatch detected!"
-          exit 1
-        fi
-        
-        echo "✅ All versions synchronized at $MCP_VERSION"
-        echo "version=$MCP_VERSION" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v4
 
-    - name: Run release tests
-      run: npm run test:ci
-    
-    - name: Verify npm token (dry-run)
-      run: |
-        cd MCPBrowser
-        npm whoami
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-    
-    - name: Verify VS Code token
-      run: |
-        vsce --version
-      env:
-        VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
 
-    - name: Verify Open VSX token
-      run: |
-        ovsx --version
-      env:
-        OVSX_PAT: ${{ secrets.OVSX_PAT }}
-    
-    - name: Package VS Code Extension
-      run: |
-        cd VSCodeExtension
-        vsce package --no-dependencies
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd MCPBrowser && npm ci
+          cd ../VSCodeExtension && npm ci
 
-    - name: Publish to npm
-      run: |
-        cd MCPBrowser
-        npm publish
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Install vsce and ovsx
+        run: npm install -g @vscode/vsce ovsx
 
-    - name: Extract changelog for version
-      id: changelog
-      run: |
-        VERSION=${{ steps.version.outputs.version }}
-        
-        # Extract changelog section for this version
-        # This is a simple extraction - adjust regex based on your CHANGELOG format
-        CHANGELOG=$(awk "/## \[$VERSION\]/,/## \[/ {print}" CHANGELOG.md | head -n -1)
-        
-        # If extraction failed, use a default message
-        if [ -z "$CHANGELOG" ]; then
-          CHANGELOG="Release version $VERSION"
-        fi
-        
-        # Save to file for multi-line output
-        echo "$CHANGELOG" > release-notes.md
-    
-    - name: Create GitHub Release
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        VERSION=${{ steps.version.outputs.version }}
-        
-        # Create release with changelog
-        gh release create "v$VERSION" \
-          --title "v$VERSION" \
-          --notes-file release-notes.md \
-          VSCodeExtension/mcpbrowser-$VERSION.vsix
+      - name: Verify version synchronization
+        id: version
+        run: |
+          MCP_VERSION=$(node -p "require('./MCPBrowser/package.json').version")
+          EXT_VERSION=$(node -p "require('./VSCodeExtension/package.json').version")
+          SERVER_VERSION=$(node -p "require('./server.json').version")
 
-    - name: Publish to MCP Registry
-      run: |
-        # Install mcp-publisher
-        curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
-        
-        # Authenticate using GitHub OIDC (no secrets needed!)
-        ./mcp-publisher login github-oidc
-        
-        # Publish to MCP Registry
-        ./mcp-publisher publish
+          if [ "$MCP_VERSION" != "$EXT_VERSION" ] || [ "$MCP_VERSION" != "$SERVER_VERSION" ]; then
+            echo "::error::Version mismatch detected!"
+            exit 1
+          fi
 
-    - name: Publish to VS Code Marketplace
-      run: |
-        cd VSCodeExtension
-        vsce publish --packagePath mcpbrowser-${{ steps.version.outputs.version }}.vsix
-      env:
-        VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          echo "✅ All versions synchronized at $MCP_VERSION"
+          echo "version=$MCP_VERSION" >> $GITHUB_OUTPUT
 
-    - name: Publish to Open VSX Registry
-      run: |
-        cd VSCodeExtension
-        ovsx publish mcpbrowser-${{ steps.version.outputs.version }}.vsix -p ${{ secrets.OVSX_PAT }}
-    
-    - name: Deployment Summary
-      run: |
-        VERSION=${{ steps.version.outputs.version }}
-        echo "🎉 Successfully deployed version $VERSION to:"
-        echo "  ✅ npm registry"
-        echo "  ✅ MCP Registry (Visual Studio & other MCP clients)"
-        echo "  ✅ VS Code Marketplace"
-        echo "  ✅ Open VSX Registry"
-        echo "  ✅ GitHub Releases (with .vsix)"
+      - name: Run release tests
+        run: npm run test:ci
+
+      - name: Verify npm token (dry-run)
+        run: |
+          cd MCPBrowser
+          npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Verify VS Code token
+        run: |
+          vsce --version
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Verify Open VSX token
+        run: |
+          ovsx --version
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+
+      - name: Package VS Code Extension
+        run: |
+          cd VSCodeExtension
+          vsce package --no-dependencies
+
+      - name: Publish to npm
+        run: |
+          cd MCPBrowser
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Extract changelog for version
+        id: changelog
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+
+          # Extract changelog section for this version
+          # This is a simple extraction - adjust regex based on your CHANGELOG format
+          CHANGELOG=$(awk "/## \[$VERSION\]/,/## \[/ {print}" CHANGELOG.md | head -n -1)
+
+          # If extraction failed, use a default message
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="Release version $VERSION"
+          fi
+
+          # Save to file for multi-line output
+          echo "$CHANGELOG" > release-notes.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+
+          # Create release with changelog
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --notes-file release-notes.md \
+            VSCodeExtension/mcpbrowser-$VERSION.vsix
+
+      - name: Publish to MCP Registry
+        run: |
+          # Install mcp-publisher
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+
+          # Authenticate using GitHub OIDC (no secrets needed!)
+          ./mcp-publisher login github-oidc
+
+          # Publish to MCP Registry
+          ./mcp-publisher publish
+
+      - name: Publish to VS Code Marketplace
+        run: |
+          cd VSCodeExtension
+          vsce publish --packagePath mcpbrowser-${{ steps.version.outputs.version }}.vsix
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Publish to Open VSX Registry
+        run: |
+          cd VSCodeExtension
+          ovsx publish mcpbrowser-${{ steps.version.outputs.version }}.vsix -p ${{ secrets.OVSX_PAT }}
+
+      - name: Deployment Summary
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          echo "🎉 Successfully deployed version $VERSION to:"
+          echo "  ✅ npm registry"
+          echo "  ✅ MCP Registry (Visual Studio & other MCP clients)"
+          echo "  ✅ VS Code Marketplace"
+          echo "  ✅ Open VSX Registry"
+          echo "  ✅ GitHub Releases (with .vsix)"

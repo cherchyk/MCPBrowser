@@ -83,8 +83,8 @@ async function sendProgress(message) {
       params: {
         progressToken: _progressToken,
         progress: _progressStep,
-        message
-      }
+        message,
+      },
     });
   } catch {
     // Fire and forget — don't break the action if progress fails
@@ -118,6 +118,15 @@ function debug(message) {
   emit('debug', message, '🔍');
 }
 
-export const logger = { info, warn, error, debug, attachServer, setConsoleOutput, setProgressToken, clearProgressToken };
+export const logger = {
+  info,
+  warn,
+  error,
+  debug,
+  attachServer,
+  setConsoleOutput,
+  setProgressToken,
+  clearProgressToken,
+};
 export { attachServer, setConsoleOutput, setProgressToken, clearProgressToken };
 export default logger;

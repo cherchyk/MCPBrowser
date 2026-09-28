@@ -1,9 +1,22 @@
 import { WordActionResponse, listRenderedLinks } from '../helpers.js';
 import { isPreparationResponse, prepareEditor } from './common.js';
+import { PluginAction } from '../../../core/actions.js';
 
-export async function listLinks({ page, params }) {
+async function listLinks({ page, params }) {
   const prepared = await prepareEditor(page, params, 'view');
   if (isPreparationResponse(prepared)) return prepared;
   const links = await listRenderedLinks(page);
-  return new WordActionResponse({ links, renderedOnly: true }, `Found ${links.length} rendered link(s).`, ['Use add_link or update_link with anchor text.']);
+  return new WordActionResponse(
+    { links, renderedOnly: true },
+    `Found ${links.length} rendered link(s).`,
+    ['Use add_link or update_link with anchor text.'],
+  );
 }
+
+export const listLinksAction = new PluginAction({
+  name: 'list_links',
+  description: 'List links on currently rendered Word pages',
+  params: [],
+  response: WordActionResponse,
+  handler: listLinks,
+});
