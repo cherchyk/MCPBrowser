@@ -130,7 +130,11 @@ try {
 
   const readAfterCleanup = await readDocument();
   markerMayExist = readAfterCleanup.data.text.includes(marker);
-  assert.strictEqual(readAfterCleanup.data.text, '', 'The Word E2E fixture must be empty after cleanup');
+  assert.strictEqual(
+    readAfterCleanup.data.text,
+    '',
+    'The Word E2E fixture must be empty after cleanup',
+  );
 
   console.log('PASS: Word document was edited, verified, cleaned up, and saved');
 } finally {

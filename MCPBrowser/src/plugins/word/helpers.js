@@ -633,11 +633,7 @@ async function setFindFilter(page, context, label, enabled) {
   }
 }
 
-async function configureFindFilters(
-  page,
-  context,
-  { matchCase = false, wholeWords = false } = {},
-) {
+async function configureFindFilters(page, context, { matchCase = false, wholeWords = false } = {}) {
   await setFindFilter(page, context, 'Match case', matchCase);
   await setFindFilter(page, context, 'Whole words only', wholeWords);
 }
