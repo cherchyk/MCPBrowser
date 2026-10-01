@@ -6,7 +6,9 @@
 import { getBrowser, getValidatedPage, domainPages } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageReady } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
+import { CoreAction } from '../core/actions.js';
 import logger from '../core/logger.js';
+import { getStructured, htmlToText } from '../cli/utils.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -19,7 +21,7 @@ import logger from '../core/logger.js';
 /**
  * Response for successful browser_navigate_history operations
  */
-export class NavigateHistorySuccessResponse extends MCPResponse {
+class NavigateHistorySuccessResponse extends MCPResponse {
   /**
    * @param {string} direction - Navigation direction (back or forward)
    * @param {string} previousUrl - URL before navigation
@@ -54,7 +56,7 @@ export class NavigateHistorySuccessResponse extends MCPResponse {
       direction: this.direction,
       previousUrl: this.previousUrl,
       currentUrl: this.currentUrl,
-      html: this.html
+      html: this.html,
     };
   }
 
@@ -68,50 +70,91 @@ export class NavigateHistorySuccessResponse extends MCPResponse {
 // ============================================================================
 
 /** @type {Tool} */
-export const NAVIGATE_HISTORY_TOOL = {
-  name: "browser_navigate_history",
-  title: "Navigate Back/Forward",
-  description: "Go back or forward in browser history. Use when: you clicked a link and need to return to the previous page, or want to go forward after going back. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.",
+const NAVIGATE_HISTORY_TOOL = {
+  name: 'browser_navigate_history',
+  title: 'Navigate Back/Forward',
+  description:
+    'Go back or forward in browser history. Use when: you clicked a link and need to return to the previous page, or want to go forward after going back. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.',
   inputSchema: {
-    type: "object",
+    type: 'object',
     properties: {
-      url: { type: "string", description: "URL of the already-loaded page (identifies which tab to navigate)" },
+      url: {
+        type: 'string',
+        description: 'URL of the already-loaded page (identifies which tab to navigate)',
+      },
       direction: {
-        type: "string",
-        enum: ["back", "forward"],
-        description: "Navigation direction: 'back' to go to previous page, 'forward' to go to next page",
-        default: "back"
+        type: 'string',
+        enum: ['back', 'forward'],
+        description:
+          "Navigation direction: 'back' to go to previous page, 'forward' to go to next page",
+        default: 'back',
       },
       // returnHtml: { type: "boolean", description: "Return page HTML after navigation", default: true },
       // removeUnnecessaryHTML: { type: "boolean", description: "Remove unnecessary HTML elements (scripts, styles, etc.) for size reduction.", default: true }
     },
-    required: ["url"],
-    additionalProperties: false
+    required: ['url'],
+    additionalProperties: false,
   },
   outputSchema: {
-    type: "object",
+    type: 'object',
     properties: {
-      direction: { type: "string", enum: ["back", "forward"], description: "Navigation direction used" },
-      previousUrl: { type: "string", description: "URL before navigation" },
-      currentUrl: { type: "string", description: "URL after navigation" },
-      html: { type: "string", description: "Page HTML content after navigation (null if returnHtml=false)" },
+      direction: {
+        type: 'string',
+        enum: ['back', 'forward'],
+        description: 'Navigation direction used',
+      },
+      previousUrl: { type: 'string', description: 'URL before navigation' },
+      currentUrl: { type: 'string', description: 'URL after navigation' },
+      html: {
+        type: 'string',
+        description: 'Page HTML content after navigation (null if returnHtml=false)',
+      },
       nextSteps: {
-        type: "array",
-        items: { type: "string" },
-        description: "Suggested next actions"
-      }
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Suggested next actions',
+      },
     },
-    required: ["direction", "previousUrl", "currentUrl", "nextSteps"],
-    additionalProperties: false
+    required: ['direction', 'previousUrl', 'currentUrl', 'nextSteps'],
+    additionalProperties: false,
   },
   annotations: {
-    title: "Navigate Back/Forward",
+    title: 'Navigate Back/Forward',
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: false,
-    openWorldHint: true
-  }
+    openWorldHint: true,
+  },
 };
+
+export const NAVIGATE_HISTORY_ACTION = new CoreAction({
+  tool: NAVIGATE_HISTORY_TOOL,
+  response: NavigateHistorySuccessResponse,
+  handler: navigateHistory,
+  cli: ['back', 'forward'].map((direction, index) => ({
+    order: 80 + index,
+    cmd: direction,
+    requiresFetch: true,
+    flagMap: { raw: '_raw' },
+    flagDefaults: {},
+    buildParams: (url, flags) => ({
+      url,
+      direction,
+      returnHtml: true,
+      removeUnnecessaryHTML: !flags.raw,
+    }),
+    formatOutput: (mcp, flags) => {
+      const result = getStructured(mcp);
+      const output = {};
+      if (result.previousUrl || result.currentUrl) {
+        output.stderr = `${result.previousUrl || '?'} → ${result.currentUrl || '?'}`;
+      }
+      if (result.html) output.stdout = flags.raw ? result.html : htmlToText(result.html);
+      return output;
+    },
+    examples: [`mcpbrowser ${direction} https://example.com`],
+  })),
+});
 
 // ============================================================================
 // ACTION FUNCTION
@@ -126,11 +169,16 @@ export const NAVIGATE_HISTORY_TOOL = {
  * @param {boolean} [params.removeUnnecessaryHTML=true] - Clean HTML
  * @returns {Promise<MCPResponse>} Navigation result
  */
-export async function navigateHistory({ url, direction = 'back', returnHtml = true, removeUnnecessaryHTML = true }) {
+async function navigateHistory({
+  url,
+  direction = 'back',
+  returnHtml = true,
+  removeUnnecessaryHTML = true,
+}) {
   logger.info(`browser_navigate_history called: url=${url}, direction=${direction}`);
 
   if (!url) {
-    throw new Error("url parameter is required");
+    throw new Error('url parameter is required');
   }
 
   let hostname;
@@ -151,8 +199,8 @@ export async function navigateHistory({ url, direction = 'back', returnHtml = tr
       [
         'Ensure the browser is installed and running',
         'Check that remote debugging is enabled (--remote-debugging-port)',
-        'Try restarting the MCP server'
-      ]
+        'Try restarting the MCP server',
+      ],
     );
   }
 
@@ -163,14 +211,16 @@ export async function navigateHistory({ url, direction = 'back', returnHtml = tr
     const isConnectionLost = pageError && pageError.includes('connection');
     logger.debug(`browser_navigate_history: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
-      isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
+      isConnectionLost
+        ? `Page connection lost for ${hostname}`
+        : `No open page found for ${hostname}`,
       isConnectionLost
         ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
         : 'The page must be loaded before you can navigate its history.',
       [
         "Use MCPBrowser's browser_fetch_webpage tool to load the page first",
-        "Then retry MCPBrowser's browser_navigate_history with the same URL"
-      ]
+        "Then retry MCPBrowser's browser_navigate_history with the same URL",
+      ],
     );
   }
 
@@ -195,8 +245,8 @@ export async function navigateHistory({ url, direction = 'back', returnHtml = tr
           direction === 'back'
             ? "Use MCPBrowser's browser_fetch_webpage to navigate to a different URL"
             : "Use MCPBrowser's browser_navigate_history with direction='back' to go back instead",
-          "Use MCPBrowser's browser_get_current_html to check the current page content"
-        ]
+          "Use MCPBrowser's browser_get_current_html to check the current page content",
+        ],
       );
     }
 
@@ -208,7 +258,9 @@ export async function navigateHistory({ url, direction = 'back', returnHtml = tr
       if (newHostname !== hostname) {
         domainPages.delete(hostname);
         domainPages.set(newHostname, page);
-        logger.info(`browser_navigate_history: Updated domainPages mapping: ${hostname} → ${newHostname}`);
+        logger.info(
+          `browser_navigate_history: Updated domainPages mapping: ${hostname} → ${newHostname}`,
+        );
       }
     } catch {
       // If URL parsing fails, keep existing mapping
@@ -221,20 +273,16 @@ export async function navigateHistory({ url, direction = 'back', returnHtml = tr
       html = await extractAndProcessHtml(page, removeUnnecessaryHTML);
     }
 
-    logger.info(`browser_navigate_history completed: ${direction} from ${previousUrl} to ${currentUrl}`);
-
-    return new NavigateHistorySuccessResponse(
-      direction,
-      previousUrl,
-      currentUrl,
-      html,
-      [
-        "Use MCPBrowser's browser_navigate_history to go back or forward again",
-        "Use MCPBrowser's browser_click_element to interact with elements on the page",
-        "Use MCPBrowser's browser_get_current_html to re-read the page content",
-        "Use MCPBrowser's browser_fetch_webpage to navigate to a new URL"
-      ]
+    logger.info(
+      `browser_navigate_history completed: ${direction} from ${previousUrl} to ${currentUrl}`,
     );
+
+    return new NavigateHistorySuccessResponse(direction, previousUrl, currentUrl, html, [
+      "Use MCPBrowser's browser_navigate_history to go back or forward again",
+      "Use MCPBrowser's browser_click_element to interact with elements on the page",
+      "Use MCPBrowser's browser_get_current_html to re-read the page content",
+      "Use MCPBrowser's browser_fetch_webpage to navigate to a new URL",
+    ]);
   } catch (err) {
     logger.error(`browser_navigate_history failed: ${err.message}`);
     return new InformationalResponse(
@@ -242,8 +290,8 @@ export async function navigateHistory({ url, direction = 'back', returnHtml = tr
       'The browser could not navigate. The page may have been closed or the connection was lost.',
       [
         "Try MCPBrowser's browser_fetch_webpage to reload the page",
-        "Use MCPBrowser's browser_close_tab and start fresh if needed"
-      ]
+        "Use MCPBrowser's browser_close_tab and start fresh if needed",
+      ],
     );
   }
 }

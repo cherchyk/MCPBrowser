@@ -9,12 +9,12 @@ The Gmail plugin is an ES module exporting the standard plugin interface.
 
 ### Exports
 
-| Export | Type | Description |
-|--------|------|-------------|
-| `manifest` | object | Plugin manifest with URL/DOM patterns for Gmail |
+| Export                   | Type     | Description                                       |
+| ------------------------ | -------- | ------------------------------------------------- |
+| `manifest`               | object   | Plugin manifest with URL/DOM patterns for Gmail   |
 | `matchesPage(url, html)` | function | Returns `{ matched, confidence }` for Gmail pages |
-| `getActions()` | function | Returns all Gmail action descriptors |
-| `getInfo()` | function | Returns plugin info + action catalog for agent |
+| `getActions()`           | function | Returns all Gmail action descriptors              |
+| `getInfo()`              | function | Returns plugin info + action catalog for agent    |
 
 ### manifest
 
@@ -31,15 +31,15 @@ The Gmail plugin is an ES module exporting the standard plugin interface.
 
 ### matchesPage(url, html) → MatchResult
 
-| Input | Type | Description |
-|-------|------|-------------|
-| `url` | string | Current page URL |
+| Input  | Type   | Description         |
+| ------ | ------ | ------------------- |
+| `url`  | string | Current page URL    |
 | `html` | string | Extracted page HTML |
 
-| Output Field | Type | Description |
-|-------------|------|-------------|
-| `matched` | boolean | `true` if page is Gmail |
-| `confidence` | number | `1.0` for URL match, `0.8` for DOM-only match |
+| Output Field | Type    | Description                                   |
+| ------------ | ------- | --------------------------------------------- |
+| `matched`    | boolean | `true` if page is Gmail                       |
+| `confidence` | number  | `1.0` for URL match, `0.8` for DOM-only match |
 
 ### getActions() → ActionDescriptor[]
 

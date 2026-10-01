@@ -5,7 +5,11 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readEmail } from '../../../src/plugins/gmail/actions/read-email.js';
+import { ACTIONS as GMAIL_ACTIONS } from '../../../src/plugins/gmail/actions/index.js';
+
+const readEmailAction = GMAIL_ACTIONS.find((action) => action.id === 'read_email');
+
+const readEmail = readEmailAction.handler;
 
 describe('readEmail', () => {
   it('is an async function', () => {
@@ -15,7 +19,7 @@ describe('readEmail', () => {
 
   it('returns error when neither id nor index is provided', async () => {
     const mockPage = {
-      url: () => 'https://mail.google.com/mail/u/0/#inbox'
+      url: () => 'https://mail.google.com/mail/u/0/#inbox',
     };
     const result = await readEmail({ page: mockPage, params: {} });
     assert.equal(result.constructor.name, 'ErrorResponse');

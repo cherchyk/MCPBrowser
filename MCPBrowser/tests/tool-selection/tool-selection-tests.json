@@ -66,7 +66,12 @@
     {
       "id": "login-workflow",
       "userRequest": "Login to https://app.example.com with username 'user' and password 'pass', then click submit",
-      "expectedToolSequence": ["browser_fetch_webpage", "browser_type_text", "browser_type_text", "browser_click_element"],
+      "expectedToolSequence": [
+        "browser_fetch_webpage",
+        "browser_type_text",
+        "browser_type_text",
+        "browser_click_element"
+      ],
       "expectedReason": "Full login workflow: fetch, fill username, fill password, click submit",
       "priority": "critical"
     },

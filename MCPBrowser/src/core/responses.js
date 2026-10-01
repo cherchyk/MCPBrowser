@@ -2,7 +2,7 @@
  * Base Response Classes for MCPBrowser
  * Defines base response types that all tool-specific responses extend.
  * Tool-specific response classes are defined in their respective action files.
- * 
+ *
  * Note: Per MCP spec, success/error is indicated by the isError flag at protocol level,
  * not in structuredContent. Response classes contain only data fields.
  */
@@ -23,10 +23,10 @@ export class MCPResponse {
     if (!Array.isArray(nextSteps)) {
       throw new TypeError('nextSteps must be an array');
     }
-    if (!nextSteps.every(step => typeof step === 'string')) {
+    if (!nextSteps.every((step) => typeof step === 'string')) {
       throw new TypeError('All nextSteps must be strings');
     }
-    
+
     this.nextSteps = nextSteps;
   }
 
@@ -37,7 +37,7 @@ export class MCPResponse {
   toJSON() {
     return {
       nextSteps: this.nextSteps,
-      ...this._getAdditionalFields()
+      ...this._getAdditionalFields(),
     };
   }
 
@@ -47,26 +47,31 @@ export class MCPResponse {
    * - Success responses have structuredContent (validated against outputSchema)
    * - Error responses have text content only, no structuredContent
    * - isError flag indicates success/error at protocol level
-   * @returns {Object} MCP-compliant response with content, isError, and optionally structuredContent
+   * @param {Object} [options]
+   * @param {boolean} [options.includeSerializedContent=true] - Include structured data as a JSON text block
+   * @returns {Object} MCP-compliant response with content, isError, and structuredContent
    */
-  toMcpFormat() {
+  toMcpFormat({ includeSerializedContent = true } = {}) {
     const structured = this.toJSON();
+    const content = [
+      {
+        type: 'text',
+        text: this.getTextSummary(),
+      },
+    ];
+    if (includeSerializedContent) {
+      content.push({
+        // Per MCP spec (2025-11-25): a tool returning structured content SHOULD
+        // also return the serialized JSON in a TextContent block, so clients
+        // that do not consume structuredContent still receive the full data.
+        type: 'text',
+        text: JSON.stringify(structured),
+      });
+    }
     return {
-      content: [
-        {
-          type: "text",
-          text: this.getTextSummary()
-        },
-        {
-          // Per MCP spec (2025-11-25): a tool returning structured content SHOULD
-          // also return the serialized JSON in a TextContent block, so clients
-          // that do not consume structuredContent still receive the full data.
-          type: "text",
-          text: JSON.stringify(structured)
-        }
-      ],
+      content,
       isError: false,
-      structuredContent: structured
+      structuredContent: structured,
     };
   }
 
@@ -76,7 +81,7 @@ export class MCPResponse {
    * @returns {string}
    */
   getTextSummary() {
-    return "Operation completed successfully";
+    return 'Operation completed successfully';
   }
 
   /**
@@ -109,7 +114,7 @@ export class InformationalResponse extends MCPResponse {
     if (typeof reason !== 'string') {
       throw new TypeError('reason must be a string');
     }
-    
+
     this.message = message;
     this.reason = reason;
   }
@@ -122,7 +127,7 @@ export class InformationalResponse extends MCPResponse {
     return {
       message: this.message,
       reason: this.reason,
-      status: 'action_required'
+      status: 'action_required',
     };
   }
 
@@ -132,7 +137,7 @@ export class InformationalResponse extends MCPResponse {
   getTextSummary() {
     let summary = `${this.message}\n\nReason: ${this.reason}`;
     if (this.nextSteps && this.nextSteps.length > 0) {
-      summary += `\n\nSuggested actions:\n${this.nextSteps.map(s => `- ${s}`).join('\n')}`;
+      summary += `\n\nSuggested actions:\n${this.nextSteps.map((s) => `- ${s}`).join('\n')}`;
     }
     return summary;
   }
@@ -148,15 +153,15 @@ export class InformationalResponse extends MCPResponse {
     return {
       content: [
         {
-          type: "text",
-          text: this.getTextSummary()
+          type: 'text',
+          text: this.getTextSummary(),
         },
         {
-          type: "text",
-          text: JSON.stringify(this.toJSON())
-        }
+          type: 'text',
+          text: JSON.stringify(this.toJSON()),
+        },
       ],
-      isError: false
+      isError: false,
     };
   }
 }
@@ -175,7 +180,7 @@ const HTTP_STATUS_DESCRIPTIONS = {
   410: 'Gone - The resource has been permanently removed',
   429: 'Too Many Requests - Rate limit exceeded',
   451: 'Unavailable For Legal Reasons - Access blocked for legal reasons',
-  
+
   // 5xx Server Errors
   500: 'Internal Server Error - The server encountered an error',
   501: 'Not Implemented - The server does not support this functionality',
@@ -186,7 +191,7 @@ const HTTP_STATUS_DESCRIPTIONS = {
   521: 'Web Server Is Down',
   522: 'Connection Timed Out',
   523: 'Origin Is Unreachable',
-  524: 'A Timeout Occurred'
+  524: 'A Timeout Occurred',
 };
 
 /**
@@ -197,43 +202,43 @@ const HTTP_STATUS_DESCRIPTIONS = {
  */
 function getHttpStatusNextSteps(statusCode, url) {
   const baseSteps = ['Check if the URL is correct'];
-  
+
   if (statusCode === 401 || statusCode === 403) {
     return [
       'Authentication may be required - try logging in first',
       'Check if you have permission to access this resource',
-      "Use MCPBrowser's browser_fetch_webpage to navigate to the login page first"
+      "Use MCPBrowser's browser_fetch_webpage to navigate to the login page first",
     ];
   }
-  
+
   if (statusCode === 404) {
     return [
       'Verify the URL is correct',
       'The page may have been moved or deleted',
-      'Try navigating to the site\'s homepage instead'
+      "Try navigating to the site's homepage instead",
     ];
   }
-  
+
   if (statusCode === 429) {
     return [
       'Rate limit exceeded - wait a few minutes before retrying',
       'Reduce request frequency',
-      "Call MCPBrowser's browser_fetch_webpage again after waiting"
+      "Call MCPBrowser's browser_fetch_webpage again after waiting",
     ];
   }
-  
+
   if (statusCode >= 500 && statusCode < 600) {
     return [
       'The server is experiencing issues',
       "Wait a moment and try again with MCPBrowser's browser_fetch_webpage",
-      'Check if the service has a status page for outages'
+      'Check if the service has a status page for outages',
     ];
   }
-  
+
   return [
     ...baseSteps,
     'Try again later if this is a temporary issue',
-    "Call MCPBrowser's browser_fetch_webpage to retry the request"
+    "Call MCPBrowser's browser_fetch_webpage to retry the request",
   ];
 }
 
@@ -253,7 +258,7 @@ export class HttpStatusResponse extends MCPResponse {
   constructor(url, statusCode, statusText, html, nextSteps = null) {
     const autoNextSteps = nextSteps || getHttpStatusNextSteps(statusCode, url);
     super(autoNextSteps);
-    
+
     if (typeof url !== 'string') {
       throw new TypeError('url must be a string');
     }
@@ -266,7 +271,7 @@ export class HttpStatusResponse extends MCPResponse {
     if (typeof html !== 'string') {
       throw new TypeError('html must be a string');
     }
-    
+
     this.url = url;
     this.statusCode = statusCode;
     this.statusText = statusText;
@@ -286,7 +291,7 @@ export class HttpStatusResponse extends MCPResponse {
       statusText: this.statusText,
       statusCategory: this.statusCategory,
       description: this.description,
-      html: this.html
+      html: this.html,
     };
   }
 
@@ -297,9 +302,9 @@ export class HttpStatusResponse extends MCPResponse {
     let summary = `HTTP ${this.statusCode} ${this.statusText}\n`;
     summary += `URL: ${this.url}\n`;
     summary += `\n${this.description}`;
-    
+
     if (this.nextSteps && this.nextSteps.length > 0) {
-      summary += `\n\nSuggested actions:\n${this.nextSteps.map(s => `- ${s}`).join('\n')}`;
+      summary += `\n\nSuggested actions:\n${this.nextSteps.map((s) => `- ${s}`).join('\n')}`;
     }
     return summary;
   }
@@ -315,15 +320,15 @@ export class HttpStatusResponse extends MCPResponse {
     return {
       content: [
         {
-          type: "text",
-          text: this.getTextSummary()
+          type: 'text',
+          text: this.getTextSummary(),
         },
         {
-          type: "text",
-          text: JSON.stringify(this.toJSON())
-        }
+          type: 'text',
+          text: JSON.stringify(this.toJSON()),
+        },
       ],
-      isError: false
+      isError: false,
     };
   }
 }
@@ -332,24 +337,18 @@ export class HttpStatusResponse extends MCPResponse {
  * Response for failed operations (any tool)
  * Per MCP spec, errors use text content only, no structuredContent
  */
-export class ErrorResponse {
+export class ErrorResponse extends MCPResponse {
   /**
    * @param {string} message - Error message
    * @param {string[]} nextSteps - Suggested recovery actions
    */
   constructor(message, nextSteps = []) {
+    super(nextSteps);
     if (typeof message !== 'string') {
       throw new TypeError('message must be a string');
     }
-    if (!Array.isArray(nextSteps)) {
-      throw new TypeError('nextSteps must be an array');
-    }
-    if (!nextSteps.every(step => typeof step === 'string')) {
-      throw new TypeError('All nextSteps must be strings');
-    }
-    
+
     this.message = message;
-    this.nextSteps = nextSteps;
   }
 
   /**
@@ -360,17 +359,17 @@ export class ErrorResponse {
   toMcpFormat() {
     let textSummary = `Error: ${this.message}`;
     if (this.nextSteps && this.nextSteps.length > 0) {
-      textSummary += `\n\nSuggested actions:\n${this.nextSteps.map(s => `- ${s}`).join('\n')}`;
+      textSummary += `\n\nSuggested actions:\n${this.nextSteps.map((s) => `- ${s}`).join('\n')}`;
     }
-    
+
     return {
       content: [
         {
-          type: "text",
-          text: textSummary
-        }
+          type: 'text',
+          text: textSummary,
+        },
       ],
-      isError: true
+      isError: true,
       // No structuredContent for errors per MCP spec
     };
   }

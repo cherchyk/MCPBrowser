@@ -5,9 +5,16 @@
  * with support for authentication flows, tab reuse, and interactive actions.
  */
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { ListToolsRequestSchema, CallToolRequestSchema, ListPromptsRequestSchema, GetPromptRequestSchema, McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import {
+  ListToolsRequestSchema,
+  CallToolRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
+  McpError,
+  ErrorCode,
+} from '@modelcontextprotocol/sdk/types.js';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
@@ -19,37 +26,13 @@ import { isCliMode, runCli } from './cli/index.js';
 import { ErrorResponse } from './core/responses.js';
 import logger, { attachServer as attachLoggerServer } from './core/logger.js';
 
-// Import EULA functionality
-import { handleAcceptEula, ACCEPT_EULA_TOOL, requireEulaAcceptance } from './actions/accept-eula.js';
-
-// Import core functionality
-import { fetchPage, FETCH_WEBPAGE_TOOL } from './actions/fetch-page.js';
-import { clickElement, CLICK_ELEMENT_TOOL } from './actions/click-element.js';
-import { typeText, TYPE_TEXT_TOOL } from './actions/type-text.js';
-import { closeTab, CLOSE_TAB_TOOL } from './actions/close-tab.js';
-import { getCurrentHtml, GET_CURRENT_HTML_TOOL } from './actions/get-current-html.js';
-import { takeScreenshot, TAKE_SCREENSHOT_TOOL } from './actions/take-screenshot.js';
-import { scrollPage, SCROLL_PAGE_TOOL } from './actions/scroll-page.js';
-import { executeJavascript, EXECUTE_JAVASCRIPT_TOOL } from './actions/execute-javascript.js';
-import { navigateHistory, NAVIGATE_HISTORY_TOOL } from './actions/navigate-history.js';
-import { detectForms, DETECT_FORMS_TOOL } from './actions/detect-forms.js';
-
-// Import plugin dispatch tools
-import { pluginAction, PLUGIN_ACTION_TOOL } from './actions/plugin-action.js';
-import { pluginInfo, PLUGIN_INFO_TOOL } from './actions/plugin-info.js';
+import { ACTIONS as ALL_CORE_ACTIONS } from './actions/index.js';
 
 // Import prompt definitions
 import { PROMPTS, getPromptMessages } from './core/prompts.js';
 
-// Import functions for testing exports
-import { getBrowser, closeBrowser } from './core/browser.js';
-import { getOrCreatePage, queueRequest, navigateToUrl, waitForPageReady, extractAndProcessHtml } from './core/page.js';
-import { isLikelyAuthUrl, waitForAuth, pollUntilAuthDone, detectLoginPage } from './core/auth.js';
-import { cleanHtml, enrichHtml, prepareHtml } from './core/html.js';
-import { getBaseDomain } from './utils.js';
-
 // Import plugin system
-import { loadPlugins, getLoadedPlugins, getPlugin, detectPlugins, getPluginNextSteps } from './core/plugin-loader.js';
+import { loadPlugins, getLoadedPlugins } from './core/plugin-loader.js';
 
 /**
  * Main entry point for the MCP server.
@@ -62,19 +45,20 @@ async function main() {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
   const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8'));
-  
+
   const server = new Server(
     {
-      name: "MCPBrowser",
+      name: 'MCPBrowser',
       version: packageJson.version,
-      title: "MCP Browser",
+      title: 'MCP Browser',
       description: packageJson.description,
-      websiteUrl: packageJson.homepage
+      websiteUrl: packageJson.homepage,
     },
     {
       capabilities: { tools: {}, logging: {}, prompts: {} },
-      instructions: "Browser automation server using the user's existing browser session (cookies and auth intact). Workflow: browser_fetch_webpage → browser_take_screenshot (visual content) or browser_get_current_html (re-read after interaction) → browser_click_element / browser_type_text (interact) → browser_close_tab (cleanup). All tools except browser_fetch_webpage and browser_plugin_info require a page loaded first. One tab per domain — same-domain navigations reuse the existing tab. Requests are queued and processed sequentially. Maximum one browser connection at a time. Pages loaded via browser_fetch_webpage persist until browser_close_tab is called or the server shuts down. Screenshots return base64 PNG — prefer browser_get_current_html for text extraction. browser_execute_javascript runs in the page context with access to the full DOM and JavaScript APIs. If plugins are loaded, browser_plugin_info provides site-specific optimized actions for known sites. If authentication is required, the user must complete login in the browser window, then retry the same URL."
-    }
+      instructions:
+        "Browser automation server using the user's existing browser session (cookies and auth intact). Workflow: browser_fetch_webpage → browser_take_screenshot (visual content) or browser_get_current_html (re-read after interaction) → browser_click_element / browser_type_text (interact) → browser_close_tab (cleanup). All tools except browser_fetch_webpage and browser_plugin_info require a page loaded first. One tab per domain — same-domain navigations reuse the existing tab. Requests are queued and processed sequentially. Maximum one browser connection at a time. Pages loaded via browser_fetch_webpage persist until browser_close_tab is called or the server shuts down. Screenshots return base64 PNG — prefer browser_get_current_html for text extraction. browser_execute_javascript runs in the page context with access to the full DOM and JavaScript APIs. If plugins are loaded, browser_plugin_info provides site-specific optimized actions for known sites. If authentication is required, the user must complete login in the browser window, then retry the same URL.",
+    },
   );
 
   // Capture the negotiated MCP protocol version so the ListTools handler can
@@ -82,7 +66,7 @@ async function main() {
   // title were added in MCP protocol 2025-03-26).
   let negotiatedProtocolVersion = null;
   const _origOnInitialize = server._oninitialize.bind(server);
-  server._oninitialize = async function(request) {
+  server._oninitialize = async function (request) {
     const result = await _origOnInitialize(request);
     negotiatedProtocolVersion = result.protocolVersion;
     return result;
@@ -99,39 +83,37 @@ async function main() {
 
   // Assemble tools from action imports
   // Only include plugin tools when plugins are actually enabled, with descriptions referencing loaded plugin names
-  const pluginTools = [];
+  const pluginActionNames = new Set(['browser_plugin_info', 'browser_plugin_action']);
+  const pluginActions =
+    pluginCount > 0 ? ALL_CORE_ACTIONS.filter((action) => pluginActionNames.has(action.id)) : [];
+  let pluginNameList = '';
   if (pluginCount > 0) {
     const pluginNames = [...getLoadedPlugins().keys()];
-    const nameList = pluginNames.join(', ');
-    pluginTools.push(
-      { ...PLUGIN_INFO_TOOL, description: `${PLUGIN_INFO_TOOL.description} Enabled plugins: ${nameList}.` },
-      { ...PLUGIN_ACTION_TOOL, description: `${PLUGIN_ACTION_TOOL.description} Enabled plugins: ${nameList}.` }
-    );
+    pluginNameList = pluginNames.join(', ');
   }
-  const tools = [
-    // ACCEPT_EULA_TOOL,
-    FETCH_WEBPAGE_TOOL,
-    EXECUTE_JAVASCRIPT_TOOL,
-    CLICK_ELEMENT_TOOL,
-    TYPE_TEXT_TOOL,
-    CLOSE_TAB_TOOL,
-    GET_CURRENT_HTML_TOOL,
-    TAKE_SCREENSHOT_TOOL,
-    SCROLL_PAGE_TOOL,
-    NAVIGATE_HISTORY_TOOL,
-    DETECT_FORMS_TOOL,
-    ...pluginTools
-  ];
+  const coreActions = ALL_CORE_ACTIONS.filter(
+    (action) => action.id !== 'accept_eula' && !pluginActionNames.has(action.id),
+  );
+  const actions = [...coreActions, ...pluginActions];
+  const actionByName = new Map(actions.map((action) => [action.tool.name, action]));
+  const tools = actions.map((action) => {
+    if (!pluginActions.includes(action)) return action.tool;
+    return {
+      ...action.tool,
+      description: `${action.tool.description} Enabled plugins: ${pluginNameList}.`,
+    };
+  });
 
   // Tool icon (SEP-973, MCP 2025-11-25): a single browser glyph shared by all
   // tools, advertised only to clients on protocol 2025-11-25 or newer.
-  const TOOL_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#4A90D9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+  const TOOL_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#4A90D9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
   const TOOL_ICONS = [
     {
       src: `data:image/svg+xml;base64,${Buffer.from(TOOL_ICON_SVG).toString('base64')}`,
       mimeType: 'image/svg+xml',
-      sizes: ['any']
-    }
+      sizes: ['any'],
+    },
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -140,7 +122,7 @@ async function main() {
     // Strip them for clients that negotiated an older version (e.g. Antigravity/Gemini).
     if (!version || version < '2025-03-26') {
       return {
-        tools: tools.map(({ outputSchema, annotations, title, ...core }) => core)
+        tools: tools.map(({ outputSchema, annotations, title, ...core }) => core),
       };
     }
     // Tool icons (SEP-973) require MCP protocol 2025-11-25+.
@@ -161,78 +143,27 @@ async function main() {
   server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     const { name, arguments: args } = request.params;
     const safeArgs = args || {};
-    
+
     // Enable MCP progress notifications for this request if the client sent a progressToken.
     // Every logger.info() call during tool execution will automatically send a
     // notifications/progress message so the agent sees real-time status updates.
     const progressToken = extra?._meta?.progressToken;
     logger.setProgressToken(progressToken);
-    
+
     let result;
-    
+
     try {
       // EULA check - accept_eula is always allowed, other tools require EULA acceptance
       // if (name !== "accept_eula") {
       //   const eulaResponse = requireEulaAcceptance(name);
       //   if (eulaResponse) return eulaResponse;
       // }
-      
-      switch (name) {
-        // case "accept_eula":
-        //   result = await handleAcceptEula(safeArgs);
-        //   break;
-          
-        case "browser_fetch_webpage":
-          result = await fetchPage(safeArgs);
-          break;
 
-        case "browser_execute_javascript":
-          result = await executeJavascript(safeArgs);
-          break;
-          
-        case "browser_click_element":
-          result = await clickElement(safeArgs);
-          break;
-          
-        case "browser_type_text":
-          result = await typeText(safeArgs);
-          break;
-          
-        case "browser_close_tab":
-          result = await closeTab(safeArgs);
-          break;
-          
-        case "browser_get_current_html":
-          result = await getCurrentHtml(safeArgs);
-          break;
-          
-        case "browser_take_screenshot":
-          result = await takeScreenshot(safeArgs);
-          break;
-          
-        case "browser_scroll_page":
-          result = await scrollPage(safeArgs);
-          break;
-
-        case "browser_navigate_history":
-          result = await navigateHistory(safeArgs);
-          break;
-
-        case "browser_detect_forms":
-          result = await detectForms(safeArgs);
-          break;
-
-        case "browser_plugin_info":
-          result = pluginInfo(safeArgs);
-          break;
-
-        case "browser_plugin_action":
-          result = await pluginAction(safeArgs);
-          break;
-          
-        default:
-          throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${name}`);
+      const action = actionByName.get(name);
+      if (!action) {
+        throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${name}`);
       }
+      result = await action.execute(safeArgs);
     } catch (error) {
       // Protocol errors (e.g. unknown tool) must propagate as JSON-RPC errors
       // per the MCP spec, not be converted into tool execution results.
@@ -241,18 +172,22 @@ async function main() {
       // Log the actual error for debugging
       logger.error(`Tool ${name} failed: ${error.message}`);
       logger.error(`Stack: ${error.stack}`);
-      
+
       // Return a proper error response instead of throwing
-      return new ErrorResponse(
-        `${name} failed: ${error.message}`,
-        ['Check browser is installed', 'Try specifying browser parameter explicitly (chrome, edge, or brave)', 'Check MCP server logs for details']
-      ).toMcpFormat();
+      return new ErrorResponse(`${name} failed: ${error.message}`, [
+        'Check browser is installed',
+        'Try specifying browser parameter explicitly (chrome, edge, or brave)',
+        'Check MCP server logs for details',
+      ]).toMcpFormat();
     } finally {
       logger.clearProgressToken();
     }
-    
-    // Transform result into MCP-compliant response using instance method
-    return result.toMcpFormat();
+
+    // Plugin results are consumed as structured data; avoid duplicating their
+    // potentially large payloads as serialized JSON text.
+    return result.toMcpFormat({
+      includeSerializedContent: !pluginActionNames.has(name),
+    });
   });
 
   const transport = new StdioServerTransport();
@@ -260,59 +195,22 @@ async function main() {
   logger.info(`MCPBrowser server v${packageJson.version} started`);
 }
 
-// Export for testing
-export { 
-  fetchPage, 
-  getBrowser,
-  closeBrowser,
-  prepareHtml, 
-  cleanHtml, 
-  enrichHtml,
-  getOrCreatePage,
-  queueRequest,
-  navigateToUrl,
-  waitForPageReady,
-  waitForAuth,
-  pollUntilAuthDone,
-  detectLoginPage,
-  extractAndProcessHtml,
-  getBaseDomain,
-  isLikelyAuthUrl,
-  executeJavascript,
-  clickElement,
-  typeText,
-  closeTab,
-  getCurrentHtml,
-  takeScreenshot,
-  scrollPage,
-  navigateHistory,
-  detectForms,
-  handleAcceptEula,
-  // CLI exports
-  isCliMode,
-  runCli,
-  // Plugin system exports
-  loadPlugins,
-  getLoadedPlugins,
-  getPlugin,
-  detectPlugins,
-  getPluginNextSteps,
-  pluginAction,
-  pluginInfo
-};
-
-// Run the MCP server only if this is the main module (not imported for testing)
-if (import.meta.url === new URL(process.argv[1], 'file://').href || 
-    fileURLToPath(import.meta.url) === process.argv[1]) {
+// Run the MCP server only when this module is executed directly
+if (
+  import.meta.url === new URL(process.argv[1], 'file://').href ||
+  fileURLToPath(import.meta.url) === process.argv[1]
+) {
   const argv = process.argv.slice(2);
   if (isCliMode(argv)) {
     // CLI mode: run command and exit
-    runCli(argv).then((code) => {
-      process.exit(code);
-    }).catch((err) => {
-      process.stderr.write(`Error: ${err.message}\n`);
-      process.exit(1);
-    });
+    runCli(argv)
+      .then((code) => {
+        process.exit(code);
+      })
+      .catch((err) => {
+        process.stderr.write(`Error: ${err.message}\n`);
+        process.exit(1);
+      });
   } else {
     // MCP server mode (default): stdin/stdout JSON-RPC
     main().catch((err) => {

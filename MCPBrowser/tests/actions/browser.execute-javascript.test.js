@@ -3,9 +3,15 @@
  */
 
 import assert from 'assert';
-import { executeJavascript, fetchPage, closeTab } from '../../src/mcp-browser.js';
+import { CLOSE_TAB_ACTION } from '../../src/actions/close-tab.js';
+import { EXECUTE_JAVASCRIPT_ACTION } from '../../src/actions/execute-javascript.js';
+import { FETCH_WEBPAGE_ACTION } from '../../src/actions/fetch-page.js';
 import { InformationalResponse } from '../../src/core/responses.js';
-import { ExecuteJavascriptResponse } from '../../src/actions/execute-javascript.js';
+
+const executeJavascript = EXECUTE_JAVASCRIPT_ACTION.execute;
+const fetchPage = FETCH_WEBPAGE_ACTION.execute;
+const closeTab = CLOSE_TAB_ACTION.execute;
+const ExecuteJavascriptResponse = EXECUTE_JAVASCRIPT_ACTION.response;
 
 console.log('🧪 Testing executeJavascript action\n');
 
@@ -61,8 +67,15 @@ await test('Should reject invalid URL', async () => {
 });
 
 await test('Should return informational response when browser unavailable', async () => {
-  const result = await executeJavascript({ url: 'https://unloaded-domain-test.com', script: 'return 1;' });
-  assert.strictEqual(result instanceof InformationalResponse, true, 'Expected InformationalResponse when page unavailable');
+  const result = await executeJavascript({
+    url: 'https://unloaded-domain-test.com',
+    script: 'return 1;',
+  });
+  assert.strictEqual(
+    result instanceof InformationalResponse,
+    true,
+    'Expected InformationalResponse when page unavailable',
+  );
   assert.match(result.message, /Browser connection failed|No open page found|Page connection lost/);
 });
 
@@ -74,7 +87,7 @@ await test('ExecuteJavascriptResponse should serialize structured fields', async
     truncated: false,
     urlChanged: false,
     currentUrl: 'https://example.com',
-    nextSteps: ['step one']
+    nextSteps: ['step one'],
   });
 
   const json = resp.toJSON();
@@ -94,7 +107,7 @@ await test('Should execute script and return metadata', async () => {
   await fetchPage({ url: testUrl, removeUnnecessaryHTML: false });
   const resp = await executeJavascript({
     url: testUrl,
-    script: `document.body.innerHTML = '<div id="item">hello</div>'; return { text: document.querySelector('#item').textContent, href: location.href };`
+    script: `document.body.innerHTML = '<div id="item">hello</div>'; return { text: document.querySelector('#item').textContent, href: location.href };`,
   });
 
   assert.strictEqual(resp instanceof ExecuteJavascriptResponse, true);
@@ -110,7 +123,8 @@ await test('Should return DOM outerHTML when script returns element', async () =
   await fetchPage({ url: testUrl, removeUnnecessaryHTML: false });
   const resp = await executeJavascript({
     url: testUrl,
-    script: "const el = document.createElement('p'); el.id='dom-test'; el.textContent='hi'; document.body.appendChild(el); return document.querySelector('#dom-test');"
+    script:
+      "const el = document.createElement('p'); el.id='dom-test'; el.textContent='hi'; document.body.appendChild(el); return document.querySelector('#dom-test');",
   });
 
   assert.strictEqual(resp.type, 'dom-html');
@@ -122,7 +136,7 @@ await test('Should flag urlChanged when navigation occurs', async () => {
   await fetchPage({ url: `${testUrl}#before`, removeUnnecessaryHTML: false });
   const resp = await executeJavascript({
     url: `${testUrl}#before`,
-    script: "history.pushState({}, '', '#after'); return 'ok';"
+    script: "history.pushState({}, '', '#after'); return 'ok';",
   });
 
   assert.strictEqual(resp.urlChanged, true);
@@ -134,7 +148,7 @@ await test('Should surface thrown errors from scripts', async () => {
   await fetchPage({ url: testUrl, removeUnnecessaryHTML: false });
   const resp = await executeJavascript({
     url: testUrl,
-    script: "throw new Error('boom');"
+    script: "throw new Error('boom');",
   });
 
   assert.strictEqual(resp.type, 'error');
@@ -146,8 +160,8 @@ await test('Should timeout long-running scripts', async () => {
   await fetchPage({ url: testUrl, removeUnnecessaryHTML: false });
   const resp = await executeJavascript({
     url: testUrl,
-    script: "await new Promise(resolve => setTimeout(resolve, 100)); return 1;",
-    timeoutMs: 10
+    script: 'await new Promise(resolve => setTimeout(resolve, 100)); return 1;',
+    timeoutMs: 10,
   });
 
   assert.strictEqual(resp.type, 'error');
@@ -161,7 +175,7 @@ await test('Should truncate large results and flag truncation', async () => {
   await fetchPage({ url: testUrl, removeUnnecessaryHTML: false });
   const resp = await executeJavascript({
     url: testUrl,
-    script: "return 'a'.repeat(120000);"
+    script: "return 'a'.repeat(120000);",
   });
 
   assert.strictEqual(resp.truncated, true);
@@ -172,7 +186,11 @@ await test('Should truncate large results and flag truncation', async () => {
 
 await test('Should reject invalid returnType', async () => {
   try {
-    await executeJavascript({ url: 'https://example.com', script: 'return 1;', returnType: 'invalid' });
+    await executeJavascript({
+      url: 'https://example.com',
+      script: 'return 1;',
+      returnType: 'invalid',
+    });
     throw new Error('Should have thrown an error');
   } catch (err) {
     assert.match(err.message, /Invalid returnType/);

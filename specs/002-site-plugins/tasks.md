@@ -213,6 +213,7 @@
 ### Parallel Opportunities
 
 Within each phase, tasks marked [P] can run in parallel:
+
 - Phase 1: T002, T003 in parallel
 - Phase 2: T004, T005, T006 test writing in parallel
 - Phase 4: T016, T017 test writing in parallel
@@ -221,6 +222,7 @@ Within each phase, tasks marked [P] can run in parallel:
 - Phase 9: T037, T038, T041, T042 in parallel
 
 Cross-phase parallelism:
+
 - After Phase 2, US1 (Phase 5) and US3 (Phase 3) can start simultaneously
 - After Phase 4, US5 (Phase 7) and US6 (Phase 8) can start simultaneously
 
@@ -236,17 +238,17 @@ Cross-phase parallelism:
 
 ## Summary
 
-| Metric | Count |
-|--------|-------|
-| Total tasks | 42 |
-| Phase 1 (Setup) | 3 |
-| Phase 2 (Foundational) | 8 |
-| Phase 3 (US3 - Registry) | 4 |
-| Phase 4 (US2 - Dispatch) | 6 |
-| Phase 5 (US1 - Detection) | 4 |
-| Phase 6 (US4 - Recommendations) | 5 |
-| Phase 7 (US5 - Browser Context) | 3 |
-| Phase 8 (US6 - Site Context) | 3 |
-| Phase 9 (Polish) | 6 |
-| Parallel opportunities | 16 tasks marked [P] |
-| MVP scope | T001–T015 (15 tasks) |
+| Metric                          | Count                |
+| ------------------------------- | -------------------- |
+| Total tasks                     | 42                   |
+| Phase 1 (Setup)                 | 3                    |
+| Phase 2 (Foundational)          | 8                    |
+| Phase 3 (US3 - Registry)        | 4                    |
+| Phase 4 (US2 - Dispatch)        | 6                    |
+| Phase 5 (US1 - Detection)       | 4                    |
+| Phase 6 (US4 - Recommendations) | 5                    |
+| Phase 7 (US5 - Browser Context) | 3                    |
+| Phase 8 (US6 - Site Context)    | 3                    |
+| Phase 9 (Polish)                | 6                    |
+| Parallel opportunities          | 16 tasks marked [P]  |
+| MVP scope                       | T001–T015 (15 tasks) |

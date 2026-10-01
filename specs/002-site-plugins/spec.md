@@ -15,7 +15,7 @@
 - Q: What happens when `browser_plugin_action` is called but the browser is on a different site? → A: Error with guidance — the plugin returns a clear error stating which site it requires and instructs the agent to use `browser_fetch_webpage` to navigate first. No auto-navigation (avoids losing form data or session state on the current page).
 - Q: How should the system handle plugins built against an older interface version? → A: Version in manifest — each plugin declares the interface version it implements. The core validates compatibility at load time; incompatible plugins are skipped with a warning log. Prevents cryptic runtime errors and makes upgrade paths clear.
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Plugin Detection on Page Fetch (Priority: P1)
 
@@ -125,7 +125,7 @@ Each plugin includes high-level context about the target site — what pages it 
 - What happens when the `plugins/` folder contains non-plugin files or folders? The discovery mechanism only loads folders that contain a valid plugin manifest; all others are silently ignored.
 - What happens when a plugin tool is called but the browser tab has navigated away from the plugin's target site? The plugin returns an error stating which site it requires and instructs the agent to use `browser_fetch_webpage` to navigate first. Plugins MUST NOT auto-navigate to avoid losing form data or session state on the current page.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -158,7 +158,7 @@ Each plugin includes high-level context about the target site — what pages it 
 - **Plugin Detection Result**: The outcome of running all plugins' detection functions against a page, containing the list of matching plugins and their recommended next steps (referencing `browser_plugin_info` and `browser_plugin_action`).
 - **Site Knowledge**: High-level context within a plugin describing what pages the plugin covers, authentication flow expectations, and plugin capabilities. Exposed via `browser_plugin_info`. Does not include internal implementation details (DOM selectors, JavaScript) which remain hidden inside action implementations.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

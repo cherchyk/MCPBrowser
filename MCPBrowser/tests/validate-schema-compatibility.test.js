@@ -54,21 +54,45 @@
  */
 
 import assert from 'assert';
+import { ACTIONS as CORE_ACTIONS } from '../src/actions/index.js';
+
+const ACCEPT_EULA_ACTION = CORE_ACTIONS.find((action) => action.id === 'accept_eula');
+const FETCH_WEBPAGE_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_fetch_webpage');
+const CLICK_ELEMENT_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_click_element');
+const TYPE_TEXT_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_type_text');
+const CLOSE_TAB_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_close_tab');
+const GET_CURRENT_HTML_ACTION = CORE_ACTIONS.find(
+  (action) => action.id === 'browser_get_current_html',
+);
+const TAKE_SCREENSHOT_ACTION = CORE_ACTIONS.find(
+  (action) => action.id === 'browser_take_screenshot',
+);
+const SCROLL_PAGE_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_scroll_page');
+const EXECUTE_JAVASCRIPT_ACTION = CORE_ACTIONS.find(
+  (action) => action.id === 'browser_execute_javascript',
+);
+const NAVIGATE_HISTORY_ACTION = CORE_ACTIONS.find(
+  (action) => action.id === 'browser_navigate_history',
+);
+const DETECT_FORMS_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_detect_forms');
+const PLUGIN_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_plugin_action');
+const PLUGIN_INFO_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_plugin_info');
 
 // Import all tool definitions directly — mirrors src/mcp-browser.js imports
-import { ACCEPT_EULA_TOOL } from '../src/actions/accept-eula.js';
-import { FETCH_WEBPAGE_TOOL } from '../src/actions/fetch-page.js';
-import { CLICK_ELEMENT_TOOL } from '../src/actions/click-element.js';
-import { TYPE_TEXT_TOOL } from '../src/actions/type-text.js';
-import { CLOSE_TAB_TOOL } from '../src/actions/close-tab.js';
-import { GET_CURRENT_HTML_TOOL } from '../src/actions/get-current-html.js';
-import { TAKE_SCREENSHOT_TOOL } from '../src/actions/take-screenshot.js';
-import { SCROLL_PAGE_TOOL } from '../src/actions/scroll-page.js';
-import { EXECUTE_JAVASCRIPT_TOOL } from '../src/actions/execute-javascript.js';
-import { NAVIGATE_HISTORY_TOOL } from '../src/actions/navigate-history.js';
-import { DETECT_FORMS_TOOL } from '../src/actions/detect-forms.js';
-import { PLUGIN_ACTION_TOOL } from '../src/actions/plugin-action.js';
-import { PLUGIN_INFO_TOOL } from '../src/actions/plugin-info.js';
+
+const ACCEPT_EULA_TOOL = ACCEPT_EULA_ACTION.tool;
+const FETCH_WEBPAGE_TOOL = FETCH_WEBPAGE_ACTION.tool;
+const CLICK_ELEMENT_TOOL = CLICK_ELEMENT_ACTION.tool;
+const TYPE_TEXT_TOOL = TYPE_TEXT_ACTION.tool;
+const CLOSE_TAB_TOOL = CLOSE_TAB_ACTION.tool;
+const GET_CURRENT_HTML_TOOL = GET_CURRENT_HTML_ACTION.tool;
+const TAKE_SCREENSHOT_TOOL = TAKE_SCREENSHOT_ACTION.tool;
+const SCROLL_PAGE_TOOL = SCROLL_PAGE_ACTION.tool;
+const EXECUTE_JAVASCRIPT_TOOL = EXECUTE_JAVASCRIPT_ACTION.tool;
+const NAVIGATE_HISTORY_TOOL = NAVIGATE_HISTORY_ACTION.tool;
+const DETECT_FORMS_TOOL = DETECT_FORMS_ACTION.tool;
+const PLUGIN_ACTION_TOOL = PLUGIN_ACTION.tool;
+const PLUGIN_INFO_TOOL = PLUGIN_INFO_ACTION.tool;
 
 const ALL_TOOLS = [
   ACCEPT_EULA_TOOL,
@@ -129,7 +153,9 @@ function validateSchema(schema, currentPath = 'root') {
       }
 
       if (value.enum && !requiredProps.includes(key) && value.default === undefined) {
-        issues.push(`${currentPath}.${key} has enum but is optional with no default (crashes Antigravity)`);
+        issues.push(
+          `${currentPath}.${key} has enum but is optional with no default (crashes Antigravity)`,
+        );
       }
 
       if (value.type === 'array' && value.items) {
@@ -172,7 +198,11 @@ await test('Every tool has a name and inputSchema', async () => {
   for (const tool of ALL_TOOLS) {
     assert.ok(tool.name, 'Tool must have a name');
     assert.ok(tool.inputSchema, `${tool.name} must have an inputSchema`);
-    assert.strictEqual(tool.inputSchema.type, 'object', `${tool.name} inputSchema.type must be "object"`);
+    assert.strictEqual(
+      tool.inputSchema.type,
+      'object',
+      `${tool.name} inputSchema.type must be "object"`,
+    );
   }
 });
 

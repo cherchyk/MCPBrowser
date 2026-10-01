@@ -1,22 +1,22 @@
 /**
  * click-element.js - Click element action
- * 
+ *
  * This function handles two distinct use cases:
- * 
+ *
  * 1. NAVIGATION/CONTENT UPDATES (returnHtml: true, default):
  *    - Clicks the element
  *    - Waits for page stability (network idle, DOM updates)
  *    - Returns the updated HTML content
  *    - Use for: Links, navigation buttons, SPA route changes (e.g., Gmail folders)
  *    - Takes 3-8 seconds due to stability wait
- * 
+ *
  * 2. FAST FORM INTERACTIONS (returnHtml: false):
  *    - Clicks the element
  *    - Minimal 300ms wait
  *    - Returns success without HTML
  *    - Use for: Checkboxes, radio buttons, form fields that don't navigate
  *    - Takes <1 second
- * 
+ *
  * Why this design?
  * - Solves SPA navigation issue: URL hash changes instantly (#inbox → #trash),
  *   but content loads asynchronously. Without waiting, we'd return old content.
@@ -27,10 +27,12 @@
 import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { extractAndProcessHtml, waitForPageReady, getLargeHtmlHints } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
+import { CoreAction } from '../core/actions.js';
 import logger from '../core/logger.js';
+import { getPrimaryText, getStructured, htmlToText } from '../cli/utils.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
-import { scanPageForms } from './detect-forms.js';
-import { scanScrollableAreas } from './scroll-page.js';
+import { scanPageForms } from '../core/form-scanner.js';
+import { scanScrollableAreas } from '../core/scrollable-areas.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -39,8 +41,21 @@ import { scanScrollableAreas } from './scroll-page.js';
 /**
  * Structured response for browser_click_element with JS fallback metadata
  */
-export class ClickWithFallbackResponse extends MCPResponse {
-  constructor({ status, fallbackUsed = false, nativeAttempt, fallbackAttempt, postClickWait, currentUrl, html = null, message, nextSteps = [], recommendedPlugins = [], formData = null, scrollableAreas = [] }) {
+class ClickWithFallbackResponse extends MCPResponse {
+  constructor({
+    status,
+    fallbackUsed = false,
+    nativeAttempt,
+    fallbackAttempt,
+    postClickWait,
+    currentUrl,
+    html = null,
+    message,
+    nextSteps = [],
+    recommendedPlugins = [],
+    formData = null,
+    scrollableAreas = [],
+  }) {
     super(nextSteps);
     this.status = status;
     this.fallbackUsed = fallbackUsed;
@@ -71,7 +86,7 @@ export class ClickWithFallbackResponse extends MCPResponse {
       forms: this.forms,
       orphanedFields: this.orphanedFields,
       totalFieldCount: this.totalFieldCount,
-      scrollableAreas: this.scrollableAreas
+      scrollableAreas: this.scrollableAreas,
     };
   }
 
@@ -88,105 +103,181 @@ export class ClickWithFallbackResponse extends MCPResponse {
 /**
  * @type {Tool}
  */
-export const CLICK_ELEMENT_TOOL = {
-  name: "browser_click_element",
-  title: "Click Element",
-  description: "Click buttons, links, or any element on a browser-loaded page. Use when: you need to navigate a website, submit a form, press a button, follow a link, or interact with any clickable UI element. Targets by CSS selector or visible text. Returns updated page HTML after click. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.",
+const CLICK_ELEMENT_TOOL = {
+  name: 'browser_click_element',
+  title: 'Click Element',
+  description:
+    'Click buttons, links, or any element on a browser-loaded page. Use when: you need to navigate a website, submit a form, press a button, follow a link, or interact with any clickable UI element. Targets by CSS selector or visible text. Returns updated page HTML after click. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.',
   inputSchema: {
-    type: "object",
+    type: 'object',
     properties: {
-      url: { type: "string", description: "The URL of the page (must match a previously fetched page)" },
-      selector: { type: "string", description: "CSS selector for the element to click (e.g., '#submit-btn', '.login-button')" },
-      text: { type: "string", description: "Text content to search for if selector is not provided (e.g., 'Sign In', 'Submit')" },
+      url: {
+        type: 'string',
+        description: 'The URL of the page (must match a previously fetched page)',
+      },
+      selector: {
+        type: 'string',
+        description: "CSS selector for the element to click (e.g., '#submit-btn', '.login-button')",
+      },
+      text: {
+        type: 'string',
+        description:
+          "Text content to search for if selector is not provided (e.g., 'Sign In', 'Submit')",
+      },
       // waitForElementTimeout: { type: "number", description: "Maximum time to wait for element in milliseconds", default: 1000 },
       // returnHtml: { type: "boolean", description: "Whether to wait for stability and return HTML after clicking. Set to false for fast form interactions (checkboxes, radio buttons).", default: true },
       // removeUnnecessaryHTML: { type: "boolean", description: "Remove Unnecessary HTML for size reduction by 90%. Only used when returnHtml is true.", default: true },
       // postClickWait: { type: "number", description: "Milliseconds to wait after click for SPAs to render dynamic content.", default: 1000 },
       // htmlSelector: { type: "string", description: "CSS selector to extract a specific DOM subtree from the post-click page instead of the full page. Use on heavy SPAs (e.g., ADO, Jira) to reduce response size. Only used when returnHtml is true. Example: '.activity-feed', '[role=\"main\"]'." },
-      detectForms: { type: "boolean", description: "Scan page for forms after click and return structured form data (fields, selectors, submit buttons, orphaned inputs). Only applies when returnHtml=true. Set to true when you need to fill or interact with forms after clicking.", default: false }
+      detectForms: {
+        type: 'boolean',
+        description:
+          'Scan page for forms after click and return structured form data (fields, selectors, submit buttons, orphaned inputs). Only applies when returnHtml=true. Set to true when you need to fill or interact with forms after clicking.',
+        default: false,
+      },
     },
-    required: ["url"],
+    required: ['url'],
     additionalProperties: false,
   },
   outputSchema: {
-    type: "object",
+    type: 'object',
     properties: {
-      status: { type: "string", enum: ["success", "failed"], description: "Overall click status after native and fallback attempts" },
-      fallbackUsed: { type: "boolean", description: "True when native click timed out and JS fallback ran" },
-      nativeAttempt: { 
-        type: "object",
+      status: {
+        type: 'string',
+        enum: ['success', 'failed'],
+        description: 'Overall click status after native and fallback attempts',
+      },
+      fallbackUsed: {
+        type: 'boolean',
+        description: 'True when native click timed out and JS fallback ran',
+      },
+      nativeAttempt: {
+        type: 'object',
         properties: {
-          status: { type: "string", enum: ["success", "timeout", "error"] },
-          durationMs: { type: "number" },
-          error: { type: "string" }
+          status: { type: 'string', enum: ['success', 'timeout', 'error'] },
+          durationMs: { type: 'number' },
+          error: { type: 'string' },
         },
-        required: ["status", "durationMs"]
+        required: ['status', 'durationMs'],
       },
       fallbackAttempt: {
-        type: "object",
+        type: 'object',
         properties: {
-          status: { type: "string", enum: ["success", "timeout", "error"] },
-          durationMs: { type: "number" },
-          error: { type: "string" }
+          status: { type: 'string', enum: ['success', 'timeout', 'error'] },
+          durationMs: { type: 'number' },
+          error: { type: 'string' },
         },
-        required: ["status", "durationMs"],
-        description: "Present when fallbackUsed is true"
+        required: ['status', 'durationMs'],
+        description: 'Present when fallbackUsed is true',
       },
       postClickWait: {
-        type: "object",
+        type: 'object',
         properties: {
-          applied: { type: "boolean" },
-          waitedMs: { type: "number" }
+          applied: { type: 'boolean' },
+          waitedMs: { type: 'number' },
         },
-        required: ["applied", "waitedMs"],
-        description: "Post-click wait metadata"
+        required: ['applied', 'waitedMs'],
+        description: 'Post-click wait metadata',
       },
-      currentUrl: { type: "string", description: "URL after click" },
-      message: { type: "string", description: "Status message" },
-      html: { 
-        type: "string", 
-        description: "Page HTML if returnHtml was true, null otherwise" 
+      currentUrl: { type: 'string', description: 'URL after click' },
+      message: { type: 'string', description: 'Status message' },
+      html: {
+        type: 'string',
+        description: 'Page HTML if returnHtml was true, null otherwise',
       },
-      forms: { type: "array", items: { type: "object" }, description: "Detected forms with fields, selectors, and metadata (when returnHtml is true)" },
-      orphanedFields: { type: "array", items: { type: "object" }, description: "Input/select/textarea elements not inside any <form> (when returnHtml is true)" },
-      totalFieldCount: { type: "number", description: "Total number of form fields found on the page" },
-      nextSteps: { 
-        type: "array", 
-        items: { type: "string" },
-        description: "Suggested next actions"
+      forms: {
+        type: 'array',
+        items: { type: 'object' },
+        description:
+          'Detected forms with fields, selectors, and metadata (when returnHtml is true)',
+      },
+      orphanedFields: {
+        type: 'array',
+        items: { type: 'object' },
+        description:
+          'Input/select/textarea elements not inside any <form> (when returnHtml is true)',
+      },
+      totalFieldCount: {
+        type: 'number',
+        description: 'Total number of form fields found on the page',
+      },
+      nextSteps: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Suggested next actions',
       },
       recommendedPlugins: {
-        type: "array",
-        items: { type: "object" },
-        description: "Detected site-specific plugins available for this domain"
+        type: 'array',
+        items: { type: 'object' },
+        description: 'Detected site-specific plugins available for this domain',
       },
       scrollableAreas: {
-        type: "array",
+        type: 'array',
         items: {
-          type: "object",
+          type: 'object',
           properties: {
-            selector: { type: "string" },
-            scrollHeight: { type: "number" },
-            clientHeight: { type: "number" },
-            scrollTop: { type: "number" },
-            hiddenPixels: { type: "number" },
-            description: { type: "string" }
-          }
+            selector: { type: 'string' },
+            scrollHeight: { type: 'number' },
+            clientHeight: { type: 'number' },
+            scrollTop: { type: 'number' },
+            hiddenPixels: { type: 'number' },
+            description: { type: 'string' },
+          },
         },
-        description: "Scrollable containers on the page. Pass a selector to browser_scroll_page's 'container' parameter to scroll within a specific area."
-      }
+        description:
+          "Scrollable containers on the page. Pass a selector to browser_scroll_page's 'container' parameter to scroll within a specific area.",
+      },
     },
-    required: ["status", "fallbackUsed", "nativeAttempt", "currentUrl", "message", "html", "nextSteps"],
-    additionalProperties: false
+    required: [
+      'status',
+      'fallbackUsed',
+      'nativeAttempt',
+      'currentUrl',
+      'message',
+      'html',
+      'nextSteps',
+    ],
+    additionalProperties: false,
   },
   annotations: {
-    title: "Click Element",
+    title: 'Click Element',
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: false,
-    openWorldHint: true
-  }
+    openWorldHint: true,
+  },
 };
+
+export const CLICK_ELEMENT_ACTION = new CoreAction({
+  tool: CLICK_ELEMENT_TOOL,
+  response: ClickWithFallbackResponse,
+  handler: clickElement,
+  cli: {
+    order: 30,
+    cmd: 'click',
+    requiresFetch: true,
+    flagMap: {},
+    buildParams: (url, flags) => ({
+      url,
+      selector: flags.selector || undefined,
+      text: flags.text || undefined,
+      returnHtml: flags.returnHtml !== 'false',
+      removeUnnecessaryHTML: true,
+      postClickWait: flags.postClickWait ? Number(flags.postClickWait) : 1000,
+    }),
+    validate: (flags) => {
+      if (!flags.selector && !flags.text) return '--selector or --text is required for click';
+    },
+    formatOutput: (mcp) => {
+      const html = getStructured(mcp).html;
+      return { stdout: html ? htmlToText(html) : getPrimaryText(mcp) };
+    },
+    examples: [
+      'mcpbrowser click https://example.com --selector "#login-btn"',
+      'mcpbrowser click https://example.com --text "Sign In"',
+    ],
+  },
+});
 
 // ============================================================================
 // ACTION FUNCTION
@@ -194,7 +285,7 @@ export const CLICK_ELEMENT_TOOL = {
 
 /**
  * Click on an element on the page
- * 
+ *
  * @param {Object} params - Click parameters
  * @param {string} params.url - The URL of the page to interact with
  * @param {string} [params.selector] - CSS selector for the element to click
@@ -204,29 +295,39 @@ export const CLICK_ELEMENT_TOOL = {
  * @param {boolean} [params.removeUnnecessaryHTML=true] - Whether to clean HTML (only if returnHtml is true)
  * @param {number} [params.postClickWait=1000] - Milliseconds to wait after click for SPAs to render dynamic content
  * @returns {Promise<Object>} Result object with success status and details
- * 
+ *
  * @example
  * // Navigate to Gmail Bin folder (waits for emails to load, returns HTML)
  * const result = await clickElement({ url: gmailUrl, text: "Bin" });
  * console.log(result.html); // Contains bin emails
- * 
+ *
  * @example
  * // Fast checkbox click (no wait, no HTML)
- * const result = await clickElement({ 
- *   url: formUrl, 
+ * const result = await clickElement({
+ *   url: formUrl,
  *   selector: "#agree-checkbox",
- *   returnHtml: false 
+ *   returnHtml: false
  * });
  */
-export async function clickElement({ url, selector, text, waitForElementTimeout = 30000, returnHtml = true, removeUnnecessaryHTML = true, htmlSelector = null, postClickWait = 1000, detectForms = false }) {
+async function clickElement({
+  url,
+  selector,
+  text,
+  waitForElementTimeout = 30000,
+  returnHtml = true,
+  removeUnnecessaryHTML = true,
+  htmlSelector = null,
+  postClickWait = 1000,
+  detectForms = false,
+}) {
   logger.info(`browser_click_element called: ${selector || `text="${text}"`}`);
-  
+
   if (!url) {
-    throw new Error("url parameter is required");
+    throw new Error('url parameter is required');
   }
-  
+
   if (!selector && !text) {
-    throw new Error("Either selector or text parameter is required");
+    throw new Error('Either selector or text parameter is required');
   }
 
   let hostname;
@@ -247,32 +348,34 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       [
         'Ensure the browser is installed and running',
         'Check that remote debugging is enabled (--remote-debugging-port)',
-        'Try restarting the MCP server'
-      ]
+        'Try restarting the MCP server',
+      ],
     );
   }
 
   // Validate page exists and is usable
   const { page, error: pageError } = await getValidatedPage(hostname);
-  
+
   if (!page) {
     const isConnectionLost = pageError && pageError.includes('connection');
     logger.debug(`browser_click_element: ${pageError || 'No page found for ' + hostname}`);
     return new InformationalResponse(
-      isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
-      isConnectionLost 
+      isConnectionLost
+        ? `Page connection lost for ${hostname}`
+        : `No open page found for ${hostname}`,
+      isConnectionLost
         ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
         : 'The page must be loaded before you can interact with elements on it',
       [
         "Use MCPBrowser's browser_fetch_webpage tool to load the page first",
-        "Then retry MCPBrowser's browser_click_element with the same URL"
-      ]
+        "Then retry MCPBrowser's browser_click_element with the same URL",
+      ],
     );
   }
 
   try {
     let elementHandle;
-    
+
     if (selector) {
       // Use CSS selector
       await page.waitForSelector(selector, { timeout: waitForElementTimeout, visible: true });
@@ -282,19 +385,19 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       await page.waitForFunction(
         (searchText) => {
           const elements = Array.from(document.querySelectorAll('*'));
-          return elements.some(el => {
+          return elements.some((el) => {
             const text = el.textContent?.trim();
             return text && text.includes(searchText) && el.offsetParent !== null;
           });
         },
         { timeout: waitForElementTimeout },
-        text
+        text,
       );
-      
+
       elementHandle = await page.evaluateHandle((searchText) => {
         const elements = Array.from(document.querySelectorAll('*'));
         // Prioritize smaller elements (more specific matches)
-        const matches = elements.filter(el => {
+        const matches = elements.filter((el) => {
           const elText = el.textContent?.trim();
           return elText && elText.includes(searchText) && el.offsetParent !== null;
         });
@@ -310,20 +413,26 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
         [
           "Use MCPBrowser's browser_get_current_html to verify page content",
           "Use MCPBrowser's browser_take_screenshot with fullPage=true to see the full visual layout if HTML is unclear",
-          "Try a different selector or text",
-          "Check if the element is visible on the page"
-        ]
+          'Try a different selector or text',
+          'Check if the element is visible on the page',
+        ],
       );
     }
 
     // Scroll element into view and click
-    await page.evaluate(el => el.scrollIntoView({ behavior: 'auto', block: 'center' }), elementHandle);
+    await page.evaluate(
+      (el) => el.scrollIntoView({ behavior: 'auto', block: 'center' }),
+      elementHandle,
+    );
 
     const attemptClick = async (label, fn, timeoutMs) => {
       const start = Date.now();
       let timeoutId;
       const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+        timeoutId = setTimeout(
+          () => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
+          timeoutMs,
+        );
       });
 
       try {
@@ -339,31 +448,44 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
 
     const clickTimeout = Math.min(Math.max(waitForElementTimeout, 500), 60000);
     logger.debug(`Clicking: ${selector || `text="${text}"`}`);
-    const nativeAttempt = await attemptClick('native click', () => elementHandle.click(), clickTimeout);
+    const nativeAttempt = await attemptClick(
+      'native click',
+      () => elementHandle.click(),
+      clickTimeout,
+    );
 
     let fallbackUsed = false;
     let fallbackAttempt = null;
 
     if (nativeAttempt.status === 'timeout') {
       fallbackUsed = true;
-      fallbackAttempt = await attemptClick('fallback click', () => page.evaluate(el => el.click(), elementHandle), clickTimeout);
+      fallbackAttempt = await attemptClick(
+        'fallback click',
+        () => page.evaluate((el) => el.click(), elementHandle),
+        clickTimeout,
+      );
     }
 
-    const finalStatus = nativeAttempt.status === 'success' || (fallbackAttempt && fallbackAttempt.status === 'success')
-      ? 'success'
-      : 'failed';
+    const finalStatus =
+      nativeAttempt.status === 'success' ||
+      (fallbackAttempt && fallbackAttempt.status === 'success')
+        ? 'success'
+        : 'failed';
 
     if (finalStatus === 'success') {
       logger.debug(`Waiting for page to be ready${returnHtml ? '' : ' (fast mode)'}...`);
       await waitForPageReady(page, { afterInteraction: true });
 
       if (postClickWait > 0) {
-        await new Promise(resolve => setTimeout(resolve, postClickWait));
+        await new Promise((resolve) => setTimeout(resolve, postClickWait));
       }
     }
 
     const currentUrl = page.url();
-    const html = finalStatus === 'success' && returnHtml ? await extractAndProcessHtml(page, removeUnnecessaryHTML, htmlSelector) : null;
+    const html =
+      finalStatus === 'success' && returnHtml
+        ? await extractAndProcessHtml(page, removeUnnecessaryHTML, htmlSelector)
+        : null;
 
     // Scan for forms when requested and returning HTML (lightweight, ~50-100ms)
     let formData = null;
@@ -385,12 +507,15 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       }
     }
 
-    const baseMessage = selector ? `Clicked element: ${selector}` : `Clicked element with text: "${text}"`;
-    const message = finalStatus === 'success'
-      ? baseMessage
-      : fallbackUsed
-        ? `Click failed after fallback. Native: ${nativeAttempt.error || nativeAttempt.status}. Fallback: ${fallbackAttempt?.error || fallbackAttempt?.status}`
-        : `Click failed. Native: ${nativeAttempt.error || nativeAttempt.status}`;
+    const baseMessage = selector
+      ? `Clicked element: ${selector}`
+      : `Clicked element with text: "${text}"`;
+    const message =
+      finalStatus === 'success'
+        ? baseMessage
+        : fallbackUsed
+          ? `Click failed after fallback. Native: ${nativeAttempt.error || nativeAttempt.status}. Fallback: ${fallbackAttempt?.error || fallbackAttempt?.status}`
+          : `Click failed. Native: ${nativeAttempt.error || nativeAttempt.status}`;
 
     const nextSteps = returnHtml
       ? [
@@ -400,30 +525,35 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
           "Use MCPBrowser's browser_type_text to fill forms if needed",
           "Use MCPBrowser's browser_get_current_html to refresh page state",
           "Use MCPBrowser's browser_take_screenshot with fullPage=true if page has popups or visual content that's hard to parse from HTML",
-          "Use MCPBrowser's browser_close_tab when finished"
+          "Use MCPBrowser's browser_close_tab when finished",
         ]
       : [
           "Use MCPBrowser's browser_get_current_html to see updated page state",
           "Use MCPBrowser's browser_take_screenshot with fullPage=true if the page has popups, modals, or visual content",
           "Use MCPBrowser's browser_click_element or MCPBrowser's browser_type_text for more interactions",
-          "Use MCPBrowser's browser_close_tab when finished"
+          "Use MCPBrowser's browser_close_tab when finished",
         ];
 
-    logger.info(`browser_click_element completed: ${selector || `text="${text}"`}${fallbackUsed ? ' (fallback used)' : ''}`);
+    logger.info(
+      `browser_click_element completed: ${selector || `text="${text}"`}${fallbackUsed ? ' (fallback used)' : ''}`,
+    );
 
     return new ClickWithFallbackResponse({
       status: finalStatus,
       fallbackUsed,
       nativeAttempt,
       fallbackAttempt,
-      postClickWait: { applied: finalStatus === 'success', waitedMs: finalStatus === 'success' ? postClickWait : 0 },
+      postClickWait: {
+        applied: finalStatus === 'success',
+        waitedMs: finalStatus === 'success' ? postClickWait : 0,
+      },
       currentUrl,
       html,
       message,
       nextSteps,
       recommendedPlugins: html ? getRecommendedPlugins(currentUrl, html) : [],
       formData,
-      scrollableAreas
+      scrollableAreas,
     });
   } catch (err) {
     logger.error(`browser_click_element failed: ${err.message}`);
@@ -433,9 +563,9 @@ export async function clickElement({ url, selector, text, waitForElementTimeout 
       [
         "Use MCPBrowser's browser_get_current_html to check current page state",
         "Use MCPBrowser's browser_take_screenshot with fullPage=true to see what's visually blocking the element",
-        "Verify the selector or text is correct",
-        "Try MCPBrowser's browser_fetch_webpage to reload if page is stale"
-      ]
+        'Verify the selector or text is correct',
+        "Try MCPBrowser's browser_fetch_webpage to reload if page is stale",
+      ],
     );
   }
 }

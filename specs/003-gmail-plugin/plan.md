@@ -22,16 +22,16 @@ Build a Gmail site-specific plugin for MCPBrowser that automates 11 email manage
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
-| Principle | Status | Notes |
-|-----------|--------|-------|
-| I. User-Safe Browser Mediation | ✅ PASS | `send: false` default on compose/reply/forward (FR-015). No credential capture. Plugin operates on user's own authenticated session. |
+| Principle                            | Status  | Notes                                                                                                                                                        |
+| ------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| I. User-Safe Browser Mediation       | ✅ PASS | `send: false` default on compose/reply/forward (FR-015). No credential capture. Plugin operates on user's own authenticated session.                         |
 | II. Deterministic MCP Tool Contracts | ✅ PASS | All 11 actions have stable input/output contracts documented in [contracts/gmail_actions.md](contracts/gmail_actions.md). MCPResponse format with nextSteps. |
-| III. Test-First Coverage | ✅ PASS | Test plan below enumerates unit, integration, and tool-selection tests. Implementation must run planned tests. |
-| IV. Observability & Diagnostics | ✅ PASS | Structured logging via logger.js with plugin/action identifiers. Timeout errors include selector names and tier level. |
-| V. Intent-Explicit Documentation | ✅ PASS | Each file states purpose. Selectors.js documents which tier each selector belongs to and when last verified. |
-| VI. Dual-Project Independence | ✅ PASS | All changes under MCPBrowser/ only. Tests under MCPBrowser/tests/plugins/gmail/. VSCodeExtension untouched. |
+| III. Test-First Coverage             | ✅ PASS | Test plan below enumerates unit, integration, and tool-selection tests. Implementation must run planned tests.                                               |
+| IV. Observability & Diagnostics      | ✅ PASS | Structured logging via logger.js with plugin/action identifiers. Timeout errors include selector names and tier level.                                       |
+| V. Intent-Explicit Documentation     | ✅ PASS | Each file states purpose. Selectors.js documents which tier each selector belongs to and when last verified.                                                 |
+| VI. Dual-Project Independence        | ✅ PASS | All changes under MCPBrowser/ only. Tests under MCPBrowser/tests/plugins/gmail/. VSCodeExtension untouched.                                                  |
 
 **Post-Phase 1 re-check**: All gates still pass. No violations or complexity justifications needed.
 
@@ -97,37 +97,36 @@ MCPBrowser/tests/plugins/gmail/
 
 ### Unit Tests (automated, fixture-based)
 
-| Test file | What it tests | FR coverage |
-|-----------|--------------|-------------|
-| `gmail-plugin.test.js` | manifest fields, matchesPage detection, getActions catalog, getInfo serialization | FR-001, FR-002 |
-| `gmail-helpers.test.js` | `detectView()` URL parsing + DOM fallback, `getAccountIndex()` extraction for /u/0/ /u/1/ /u/2/, `gmailNavigate()` URL construction, `checkPrecondition()` validation logic | FR-017, FR-020, FR-024, FR-025 |
-| `gmail-selectors.test.js` | All Tier 4 selectors exported, tier documentation comments present, no action logic in selectors module | FR-023 |
-| `list-emails.test.js` | URL hash navigation to folders, email row extraction from fixture HTML, limit param, folder param, error on non-Gmail | FR-003, FR-011(T1), FR-012, FR-020 |
-| `read-email.test.js` | Thread extraction from fixture HTML, message chronological ordering, attachment metadata, ID and index targeting | FR-004, FR-016 |
-| `search-emails.test.js` | URL hash construction with encoded query, account index preservation, result extraction, empty results | FR-005, FR-011(T1), FR-020 |
-| `compose-email.test.js` | Keyboard `c` trigger, form fill via name attrs, send vs draft, CC expansion, empty-to validation | FR-006, FR-011(T2/T3), FR-015 |
-| `reply-email.test.js` | Precondition check (thread open), keyboard `r`/`a` trigger, body fill, send vs draft | FR-007, FR-011(T2), FR-025 |
-| `forward-email.test.js` | Precondition check, keyboard `f` trigger, To fill, body prepend | FR-018, FR-025 |
-| `archive-email.test.js` | Hybrid DOM+keyboard: checkbox click + `e`, thread view direct `e`, precondition errors | FR-008, FR-011(T2/T3), FR-016, FR-025 |
-| `delete-email.test.js` | Same hybrid pattern with `#` shortcut | FR-008 |
-| `label-email.test.js` | Hybrid select + `l` keyboard, label picker interaction, label-not-found error | FR-009, FR-011(T2/T4) |
-| `mark-readunread.test.js` | Hybrid select + `Shift+i`/`Shift+u`, status change verification | FR-010, FR-011(T2) |
+| Test file                 | What it tests                                                                                                                                                               | FR coverage                           |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `gmail-plugin.test.js`    | manifest fields, matchesPage detection, getActions catalog, getInfo serialization                                                                                           | FR-001, FR-002                        |
+| `gmail-helpers.test.js`   | `detectView()` URL parsing + DOM fallback, `getAccountIndex()` extraction for /u/0/ /u/1/ /u/2/, `gmailNavigate()` URL construction, `checkPrecondition()` validation logic | FR-017, FR-020, FR-024, FR-025        |
+| `gmail-selectors.test.js` | All Tier 4 selectors exported, tier documentation comments present, no action logic in selectors module                                                                     | FR-023                                |
+| `list-emails.test.js`     | URL hash navigation to folders, email row extraction from fixture HTML, limit param, folder param, error on non-Gmail                                                       | FR-003, FR-011(T1), FR-012, FR-020    |
+| `read-email.test.js`      | Thread extraction from fixture HTML, message chronological ordering, attachment metadata, ID and index targeting                                                            | FR-004, FR-016                        |
+| `search-emails.test.js`   | URL hash construction with encoded query, account index preservation, result extraction, empty results                                                                      | FR-005, FR-011(T1), FR-020            |
+| `compose-email.test.js`   | Keyboard `c` trigger, form fill via name attrs, send vs draft, CC expansion, empty-to validation                                                                            | FR-006, FR-011(T2/T3), FR-015         |
+| `reply-email.test.js`     | Precondition check (thread open), keyboard `r`/`a` trigger, body fill, send vs draft                                                                                        | FR-007, FR-011(T2), FR-025            |
+| `forward-email.test.js`   | Precondition check, keyboard `f` trigger, To fill, body prepend                                                                                                             | FR-018, FR-025                        |
+| `archive-email.test.js`   | Hybrid DOM+keyboard: checkbox click + `e`, thread view direct `e`, precondition errors                                                                                      | FR-008, FR-011(T2/T3), FR-016, FR-025 |
+| `delete-email.test.js`    | Same hybrid pattern with `#` shortcut                                                                                                                                       | FR-008                                |
+| `label-email.test.js`     | Hybrid select + `l` keyboard, label picker interaction, label-not-found error                                                                                               | FR-009, FR-011(T2/T4)                 |
+| `mark-readunread.test.js` | Hybrid select + `Shift+i`/`Shift+u`, status change verification                                                                                                             | FR-010, FR-011(T2)                    |
 
 ### Integration Tests (manual, real Gmail)
 
-| Test | What it validates |
-|------|------------------|
-| End-to-end workflow | list → read → reply → archive chain on live Gmail |
-| Keyboard shortcut detection | Verify FR-019 error when shortcuts disabled |
-| Multi-account URL | Verify `/u/1/` account index preserved correctly |
-| Search via URL | Verify `#search/` navigation returns correct results |
+| Test                        | What it validates                                    |
+| --------------------------- | ---------------------------------------------------- |
+| End-to-end workflow         | list → read → reply → archive chain on live Gmail    |
+| Keyboard shortcut detection | Verify FR-019 error when shortcuts disabled          |
+| Multi-account URL           | Verify `/u/1/` account index preserved correctly     |
+| Search via URL              | Verify `#search/` navigation returns correct results |
 
 ### Tool-Selection Tests
 
-| Test | What it validates |
-|------|------------------|
-| `nextSteps` guidance | Each action returns contextually appropriate nextSteps |
-| Error recovery | Error responses include actionable remediation steps |
-| Plugin detection | `browser_fetch_webpage` on Gmail triggers plugin discovery hint |
-
+| Test                 | What it validates                                               |
+| -------------------- | --------------------------------------------------------------- |
+| `nextSteps` guidance | Each action returns contextually appropriate nextSteps          |
+| Error recovery       | Error responses include actionable remediation steps            |
+| Plugin detection     | `browser_fetch_webpage` on Gmail triggers plugin discovery hint |
 ````

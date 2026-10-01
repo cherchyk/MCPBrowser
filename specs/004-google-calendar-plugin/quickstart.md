@@ -13,11 +13,13 @@
 ## Setup
 
 Navigate to Google Calendar:
+
 ```
 browser_fetch_webpage({ url: "https://calendar.google.com" })
 ```
 
 The MCP response will include nextSteps indicating the `gcal` plugin is available:
+
 ```
 "nextSteps": ["Google Calendar plugin detected. Use browser_plugin_info({ plugin: 'gcal' }) to see available actions."]
 ```
@@ -108,12 +110,12 @@ browser_plugin_action({ plugin: "gcal", action: "delete_event", params: { index:
 
 ## Error Recovery
 
-| Error | Recovery |
-|-------|----------|
-| "Google Calendar is not the active page" | `browser_fetch_webpage({ url: "https://calendar.google.com" })` |
-| "Keyboard shortcuts are not enabled" | Enable in Calendar Settings → Keyboard shortcuts → Enable keyboard shortcuts |
-| "Event index N is out of range" | `browser_plugin_action({ plugin: "gcal", action: "list_events" })` to refresh |
-| "Page is still loading" | Wait a moment, then retry the action |
+| Error                                    | Recovery                                                                      |
+| ---------------------------------------- | ----------------------------------------------------------------------------- |
+| "Google Calendar is not the active page" | `browser_fetch_webpage({ url: "https://calendar.google.com" })`               |
+| "Keyboard shortcuts are not enabled"     | Enable in Calendar Settings → Keyboard shortcuts → Enable keyboard shortcuts  |
+| "Event index N is out of range"          | `browser_plugin_action({ plugin: "gcal", action: "list_events" })` to refresh |
+| "Page is still loading"                  | Wait a moment, then retry the action                                          |
 
 ## Action Chaining
 

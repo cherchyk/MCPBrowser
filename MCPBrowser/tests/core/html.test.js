@@ -47,7 +47,8 @@ test('Should remove style tags and their content', () => {
 
 // Test 4: Remove meta tags
 test('Should remove meta tags', () => {
-  const html = '<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head><body>Content</body>';
+  const html =
+    '<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head><body>Content</body>';
   const result = prepareHtml(html, 'https://example.com');
   assert(!result.includes('<meta'), 'Should not contain meta tags');
   assert(result.includes('Content'), 'Should preserve content');
@@ -57,7 +58,10 @@ test('Should remove meta tags', () => {
 test('Should convert relative href URLs to absolute', () => {
   const html = '<a href="/docs/page">Link</a>';
   const result = prepareHtml(html, 'https://example.com');
-  assert(result.includes('href="https://example.com/docs/page"'), 'Should convert relative href to absolute');
+  assert(
+    result.includes('href="https://example.com/docs/page"'),
+    'Should convert relative href to absolute',
+  );
 });
 
 // Test 6: Keep absolute URLs in href unchanged
@@ -71,14 +75,20 @@ test('Should keep absolute href URLs unchanged', () => {
 test('Should convert relative src URLs to absolute', () => {
   const html = '<img src="/images/logo.png">';
   const result = prepareHtml(html, 'https://example.com');
-  assert(result.includes('src="https://example.com/images/logo.png"'), 'Should convert relative src to absolute');
+  assert(
+    result.includes('src="https://example.com/images/logo.png"'),
+    'Should convert relative src to absolute',
+  );
 });
 
 // Test 8: Keep absolute URLs in src unchanged
 test('Should keep absolute src URLs unchanged', () => {
   const html = '<img src="https://cdn.example.com/logo.png">';
   const result = prepareHtml(html, 'https://example.com');
-  assert(result.includes('src="https://cdn.example.com/logo.png"'), 'Should keep absolute src unchanged');
+  assert(
+    result.includes('src="https://cdn.example.com/logo.png"'),
+    'Should keep absolute src unchanged',
+  );
 });
 
 // Test 9: Handle anchor links (should not modify)
@@ -100,14 +110,20 @@ test('Should not modify mailto and tel links', () => {
 test('Should not modify data URIs', () => {
   const html = '<img src="data:image/png;base64,iVBORw0KGg==">';
   const result = prepareHtml(html, 'https://example.com');
-  assert(result.includes('src="data:image/png;base64,iVBORw0KGg=="'), 'Should keep data URI unchanged');
+  assert(
+    result.includes('src="data:image/png;base64,iVBORw0KGg=="'),
+    'Should keep data URI unchanged',
+  );
 });
 
 // Test 12: Handle protocol-relative URLs (should not modify)
 test('Should not modify protocol-relative URLs', () => {
   const html = '<img src="//cdn.example.com/image.png">';
   const result = prepareHtml(html, 'https://example.com');
-  assert(result.includes('src="//cdn.example.com/image.png"'), 'Should keep protocol-relative URL unchanged');
+  assert(
+    result.includes('src="//cdn.example.com/image.png"'),
+    'Should keep protocol-relative URL unchanged',
+  );
 });
 
 // Test 13: Handle empty or null HTML
@@ -144,27 +160,31 @@ test('Should handle complex HTML with multiple elements', () => {
     </html>
   `;
   const result = prepareHtml(html, 'https://example.com/test/');
-  
+
   // Should not contain removed elements
   assert(!result.includes('<meta'), 'Should remove meta');
   assert(!result.includes('<style'), 'Should remove style');
   assert(!result.includes('<script'), 'Should remove script');
   assert(!result.includes('<!--'), 'Should remove comments');
-  
+
   // Should convert relative URLs
   assert(result.includes('href="https://example.com/page1"'), 'Should convert relative href');
-  assert(result.includes('src="https://example.com/images/pic.jpg"'), 'Should convert relative src');
-  
+  assert(
+    result.includes('src="https://example.com/images/pic.jpg"'),
+    'Should convert relative src',
+  );
+
   // Should keep absolute URLs
   assert(result.includes('href="https://external.com"'), 'Should keep absolute href');
-  
+
   // Should preserve content
   assert(result.includes('Page 1'), 'Should preserve content');
 });
 
 // Test 15: Verify script with attributes is removed
 test('Should remove script tags with various attributes', () => {
-  const html = '<script type="text/javascript" async defer src="/app.js">console.log("test");</script>';
+  const html =
+    '<script type="text/javascript" async defer src="/app.js">console.log("test");</script>';
   const result = prepareHtml(html, 'https://example.com');
   assert(!result.includes('<script'), 'Should remove script with attributes');
   assert(!result.includes('app.js'), 'Should remove script content');
@@ -215,7 +235,8 @@ test('Should remove event handler attributes', () => {
 
 // Test 21: Remove SVG tags
 test('Should remove SVG tags and content', () => {
-  const html = '<div>Text</div><svg width="100" height="100"><circle cx="50" cy="50" r="40"/></svg>';
+  const html =
+    '<div>Text</div><svg width="100" height="100"><circle cx="50" cy="50" r="40"/></svg>';
   const result = prepareHtml(html, 'https://example.com');
   assert(!result.includes('<svg'), 'Should remove svg tag');
   assert(!result.includes('circle'), 'Should remove svg content');
@@ -233,7 +254,8 @@ test('Should remove noscript tags and content', () => {
 
 // Test 23: Remove link tags
 test('Should remove link tags', () => {
-  const html = '<head><link rel="stylesheet" href="/style.css"><link rel="preload" as="script"></head>';
+  const html =
+    '<head><link rel="stylesheet" href="/style.css"><link rel="preload" as="script"></head>';
   const result = prepareHtml(html, 'https://example.com');
   assert(!result.includes('<link'), 'Should remove link tags');
 });
@@ -266,7 +288,8 @@ test('Should collapse multiple whitespace into single space', () => {
 
 // Test 26b: Data-carrying scripts are preserved (JSON-LD structured data)
 test('Should preserve JSON-LD script tags while removing executable scripts', () => {
-  const html = '<script type="application/ld+json">{"@type":"Product","name":"Widget"}</script><script>alert(1)</script>';
+  const html =
+    '<script type="application/ld+json">{"@type":"Product","name":"Widget"}</script><script>alert(1)</script>';
   const result = prepareHtml(html, 'https://example.com');
   assert(result.includes('application/ld+json'), 'Should keep JSON-LD script');
   assert(result.includes('Widget'), 'Should keep JSON-LD content');
@@ -283,7 +306,8 @@ test('Should preserve application/json script tags', () => {
 
 // Test 26d: Keep description and OpenGraph meta, drop the rest
 test('Should keep description and og:* meta tags, drop others', () => {
-  const html = '<meta charset="utf-8"><meta name="description" content="A page"><meta property="og:title" content="Title">';
+  const html =
+    '<meta charset="utf-8"><meta name="description" content="A page"><meta property="og:title" content="Title">';
   const result = prepareHtml(html, 'https://example.com');
   assert(!result.includes('charset'), 'Should remove charset meta');
   assert(result.includes('name="description"'), 'Should keep description meta');
@@ -306,7 +330,7 @@ test('Should handle HTML with all types of removals', () => {
     </div>
   `;
   const result = prepareHtml(html, 'https://example.com/test/');
-  
+
   // Should keep interaction-related attributes
   assert(result.includes('class='), 'Should keep class');
   assert(result.includes('id='), 'Should keep id');
@@ -315,14 +339,14 @@ test('Should handle HTML with all types of removals', () => {
   assert(!result.includes('onclick='), 'Should remove onclick');
   assert(result.includes('role='), 'Should preserve role (semantically valuable)');
   assert(result.includes('aria-label='), 'Should preserve aria-label (accessible name)');
-  
+
   // Should remove non-content elements
   assert(!result.includes('<svg'), 'Should remove svg');
   assert(!result.includes('<script'), 'Should remove script');
   assert(!result.includes('<style'), 'Should remove style');
   assert(!result.includes('<noscript'), 'Should remove noscript');
   assert(!result.includes('<link'), 'Should remove link');
-  
+
   // Should preserve content and convert URLs
   assert(result.includes('href="https://example.com/page"'), 'Should convert relative URL');
   assert(result.includes('Text content'), 'Should preserve text');
@@ -363,7 +387,8 @@ test('cleanHtml: Should remove style tags and their content', () => {
 
 // Test cleanHtml 4: Remove meta tags
 test('cleanHtml: Should remove meta tags', () => {
-  const html = '<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head><body>Content</body>';
+  const html =
+    '<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head><body>Content</body>';
   const result = cleanHtml(html);
   assert(!result.includes('<meta'), 'Should not contain meta tags');
   assert(result.includes('Content'), 'Should preserve content');
@@ -395,7 +420,8 @@ test('cleanHtml: Should keep id attributes', () => {
 
 // Test cleanHtml 8: Remove SVG tags
 test('cleanHtml: Should remove SVG tags and content', () => {
-  const html = '<div>Text</div><svg width="100" height="100"><circle cx="50" cy="50" r="40"/></svg>';
+  const html =
+    '<div>Text</div><svg width="100" height="100"><circle cx="50" cy="50" r="40"/></svg>';
   const result = cleanHtml(html);
   assert(!result.includes('<svg'), 'Should remove svg tag');
   assert(!result.includes('circle'), 'Should remove svg content');
@@ -429,7 +455,10 @@ console.log('\n🔗 Testing enrichHtml function\n');
 test('enrichHtml: Should convert relative href URLs to absolute', () => {
   const html = '<a href="/docs/page">Link</a>';
   const result = enrichHtml(html, 'https://example.com');
-  assert(result.includes('href="https://example.com/docs/page"'), 'Should convert relative href to absolute');
+  assert(
+    result.includes('href="https://example.com/docs/page"'),
+    'Should convert relative href to absolute',
+  );
 });
 
 // Test enrichHtml 2: Keep absolute href URLs unchanged
@@ -443,14 +472,20 @@ test('enrichHtml: Should keep absolute href URLs unchanged', () => {
 test('enrichHtml: Should convert relative src URLs to absolute', () => {
   const html = '<img src="/images/logo.png">';
   const result = enrichHtml(html, 'https://example.com');
-  assert(result.includes('src="https://example.com/images/logo.png"'), 'Should convert relative src to absolute');
+  assert(
+    result.includes('src="https://example.com/images/logo.png"'),
+    'Should convert relative src to absolute',
+  );
 });
 
 // Test enrichHtml 4: Keep absolute src URLs unchanged
 test('enrichHtml: Should keep absolute src URLs unchanged', () => {
   const html = '<img src="https://cdn.example.com/logo.png">';
   const result = enrichHtml(html, 'https://example.com');
-  assert(result.includes('src="https://cdn.example.com/logo.png"'), 'Should keep absolute src unchanged');
+  assert(
+    result.includes('src="https://cdn.example.com/logo.png"'),
+    'Should keep absolute src unchanged',
+  );
 });
 
 // Test enrichHtml 5: Handle anchor links
@@ -472,14 +507,20 @@ test('enrichHtml: Should not modify mailto and tel links', () => {
 test('enrichHtml: Should not modify data URIs', () => {
   const html = '<img src="data:image/png;base64,iVBORw0KGg==">';
   const result = enrichHtml(html, 'https://example.com');
-  assert(result.includes('src="data:image/png;base64,iVBORw0KGg=="'), 'Should keep data URI unchanged');
+  assert(
+    result.includes('src="data:image/png;base64,iVBORw0KGg=="'),
+    'Should keep data URI unchanged',
+  );
 });
 
 // Test enrichHtml 8: Handle protocol-relative URLs
 test('enrichHtml: Should not modify protocol-relative URLs', () => {
   const html = '<img src="//cdn.example.com/image.png">';
   const result = enrichHtml(html, 'https://example.com');
-  assert(result.includes('src="//cdn.example.com/image.png"'), 'Should keep protocol-relative URL unchanged');
+  assert(
+    result.includes('src="//cdn.example.com/image.png"'),
+    'Should keep protocol-relative URL unchanged',
+  );
 });
 
 // Test enrichHtml 9: Does NOT remove elements (that's cleanHtml's job)
@@ -494,7 +535,10 @@ test('enrichHtml: Should NOT remove script or style tags', () => {
 test('enrichHtml: Should convert relative form action to absolute', () => {
   const html = '<form action="/submit" method="post"><input name="q"></form>';
   const result = enrichHtml(html, 'https://example.com/page/');
-  assert(result.includes('action="https://example.com/submit"'), 'Should convert relative action to absolute');
+  assert(
+    result.includes('action="https://example.com/submit"'),
+    'Should convert relative action to absolute',
+  );
 });
 
 // Test enrichHtml 11: Do not rewrite non-form action attributes
@@ -508,7 +552,10 @@ test('enrichHtml: Should not rewrite data-action attributes', () => {
 test('enrichHtml: Should convert relative poster URLs to absolute', () => {
   const html = '<video poster="/thumb.jpg"></video>';
   const result = enrichHtml(html, 'https://example.com');
-  assert(result.includes('poster="https://example.com/thumb.jpg"'), 'Should convert relative poster to absolute');
+  assert(
+    result.includes('poster="https://example.com/thumb.jpg"'),
+    'Should convert relative poster to absolute',
+  );
 });
 
 // Test enrichHtml 13: Convert relative srcset URLs, preserve descriptors
@@ -529,17 +576,27 @@ test('enrichHtml: Should keep absolute/protocol-relative srcset candidates', () 
 
 // Test enrichHtml 15: Honor <base href> for relative resolution
 test('enrichHtml: Should resolve relative URLs against <base href>', () => {
-  const html = '<head><base href="https://cdn.example.com/app/"></head><body><a href="page">Link</a><img src="img/logo.png"></body>';
+  const html =
+    '<head><base href="https://cdn.example.com/app/"></head><body><a href="page">Link</a><img src="img/logo.png"></body>';
   const result = enrichHtml(html, 'https://example.com/');
-  assert(result.includes('href="https://cdn.example.com/app/page"'), 'Should resolve href against base');
-  assert(result.includes('src="https://cdn.example.com/app/img/logo.png"'), 'Should resolve src against base');
+  assert(
+    result.includes('href="https://cdn.example.com/app/page"'),
+    'Should resolve href against base',
+  );
+  assert(
+    result.includes('src="https://cdn.example.com/app/img/logo.png"'),
+    'Should resolve src against base',
+  );
 });
 
 // Test enrichHtml 16: Relative <base href> resolves against document URL
 test('enrichHtml: Should resolve a relative <base href> against the document URL', () => {
   const html = '<base href="/app/"><a href="page">Link</a>';
   const result = enrichHtml(html, 'https://example.com/docs/');
-  assert(result.includes('href="https://example.com/app/page"'), 'Should combine relative base with document URL');
+  assert(
+    result.includes('href="https://example.com/app/page"'),
+    'Should combine relative base with document URL',
+  );
 });
 
 // ==================================================
@@ -550,15 +607,16 @@ console.log('\n🔄 Testing cleanHtml + enrichHtml combination\n');
 
 // Test Combined 1: Clean then enrich
 test('Combined: Should clean HTML then enrich URLs', () => {
-  const html = '<div class="test" style="color:red"><a href="/page">Link</a><script>alert();</script></div>';
+  const html =
+    '<div class="test" style="color:red"><a href="/page">Link</a><script>alert();</script></div>';
   const cleaned = cleanHtml(html);
   const enriched = enrichHtml(cleaned, 'https://example.com');
-  
+
   // Should keep class, remove style and script
   assert(enriched.includes('class="test"'), 'Should keep class');
   assert(!enriched.includes('style='), 'Should not have style');
   assert(!enriched.includes('<script'), 'Should not have script');
-  
+
   // Should have enriched URL
   assert(enriched.includes('href="https://example.com/page"'), 'Should have absolute URL');
   assert(enriched.includes('Link'), 'Should preserve content');
@@ -568,11 +626,11 @@ test('Combined: Should clean HTML then enrich URLs', () => {
 test('Combined: prepareHtml should still work as before', () => {
   const html = '<div class="test"><a href="/page">Link</a><script>alert();</script></div>';
   const result = prepareHtml(html, 'https://example.com');
-  
+
   // Should keep class, remove script
   assert(result.includes('class="test"'), 'Should keep class for interaction');
   assert(!result.includes('<script'), 'Should remove script');
-  
+
   // Should enrich
   assert(result.includes('href="https://example.com/page"'), 'Should convert URL');
   assert(result.includes('Link'), 'Should preserve content');

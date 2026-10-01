@@ -1,7 +1,7 @@
 /**
  * Automated Tool Selection Testing
  * Tests different tool description versions to ensure AI agents select the correct tools
- * 
+ *
  * Usage:
  *   npm test -- tool-selection.test.js
  *   node tests/tool-selection.test.js --api-key YOUR_KEY
@@ -10,21 +10,34 @@
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { ACTIONS as CORE_ACTIONS } from '../../src/actions/index.js';
+
+const FETCH_WEBPAGE_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_fetch_webpage');
+const CLICK_ELEMENT_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_click_element');
+const TYPE_TEXT_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_type_text');
+const CLOSE_TAB_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_close_tab');
+const GET_CURRENT_HTML_ACTION = CORE_ACTIONS.find(
+  (action) => action.id === 'browser_get_current_html',
+);
+const EXECUTE_JAVASCRIPT_ACTION = CORE_ACTIONS.find(
+  (action) => action.id === 'browser_execute_javascript',
+);
 
 // Import tool definitions directly
-import { FETCH_WEBPAGE_TOOL } from '../../src/actions/fetch-page.js';
-import { CLICK_ELEMENT_TOOL } from '../../src/actions/click-element.js';
-import { TYPE_TEXT_TOOL } from '../../src/actions/type-text.js';
-import { CLOSE_TAB_TOOL } from '../../src/actions/close-tab.js';
-import { GET_CURRENT_HTML_TOOL } from '../../src/actions/get-current-html.js';
-import { EXECUTE_JAVASCRIPT_TOOL } from '../../src/actions/execute-javascript.js';
+
+const FETCH_WEBPAGE_TOOL = FETCH_WEBPAGE_ACTION.tool;
+const CLICK_ELEMENT_TOOL = CLICK_ELEMENT_ACTION.tool;
+const TYPE_TEXT_TOOL = TYPE_TEXT_ACTION.tool;
+const CLOSE_TAB_TOOL = CLOSE_TAB_ACTION.tool;
+const GET_CURRENT_HTML_TOOL = GET_CURRENT_HTML_ACTION.tool;
+const EXECUTE_JAVASCRIPT_TOOL = EXECUTE_JAVASCRIPT_ACTION.tool;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load test scenarios
 const testScenarios = JSON.parse(
-  readFileSync(join(__dirname, 'tool-selection-tests.json'), 'utf-8')
+  readFileSync(join(__dirname, 'tool-selection-tests.json'), 'utf-8'),
 );
 
 /**
@@ -33,37 +46,45 @@ const testScenarios = JSON.parse(
  */
 function simulateToolSelection(tools, userRequest, context = null) {
   const request = userRequest.toLowerCase();
-  
+
   // Track tool scores for this request
   const scores = {};
-  
-  tools.forEach(tool => {
+
+  tools.forEach((tool) => {
     const desc = tool.description.toLowerCase();
     let score = 0;
-    
+
     // Domain pattern matching for browser_fetch_webpage
     if (tool.name === 'browser_fetch_webpage') {
       const patterns = [
-        '.microsoft.com', '.corp.', '.internal.', 'eng.ms', 
-        '.azure.', '.office.', 'sso', 'oauth', 'saml', 'captcha'
+        '.microsoft.com',
+        '.corp.',
+        '.internal.',
+        'eng.ms',
+        '.azure.',
+        '.office.',
+        'sso',
+        'oauth',
+        'saml',
+        'captcha',
       ];
-      
-      patterns.forEach(pattern => {
+
+      patterns.forEach((pattern) => {
         if (request.includes(pattern) || request.includes(pattern.replace('.', ''))) {
           score += 30;
         }
       });
-      
+
       // Only boost for initial fetch/load/navigate keywords if no context
       if (!context && /\b(fetch|get|load|navigate|go to|open)\b/.test(request)) {
         score += 25;
       }
-      
+
       // Small boost for login flows (they need initial fetch)
       if (!context && /\b(login)\b/.test(request)) {
         score += 15;
       }
-      
+
       // URL in request suggests fetching
       if (!context && /https?:\/\//.test(request)) {
         score += 10;
@@ -74,17 +95,17 @@ function simulateToolSelection(tools, userRequest, context = null) {
         score -= 100;
       }
     }
-    
+
     // Click element detection
     if (tool.name === 'browser_click_element') {
       if (/\b(click|press|tap|submit)\b/.test(request)) {
         score += 40;
       }
-      
+
       if (/\b(button|link)\b/.test(request)) {
         score += 20;
       }
-      
+
       // Needs page loaded
       if (context && context.pageLoaded) {
         score += 25;
@@ -92,17 +113,17 @@ function simulateToolSelection(tools, userRequest, context = null) {
         score -= 100; // Can't click without page loaded
       }
     }
-    
+
     // Type text detection
     if (tool.name === 'browser_type_text') {
       if (/\b(fill|type|enter)\b/.test(request)) {
         score += 40;
       }
-      
+
       if (/\b(username|password|field|input|search)\b/.test(request)) {
         score += 20;
       }
-      
+
       // Needs page loaded
       if (context && context.pageLoaded) {
         score += 25;
@@ -110,13 +131,13 @@ function simulateToolSelection(tools, userRequest, context = null) {
         score -= 100; // Can't type without page loaded
       }
     }
-    
+
     // Get current HTML detection
     if (tool.name === 'browser_get_current_html') {
       if (/\b(what does|what is|check|current|page state|say now|after)\b/.test(request)) {
         score += 40;
       }
-      
+
       // Needs context
       if (context && context.pageLoaded) {
         score += 25;
@@ -127,7 +148,10 @@ function simulateToolSelection(tools, userRequest, context = null) {
 
     // Execute JavaScript detection
     if (tool.name === 'browser_execute_javascript') {
-      if (/\b(run|execute|eval|evaluate)\b/.test(request) && /\b(js|javascript|script)\b/.test(request)) {
+      if (
+        /\b(run|execute|eval|evaluate)\b/.test(request) &&
+        /\b(js|javascript|script)\b/.test(request)
+      ) {
         score += 50;
       }
 
@@ -141,7 +165,7 @@ function simulateToolSelection(tools, userRequest, context = null) {
         score -= 80; // Must have a loaded page first
       }
     }
-    
+
     // Close tab detection
     if (tool.name === 'browser_close_tab') {
       if (/\b(close)\b/.test(request) && /\b(tab|browser)\b/.test(request)) {
@@ -151,12 +175,12 @@ function simulateToolSelection(tools, userRequest, context = null) {
       }
       // Don't match "login" as "logout"
     }
-    
+
     scores[tool.name] = score;
   });
-  
+
   // Return tool with highest score (prefer earlier tools on ties — browser_fetch_webpage is a safe default)
-  const selectedTool = Object.entries(scores).reduce((a, b) => a[1] >= b[1] ? a : b)[0];
+  const selectedTool = Object.entries(scores).reduce((a, b) => (a[1] >= b[1] ? a : b))[0];
   return selectedTool;
 }
 
@@ -169,20 +193,20 @@ function runScenario(scenario, tools, version) {
     scenario: scenario.id,
     version: version,
     passed: false,
-    details: {}
+    details: {},
   };
-  
+
   // Handle sequence scenarios
   if (scenario.expectedToolSequence) {
     const selectedSequence = [];
     let requestContext = scenario.userRequest.toLowerCase();
-    
+
     // For multi-step, we need to simulate each step separately
     const steps = scenario.expectedToolSequence.length;
-    
+
     for (let i = 0; i < steps; i++) {
       let stepRequest = requestContext;
-      
+
       // Adjust request based on what we're looking for
       if (i === 0) {
         // First step - usually fetch/load/navigate
@@ -190,7 +214,7 @@ function runScenario(scenario, tools, version) {
       } else {
         // Subsequent steps - parse based on expected action
         const expectedTool = scenario.expectedToolSequence[i];
-        
+
         if (expectedTool === 'browser_type_text') {
           // Look for typing-related keywords
           if (requestContext.includes('username') && i === 1) {
@@ -211,42 +235,49 @@ function runScenario(scenario, tools, version) {
           }
         }
       }
-      
+
       const selected = simulateToolSelection(tools, stepRequest, context);
       selectedSequence.push(selected);
-      
+
       // Update context if browser_fetch_webpage was selected
       if (selected === 'browser_fetch_webpage') {
         context = { pageLoaded: true };
       }
     }
-    
+
     results.details.expectedSequence = scenario.expectedToolSequence;
     results.details.selectedSequence = selectedSequence;
-    results.passed = JSON.stringify(selectedSequence) === JSON.stringify(scenario.expectedToolSequence);
-    
+    results.passed =
+      JSON.stringify(selectedSequence) === JSON.stringify(scenario.expectedToolSequence);
   } else {
     // Single tool scenario
-    const selected = simulateToolSelection(tools, scenario.userRequest, 
-      scenario.contextDependent ? { pageLoaded: true } : null);
-    
+    const selected = simulateToolSelection(
+      tools,
+      scenario.userRequest,
+      scenario.contextDependent ? { pageLoaded: true } : null,
+    );
+
     results.details.expected = scenario.expectedTool || scenario.acceptableTools;
     results.details.selected = selected;
-    
+
     if (scenario.expectedTool) {
       results.passed = selected === scenario.expectedTool;
     } else if (scenario.acceptableTools) {
       results.passed = scenario.acceptableTools.includes(selected);
     }
-    
+
     // Check mustNotUse violations
-    if (scenario.mustNotUse && scenario.mustNotUse.some(forbidden => 
-      selected.toLowerCase().includes(forbidden.toLowerCase()))) {
+    if (
+      scenario.mustNotUse &&
+      scenario.mustNotUse.some((forbidden) =>
+        selected.toLowerCase().includes(forbidden.toLowerCase()),
+      )
+    ) {
       results.passed = false;
       results.details.violation = `Used forbidden tool: ${selected}`;
     }
   }
-  
+
   return results;
 }
 
@@ -257,17 +288,17 @@ function loadDescriptionVersions() {
   // From tests/tool-selection/ we need to go up two levels to reach MCPBrowser/src/
   const versionsDir = join(__dirname, '..', '..', 'src', 'tool-descriptions');
   const versions = {};
-  
+
   // If versions directory doesn't exist, use current version only
   if (!existsSync(versionsDir)) {
     console.log('⚠️  No tool-descriptions directory found. Using current version only.');
     return {
-      'current': loadToolsFromCurrentFile()
+      current: loadToolsFromCurrentFile(),
     };
   }
-  
-  const files = readdirSync(versionsDir).filter(f => f.endsWith('.js'));
-  
+
+  const files = readdirSync(versionsDir).filter((f) => f.endsWith('.js'));
+
   for (const file of files) {
     const versionName = file.replace('.js', '');
     try {
@@ -279,7 +310,7 @@ function loadDescriptionVersions() {
       console.error(`Failed to load version ${versionName}:`, err.message);
     }
   }
-  
+
   return versions;
 }
 
@@ -293,7 +324,7 @@ function loadToolsFromCurrentFile() {
     TYPE_TEXT_TOOL,
     CLOSE_TAB_TOOL,
     GET_CURRENT_HTML_TOOL,
-    EXECUTE_JAVASCRIPT_TOOL
+    EXECUTE_JAVASCRIPT_TOOL,
   ];
 }
 
@@ -306,7 +337,7 @@ function parseToolsFromFile(content) {
   if (!match) {
     throw new Error('Could not find tools array in file');
   }
-  
+
   // Use eval in a controlled way (this is for testing only)
   // In production, you'd want a proper parser
   try {
@@ -325,21 +356,21 @@ function calculateScore(results, scenarios) {
   const weights = testScenarios.evaluationCriteria.priorityWeighting;
   let totalWeight = 0;
   let weightedScore = 0;
-  
-  results.forEach(result => {
-    const scenario = scenarios.testScenarios.find(s => s.id === result.scenario);
+
+  results.forEach((result) => {
+    const scenario = scenarios.testScenarios.find((s) => s.id === result.scenario);
     const weight = weights[scenario.priority] || 1;
-    
+
     totalWeight += weight;
     if (result.passed) {
       weightedScore += weight;
     }
   });
-  
+
   return {
-    percentage: (weightedScore / totalWeight * 100).toFixed(1),
+    percentage: ((weightedScore / totalWeight) * 100).toFixed(1),
     weighted: weightedScore,
-    total: totalWeight
+    total: totalWeight,
   };
 }
 
@@ -353,48 +384,48 @@ function generateReport(allResults, versions) {
   console.log(`Date: ${new Date().toISOString()}`);
   console.log(`Scenarios: ${testScenarios.testScenarios.length}`);
   console.log(`Versions tested: ${Object.keys(versions).length}\n`);
-  
+
   const versionScores = {};
-  
-  Object.keys(versions).forEach(version => {
+
+  Object.keys(versions).forEach((version) => {
     const results = allResults[version];
     const score = calculateScore(results, testScenarios);
     versionScores[version] = score;
-    
+
     console.log(`\n${'─'.repeat(80)}`);
     console.log(`VERSION: ${version}`);
     console.log(`${'─'.repeat(80)}`);
-    
+
     // Group by priority
     const byPriority = {
       critical: [],
       high: [],
       medium: [],
-      low: []
+      low: [],
     };
-    
-    results.forEach(result => {
-      const scenario = testScenarios.testScenarios.find(s => s.id === result.scenario);
+
+    results.forEach((result) => {
+      const scenario = testScenarios.testScenarios.find((s) => s.id === result.scenario);
       byPriority[scenario.priority].push({ ...result, scenario });
     });
-    
+
     // Report each priority level
     Object.entries(byPriority).forEach(([priority, items]) => {
       if (items.length === 0) return;
-      
-      const passed = items.filter(r => r.passed).length;
+
+      const passed = items.filter((r) => r.passed).length;
       const total = items.length;
-      const percentage = (passed / total * 100).toFixed(1);
-      
+      const percentage = ((passed / total) * 100).toFixed(1);
+
       const threshold = testScenarios.passingThreshold[priority] || 80;
       const status = parseFloat(percentage) >= threshold ? '✅' : '❌';
-      
+
       console.log(`\n${priority.toUpperCase()} (${passed}/${total} = ${percentage}%) ${status}`);
-      
-      items.forEach(result => {
+
+      items.forEach((result) => {
         const icon = result.passed ? '  ✅' : '  ❌';
         console.log(`${icon} ${result.scenario.id}`);
-        
+
         if (!result.passed) {
           if (result.details.expectedSequence) {
             console.log(`      Expected: ${result.details.expectedSequence.join(' → ')}`);
@@ -409,10 +440,10 @@ function generateReport(allResults, versions) {
         }
       });
     });
-    
+
     console.log(`\n${'─'.repeat(40)}`);
     console.log(`OVERALL SCORE: ${score.percentage}% (${score.weighted}/${score.total} weighted)`);
-    
+
     const overallThreshold = testScenarios.passingThreshold.overall;
     if (parseFloat(score.percentage) >= overallThreshold) {
       console.log(`✅ PASS - Above ${overallThreshold}% threshold`);
@@ -420,31 +451,32 @@ function generateReport(allResults, versions) {
       console.log(`❌ FAIL - Below ${overallThreshold}% threshold`);
     }
   });
-  
+
   // Determine best version
   console.log('\n' + '='.repeat(80));
   console.log('COMPARISON');
   console.log('='.repeat(80));
-  
-  const ranked = Object.entries(versionScores)
-    .sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage));
-  
+
+  const ranked = Object.entries(versionScores).sort(
+    (a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage),
+  );
+
   console.log('\nRanking:');
   ranked.forEach(([version, score], index) => {
     const medal = index === 0 ? '🏆' : index === 1 ? '🥈' : index === 2 ? '🥉' : '  ';
     console.log(`${medal} ${index + 1}. ${version}: ${score.percentage}%`);
   });
-  
+
   const [bestVersion, bestScore] = ranked[0];
   console.log('\n' + '='.repeat(80));
   console.log(`🏆 BEST VERSION: ${bestVersion} with ${bestScore.percentage}% accuracy`);
   console.log('='.repeat(80));
-  
+
   return {
     bestVersion,
     bestScore: parseFloat(bestScore.percentage),
     allScores: versionScores,
-    allResults
+    allResults,
   };
 }
 
@@ -453,41 +485,43 @@ function generateReport(allResults, versions) {
  */
 async function runTests() {
   console.log('Loading tool description versions...');
-  
+
   // For now, we'll test the current version
   // You can create multiple versions in src/tool-descriptions/
   const versions = {
-    'current': loadToolsFromCurrentFile()
+    current: loadToolsFromCurrentFile(),
   };
-  
+
   console.log(`Found ${Object.keys(versions).length} version(s) to test\n`);
-  
+
   const allResults = {};
-  
+
   for (const [versionName, tools] of Object.entries(versions)) {
     console.log(`Testing version: ${versionName}...`);
     const results = [];
-    
+
     for (const scenario of testScenarios.testScenarios) {
       const result = runScenario(scenario, tools, versionName);
       results.push(result);
     }
-    
+
     allResults[versionName] = results;
   }
-  
+
   return generateReport(allResults, versions);
 }
 
 // Run tests if this is the main module
-if (import.meta.url === `file://${process.argv[1]}` || 
-    process.argv[1]?.includes('tool-selection.test.js')) {
+if (
+  import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1]?.includes('tool-selection.test.js')
+) {
   runTests()
-    .then(report => {
+    .then((report) => {
       console.log('\n✅ Testing complete\n');
       process.exit(report.bestScore >= testScenarios.passingThreshold.overall ? 0 : 1);
     })
-    .catch(err => {
+    .catch((err) => {
       console.error('❌ Test failed:', err);
       process.exit(1);
     });

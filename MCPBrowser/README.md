@@ -28,18 +28,18 @@ Example workflow for AI assistant to use MCPBrowser
 
 Puppeteer and Playwright are browser automation libraries — their MCP servers expose low-level browser commands and the agent has to handle SPAs, auth flows, messy HTML, and edge cases on its own. **MCPBrowser was built specifically for AI agents.** It uses Puppeteer under the hood and adds an intelligence layer so the agent can focus on the task instead of fighting the browser.
 
-| | MCPBrowser | Puppeteer/Playwright MCP |
-|---|---|---|
-| **HTML output** | Clean, LLM-optimized (~90% smaller) — strips scripts, styles, SVGs, tracking attrs, converts relative URLs | Raw DOM |
-| **SPA support** | Auto-detects React, Vue, Angular, Svelte, Next.js, Nuxt — applies framework-aware wait strategies | Agent must configure waits manually |
-| **Authentication** | Detects login pages, SSO redirects, multi-step auth — follows redirect chains, two-phase timeouts (5s SSO → 20min manual) | Agent must script each auth step |
-| **Form interaction** | `browser_detect_forms` discovers all fields, labels, constraints; `browser_type_text` fills multiple fields at once | One field at a time, manual selectors |
-| **Response format** | Typed, structured with `nextSteps` guidance — soft vs hard failure distinction with recovery actions | Raw results, generic errors |
-| **Tab management** | Domain-pooled — reuses tabs, survives browser reconnection | New context per request |
-| **DOM re-extraction** | `browser_get_current_html` — instant, no reload (10-50x faster) | Must re-fetch full page |
-| **Plugin system** | Detects known sites by URL/DOM patterns, offers site-specific actions with confidence scoring | N/A |
-| **Built for** | AI agents | Browser test automation |
-| **Agent efficiency** | 1 tool call replaces 5-8 raw browser calls — a 4-step login flow takes 4 calls instead of 20+, saving tokens and round-trips | Each step (navigate, wait, query, type, click) is a separate call |
+|                       | MCPBrowser                                                                                                                   | Puppeteer/Playwright MCP                                          |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **HTML output**       | Clean, LLM-optimized (~90% smaller) — strips scripts, styles, SVGs, tracking attrs, converts relative URLs                   | Raw DOM                                                           |
+| **SPA support**       | Auto-detects React, Vue, Angular, Svelte, Next.js, Nuxt — applies framework-aware wait strategies                            | Agent must configure waits manually                               |
+| **Authentication**    | Detects login pages, SSO redirects, multi-step auth — follows redirect chains, two-phase timeouts (5s SSO → 20min manual)    | Agent must script each auth step                                  |
+| **Form interaction**  | `browser_detect_forms` discovers all fields, labels, constraints; `browser_type_text` fills multiple fields at once          | One field at a time, manual selectors                             |
+| **Response format**   | Typed, structured with `nextSteps` guidance — soft vs hard failure distinction with recovery actions                         | Raw results, generic errors                                       |
+| **Tab management**    | Domain-pooled — reuses tabs, survives browser reconnection                                                                   | New context per request                                           |
+| **DOM re-extraction** | `browser_get_current_html` — instant, no reload (10-50x faster)                                                              | Must re-fetch full page                                           |
+| **Plugin system**     | Detects known sites by URL/DOM patterns, offers site-specific actions with confidence scoring                                | N/A                                                               |
+| **Built for**         | AI agents                                                                                                                    | Browser test automation                                           |
+| **Agent efficiency**  | 1 tool call replaces 5-8 raw browser calls — a 4-step login flow takes 4 calls instead of 20+, saving tokens and round-trips | Each step (navigate, wait, query, type, click) is a separate call |
 
 ## Contents
 
@@ -59,6 +59,8 @@ Puppeteer and Playwright are browser automation libraries — their MCP servers 
   - [browser_scroll_page](#browser_scroll_page)
   - [browser_take_screenshot](#browser_take_screenshot)
   - [browser_close_tab](#browser_close_tab)
+- [Microsoft Word Online Plugin](#microsoft-word-online-plugin)
+- [Developing Actions](#developing-actions)
 - [CLI Mode](#cli-mode)
 - [Configuration](#configuration-optional)
 - [Troubleshooting](#troubleshooting)
@@ -73,17 +75,18 @@ Puppeteer and Playwright are browser automation libraries — their MCP servers 
 
 ## Installation
 
-| # | Platform | Difficulty |
-|---|----------|------------|
-| 1 | [VS Code Extension](#option-1-vs-code-extension) | One Click |
-| 2 | [Claude Code](#option-2-claude-code) | One Command |
-| 3 | [OpenClaw](#option-3-openclaw) | One Command |
-| 4 | [Claude Desktop](#option-4-claude-desktop) | Manual |
-| 5 | [npm Package](#option-5-npm-package) | Manual |
+| #   | Platform                                         | Difficulty  |
+| --- | ------------------------------------------------ | ----------- |
+| 1   | [VS Code Extension](#option-1-vs-code-extension) | One Click   |
+| 2   | [Claude Code](#option-2-claude-code)             | One Command |
+| 3   | [OpenClaw](#option-3-openclaw)                   | One Command |
+| 4   | [Claude Desktop](#option-4-claude-desktop)       | Manual      |
+| 5   | [npm Package](#option-5-npm-package)             | Manual      |
 
 ### Option 1: VS Code Extension
 
 Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cherchyk.mcpbrowser) or [Open VSX Registry](https://open-vsx.org/extension/cherchyk/mcpbrowser), or run:
+
 ```bash
 code --install-extension cherchyk.mcpbrowser
 ```
@@ -97,16 +100,19 @@ claude mcp add mcpbrowser --scope user -- npx -y mcpbrowser@latest
 ```
 
 Verify it's working:
+
 ```bash
 claude mcp list
 ```
 
 You should see:
+
 ```
 mcpbrowser: npx -y mcpbrowser@latest - ✓ Connected
 ```
 
 That's it! Ask Claude to fetch any protected page:
+
 > "Fetch https://portal.azure.com using mcpbrowser"
 
 ### Option 3: OpenClaw
@@ -118,6 +124,7 @@ openclaw mcp add mcpbrowser -- npx -y mcpbrowser@latest
 ```
 
 Verify it's working:
+
 ```bash
 openclaw mcp list
 ```
@@ -170,11 +177,13 @@ For VS Code, Kiro, Antigravity, or other editors — manual MCP setup. Add to yo
 Fetches web pages using your Chrome/Edge/Brave browser. Handles authentication, CAPTCHA, SSO, anti-bot protection, and JavaScript-heavy sites. Opens the URL in a browser tab (reuses existing tab for same domain) and waits for the page to fully load before returning content. **Automatically detects SPAs** (React, Vue, Angular) and waits for JavaScript to render content.
 
 **Parameters:**
+
 - `url` (string, required) - The URL to fetch
 - `removeUnnecessaryHTML` (boolean, optional, default: `true`) - Remove unnecessary HTML for size reduction by ~90%
 - `postLoadWait` (number, optional, default: `0`) - Additional milliseconds to wait after page load before extracting HTML. Use for pages that need extra time to render.
 
 **Examples:**
+
 ```javascript
 // Basic fetch
 { url: "https://example.com" }
@@ -195,6 +204,7 @@ Executes a JavaScript snippet in the active page context and returns the result 
 **⚠️ Note:** Page must be already loaded via `browser_fetch_webpage` first.
 
 **Parameters:**
+
 - `url` (string, required) - The URL of the page (must match a previously fetched page)
 - `script` (string, required) - JavaScript source to execute in the page context
 - `timeoutMs` (number, optional, default: `30000`, max: `60000`) - Execution timeout
@@ -203,6 +213,7 @@ Executes a JavaScript snippet in the active page context and returns the result 
 **Returns:** Serialized result (`outerHTML` for DOM nodes), `type`, `executionTimeMs`, `truncated`, `urlChanged`, `currentUrl`, and structured `error` when the script throws or times out.
 
 **Example:**
+
 ```json
 {
   "action": "browser_execute_javascript",
@@ -222,6 +233,7 @@ Clicks on any clickable element (buttons, links, divs with onclick handlers, etc
 **⚠️ Note:** Page must be already loaded via `browser_fetch_webpage` first.
 
 **Parameters:**
+
 - `url` (string, required) - The URL of the page (must match a previously fetched page)
 - `selector` (string, optional) - CSS selector for the element (e.g., `#submit-btn`, `.login-button`)
 - `text` (string, optional) - Text content to search for if selector not provided (e.g., "Sign In", "Submit")
@@ -231,6 +243,7 @@ Clicks on any clickable element (buttons, links, divs with onclick handlers, etc
 - `waitForElementTimeout` (number, optional, default: `1000`) - Maximum time to wait for element in milliseconds
 
 **Examples:**
+
 ```javascript
 // Click by text content
 { url: "https://example.com", text: "Sign In" }
@@ -256,6 +269,7 @@ Types text into one or more input fields in a single call. Supports filling enti
 **⚠️ Note:** Page must be already loaded via `browser_fetch_webpage` first.
 
 **Parameters:**
+
 - `url` (string, required) - The URL of the page (must match a previously fetched page)
 - `fields` (array, required) - Array of fields to fill. Each field object contains:
   - `selector` (string, required) - CSS selector for the input element (e.g., `#username`, `input[name="email"]`)
@@ -267,10 +281,11 @@ Types text into one or more input fields in a single call. Supports filling enti
 - `postTypeWait` (number, optional, default: `1000`) - Milliseconds to wait after typing for SPAs to render dynamic content
 
 **Examples:**
+
 ```javascript
 // Fill multiple fields at once (login form)
-{ 
-  url: "https://example.com/login", 
+{
+  url: "https://example.com/login",
   fields: [
     { selector: "#username", text: "john@example.com" },
     { selector: "#password", text: "secretpass123" }
@@ -284,18 +299,19 @@ Types text into one or more input fields in a single call. Supports filling enti
 { url: "https://example.com", fields: [{ selector: "#notes", text: " additional text", clear: false }] }
 
 // Fast form fill without HTML return
-{ 
-  url: "https://example.com/signup", 
+{
+  url: "https://example.com/signup",
   fields: [
     { selector: "#firstName", text: "John" },
     { selector: "#lastName", text: "Doe" },
     { selector: "#email", text: "john@example.com" }
   ],
-  returnHtml: false 
+  returnHtml: false
 }
 ```
 
 **Error handling:** If a field fails, the response indicates:
+
 - Which field number failed (e.g., "Failed on field 2 of 3")
 - Which fields were successfully filled
 - Clear guidance to NOT re-type already filled fields
@@ -309,10 +325,12 @@ Gets the current HTML from an already-loaded page **WITHOUT** navigating or relo
 **⚠️ Note:** Page must be already loaded via `browser_fetch_webpage` first.
 
 **Parameters:**
+
 - `url` (string, required) - The URL of the page (must match a previously fetched page)
 - `removeUnnecessaryHTML` (boolean, optional, default: `true`) - Remove unnecessary HTML for size reduction by ~90%
 
 **Examples:**
+
 ```javascript
 // Get current HTML after interactions
 { url: "https://example.com" }
@@ -322,6 +340,7 @@ Gets the current HTML from an already-loaded page **WITHOUT** navigating or relo
 ```
 
 **Performance comparison:**
+
 - `browser_fetch_webpage`: 2-5 seconds (full page reload)
 - `browser_get_current_html`: 0.1-0.3 seconds (just extracts HTML) ✅
 
@@ -338,6 +357,7 @@ Scrolls within an already-loaded page. Use before `browser_take_screenshot` to c
 **⚠️ Note:** Page must be already loaded via `browser_fetch_webpage` first.
 
 **Parameters:**
+
 - `url` (string, required) - The URL of the page (must match a previously fetched page)
 - `direction` (string, optional) - Direction to scroll: `up`, `down`, `left`, `right`. Use with `amount`.
 - `amount` (number, optional, default: `500`) - Pixels to scroll in the specified direction (~half a viewport)
@@ -346,6 +366,7 @@ Scrolls within an already-loaded page. Use before `browser_take_screenshot` to c
 - `y` (number, optional) - Absolute vertical scroll position. Use with `x`.
 
 **Examples:**
+
 ```javascript
 // Scroll down by 500px (default)
 { url: "https://example.com", direction: "down" }
@@ -374,10 +395,12 @@ Takes a screenshot of an already-loaded page for visual analysis. **Useful when 
 **⚠️ Note:** Page must be already loaded via `browser_fetch_webpage` first.
 
 **Parameters:**
+
 - `url` (string, required) - The URL of the page (must match a previously fetched page)
 - `fullPage` (boolean, optional, default: `false`) - Capture the full scrollable page instead of just the viewport
 
 **Examples:**
+
 ```javascript
 // Capture viewport screenshot (default)
 { url: "https://example.com" }
@@ -387,6 +410,7 @@ Takes a screenshot of an already-loaded page for visual analysis. **Useful when 
 ```
 
 **Use cases:**
+
 - Visualize page layout when HTML is hard to parse
 - Capture charts, graphs, or data visualizations
 - Debug popups, modals, or overlays
@@ -402,22 +426,114 @@ Closes the browser tab for the given URL's hostname. Removes the page from the t
 **⚠️ Note:** Uses exact hostname match (`www.example.com` and `example.com` are treated as different tabs).
 
 **Parameters:**
+
 - `url` (string, required) - The URL whose hostname tab should be closed
 
 **Examples:**
+
 ```javascript
 // Close tab for a domain
-{ url: "https://example.com" }
+{
+  url: 'https://example.com';
+}
 
 // This will close the tab for portal.azure.com
-{ url: "https://portal.azure.com/dashboard" }
+{
+  url: 'https://portal.azure.com/dashboard';
+}
 ```
 
 **Use cases:**
+
 - Clear authentication/session state
 - Free up browser memory
 - Reset to fresh state before new login
 
+## Microsoft Word Online Plugin
+
+The enabled `word` plugin reads and replaces content in authenticated Word Online documents hosted by SharePoint or OneDrive. Open the document with `browser_fetch_webpage`, then discover or run actions through `browser_plugin_info` and `browser_plugin_action`.
+
+| Action                                                    | Purpose                                                                                     |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `open_document`                                           | Open a document URL, safely promote the SharePoint-hosted editor, and verify edit/view mode |
+| `read_document`                                           | Return bounded rendered document text and structural metadata                               |
+| `replace_document_text`                                   | Replace the entire document with plain text                                                 |
+| `replace_document_html`                                   | Replace the entire document with sanitized rich HTML and a plain-text fallback              |
+| `insert_document_text`                                    | Prepend or append plain text without replacing existing content                             |
+| `insert_document_html`                                    | Prepend or append sanitized rich HTML without replacing existing content                    |
+| `find_text`                                               | Search the full document with optional case and whole-word matching                         |
+| `replace_text`                                            | Surgically replace one occurrence or every occurrence using Word's native document model    |
+| `get_document_info`                                       | Read title, mode, word count, rendered layout, and save state                               |
+| `get_outline`                                             | Read Word's native heading outline                                                          |
+| `read_range`                                              | Navigate to a heading and read rendered paragraph ranges                                    |
+| `get_text_context`                                        | Inspect native search context for one occurrence                                            |
+| `insert_at`                                               | Insert text before or after an exact occurrence                                             |
+| `replace_range` / `delete_range`                          | Replace or delete one anchored occurrence                                                   |
+| `format_range`                                            | Apply bold, italic, underline, or strikethrough to anchored text                            |
+| `list_tables` / `read_table` / `update_table_cell`        | Inspect and safely update rendered tables                                                   |
+| `list_links` / `add_link` / `update_link` / `remove_link` | Inspect and edit rendered hyperlinks                                                        |
+| `list_comments` / `add_comment` / `resolve_comment`       | Work with Word comments                                                                     |
+| `get_state`                                               | Report editor mode, layout counts, bounded text checks, and Word's save signal              |
+| `wait_for_save`                                           | Require stable layout, optional prefix/suffix matches, and Word's confirmed `Saved` state   |
+| `close_document`                                          | Confirm save, then close the Word tab                                                       |
+
+Supported entry points include `https://word.cloud.microsoft/`, HTTPS SharePoint/OneDrive Word links, and Word editor hosts under `*.officeapps.live.com`. The plugin uses the existing browser session; complete sign-in, MFA, or consent directly in the browser.
+
+Rich HTML updates remove active content, event handlers, embedded resources, forms, images, and unsafe URL schemes before dispatch. Payload size and document element counts are bounded. The plugin never reads or returns the SharePoint WOPI access token, cookies, or authorization headers.
+
+`read_document` supports `offset` and `maxCharacters` for chunked reading. It reflects Word's currently rendered pages and reports `mayBePartial: true` because Word virtualizes large documents. `wait_for_save` fails rather than assuming persistence when Word's save indicator is unavailable.
+
+For large documents, prefer `find_text` and `replace_text` over reading and rebuilding the file. `replace_text` preserves unaffected content and formatting, supports a 1-based occurrence or `replaceAll`, and can require `expectedMatchCount` so ambiguous or stale edits fail without changing the document.
+
+Table and link enumeration is limited to currently rendered pages because Word virtualizes large documents. Use `get_outline`, `read_range`, or `find_text` to navigate the relevant area first. Anchored mutations fail when a locator is ambiguous unless an occurrence or expected match count is supplied.
+
+## Developing Actions
+
+Every action uses the shared contract in `src/core/actions.js`: `tool` contains its metadata and schemas, `response` identifies its successful `MCPResponse` type, and `handler` contains the implementation. Callers invoke `execute()`, which rejects handlers that return anything other than an `MCPResponse`. Every `actions/` folder has an `index.js` that exports its complete `ACTIONS` array; registration code consumes that array instead of rebuilding action lists.
+
+Each action module has exactly one public export: its `CoreAction` or `PluginAction` descriptor. The tool schema, response class, and handler remain private and are available through the descriptor's `tool`, `response`, and `handler` properties. Every descriptor also has an immutable `id` equal to `tool.name`, allowing callers and tests to select it from the folder's `ACTIONS` array.
+
+```javascript
+export const FETCH_WEBPAGE_ACTION = new CoreAction({
+  tool: FETCH_WEBPAGE_TOOL,
+  response: FetchPageSuccessResponse,
+  handler: fetchPage,
+});
+```
+
+A core action can opt into the CLI by adding a `cli` object, or an array when one action provides multiple commands. The CLI registry derives its entries from the core `ACTIONS` array, so no separate command registration is required.
+
+Plugin interface version 2 exports a `PluginAction` beside each plugin handler. Existing parameter metadata is converted into an MCP-compatible `inputSchema`, while `name`, `description`, and `params` remain available to plugin discovery:
+
+```javascript
+// plugins/example/actions/list-items.js
+export async function listItems({ page, params }) {
+  return new MyPluginResponse(...);
+}
+
+export const listItemsAction = new PluginAction({
+  name: 'list_items',
+  description: 'List items from the current page',
+  params: [{ name: 'limit', type: 'number', required: false, default: 10 }],
+  response: MyPluginResponse,
+  handler: listItems
+});
+```
+
+The action folder's `index.js` imports these descriptors into `ACTIONS`. Production modules consume that folder index rather than importing individual action files. Tests may import an individual action module when isolation is useful, but the module still exposes only its descriptor; handler, tool, and response access goes through that object.
+
+Each plugin-level `index.js` has exactly one public export: a `CorePlugin` descriptor containing its manifest, detection function, actions, and information provider. Production code accesses plugins only through the `PLUGINS` array exported by `src/plugins/index.js`; adding or removing an entry there enables or disables that plugin. Only plugin-specific tests import an individual plugin entry point directly.
+
+```javascript
+export const EXAMPLE_PLUGIN = new CorePlugin({
+  manifest,
+  matchesPage,
+  actions: ACTIONS,
+  getInfo,
+});
+```
+
+Plugin handlers receive `{ page, params }` and must return the declared response type or another `MCPResponse`, such as `ErrorResponse`. Raw objects are rejected at the action boundary.
 
 ## CLI Mode
 
@@ -451,16 +567,15 @@ mcpbrowser html https://example.com
 
 **CLI vs MCP mode:** When run without arguments, MCPBrowser starts as an MCP server (stdin/stdout JSON-RPC). When run with a subcommand, it executes the command and exits — no MCP protocol needed.
 
-
 ## Configuration (Optional)
 
 Environment variables for advanced setup:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `CHROME_PATH` | Path to Chrome/Edge/Brave | Auto-detect |
-| `CHROME_USER_DATA_DIR` | Browser profile directory | `%LOCALAPPDATA%/ChromeAuthProfile` |
-| `CHROME_REMOTE_DEBUG_PORT` | DevTools port | `9222` |
+| Variable                   | Description               | Default                            |
+| -------------------------- | ------------------------- | ---------------------------------- |
+| `CHROME_PATH`              | Path to Chrome/Edge/Brave | Auto-detect                        |
+| `CHROME_USER_DATA_DIR`     | Browser profile directory | `%LOCALAPPDATA%/ChromeAuthProfile` |
+| `CHROME_REMOTE_DEBUG_PORT` | DevTools port             | `9222`                             |
 
 ## Observability & Logging
 
@@ -477,6 +592,7 @@ MCPBrowser logs all operations to help you understand what's happening:
 ```
 
 **Error messages are marked with ❌:**
+
 ```
 [MCPBrowser] ❌ browser_fetch_webpage failed: net::ERR_NAME_NOT_RESOLVED
 [MCPBrowser] ❌ No open page found for example.com
@@ -487,14 +603,17 @@ Logs go to `stderr` so they don't interfere with MCP protocol on `stdout`.
 ## Troubleshooting
 
 **Browser doesn't open?**
+
 - Make sure Chrome, Edge, or Brave is installed
 - Try setting `CHROME_PATH` explicitly
 
 **Can't connect to browser?**
+
 - Close all Chrome instances and try again
 - Check if port 9222 is in use
 
 **Authentication not preserved?**
+
 - Keep the browser tab open (default behavior)
 - Use the same domain for related requests
 
@@ -503,6 +622,7 @@ Logs go to `stderr` so they don't interfere with MCP protocol on `stdout`.
 If your project has a `.npmrc` that points to a private registry (e.g., Azure Artifacts, GitHub Packages, Artifactory), `npx` will try to fetch `mcpbrowser` from that registry instead of npmjs.org and fail with `E401`.
 
 **Fix:** Add `npm_config_registry` to the `env` block in your MCP config:
+
 ```json
 {
   "mcpServers": {
@@ -518,9 +638,11 @@ If your project has a `.npmrc` that points to a private registry (e.g., Azure Ar
 ```
 
 **Alternative:** Install globally to skip `npx` entirely:
+
 ```bash
 npm install -g mcpbrowser
 ```
+
 Then use `"command": "mcpbrowser"` with no `args` in your MCP config.
 
 ## Links

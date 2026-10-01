@@ -69,7 +69,7 @@ function formatSchemaOutput(tool) {
   const lines = [];
   for (const [name, prop] of Object.entries(props)) {
     let t = prop.type || 'any';
-    if (Array.isArray(t)) t = t.filter(x => x !== 'null').join('|');
+    if (Array.isArray(t)) t = t.filter((x) => x !== 'null').join('|');
     if (t === 'array') t = `array<${prop.items?.type || 'any'}>`;
     if (t === 'object' && !prop.description) continue;
     lines.push(`    ${name} (${t})${prop.description ? ' — ' + prop.description : ''}`);
@@ -164,6 +164,8 @@ export function printHelp() {
   o('  No arguments → starts MCP server (stdin/stdout JSON-RPC).');
   o('  CLI commands map 1:1 to MCP tools (fetch→browser_fetch_webpage, etc.).');
   o('');
-  o('  { "mcpServers": { "mcpbrowser": { "command": "npx", "args": ["-y", "mcpbrowser@latest"] } } }');
+  o(
+    '  { "mcpServers": { "mcpbrowser": { "command": "npx", "args": ["-y", "mcpbrowser@latest"] } } }',
+  );
   o('');
 }

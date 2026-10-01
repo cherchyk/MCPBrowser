@@ -13,6 +13,7 @@ This document defines the contracts for the `gcal` plugin's 8 actions as dispatc
 ### `browser_plugin_info({ plugin: "gcal" })`
 
 **Response**:
+
 ```json
 {
   "description": "Google Calendar plugin — interact with Google Calendar for scheduling, event management, and availability checking.",
@@ -41,11 +42,11 @@ List events visible in the current calendar view.
 
 **Params**:
 
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `date` | string | no | — | ISO date to navigate to (e.g., `"2026-04-10"`). If omitted, uses current view. |
-| `view` | string | no | — | Calendar view: `"day"`, `"week"`, `"month"`, `"schedule"`. If omitted, uses current view. |
-| `limit` | number | no | 25 | Maximum number of events to return. |
+| Name    | Type   | Required | Default | Description                                                                               |
+| ------- | ------ | -------- | ------- | ----------------------------------------------------------------------------------------- |
+| `date`  | string | no       | —       | ISO date to navigate to (e.g., `"2026-04-10"`). If omitted, uses current view.            |
+| `view`  | string | no       | —       | Calendar view: `"day"`, `"week"`, `"month"`, `"schedule"`. If omitted, uses current view. |
+| `limit` | number | no       | 25      | Maximum number of events to return.                                                       |
 
 **Success Response** (`GCalActionResponse`):
 
@@ -64,6 +65,7 @@ List events visible in the current calendar view.
 ```
 
 **Error Cases**:
+
 - Not on Google Calendar → `ErrorResponse("Google Calendar is not the active page. Use browser_fetch_webpage to navigate to calendar.google.com first.", [...])`
 - Page not loaded → `ErrorResponse("Google Calendar is still loading. Wait a moment and try again.", [...])`
 
@@ -75,10 +77,10 @@ Open an event and extract full details.
 
 **Params**:
 
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `index` | number | conditional | — | 0-based positional index of the event in current view. |
-| `id` | string | conditional | — | Google Calendar event ID (from previous `list_events`). |
+| Name    | Type   | Required    | Default | Description                                             |
+| ------- | ------ | ----------- | ------- | ------------------------------------------------------- |
+| `index` | number | conditional | —       | 0-based positional index of the event in current view.  |
+| `id`    | string | conditional | —       | Google Calendar event ID (from previous `list_events`). |
 
 One of `index` or `id` is required. `id` takes precedence when both provided.
 
@@ -97,6 +99,7 @@ One of `index` or `id` is required. `id` takes precedence when both provided.
 ```
 
 **Error Cases**:
+
 - Index out of range → `ErrorResponse("Event index 5 is out of range. The current view has 3 events (indices 0-2). Use list_events to refresh.", [...])`
 - No events visible → `ErrorResponse("No events visible in the current view. Use list_events to navigate to a date with events.", [...])`
 
@@ -108,17 +111,17 @@ Open the event creation form and fill in fields.
 
 **Params**:
 
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `title` | string | **yes** | — | Event title. |
-| `date` | string | no | today | ISO date (e.g., `"2026-04-07"`). |
-| `startTime` | string | no | — | Start time in HH:MM format. Ignored if `allDay: true`. |
-| `endTime` | string | no | — | End time in HH:MM format. Ignored if `allDay: true`. |
-| `allDay` | boolean | no | false | Create an all-day event. |
-| `location` | string | no | — | Event location. |
-| `description` | string | no | — | Event description/notes. |
-| `attendees` | string[] | no | — | Array of attendee email addresses. |
-| `save` | boolean | no | **false** | Whether to save the event. Default `false` to prevent accidental modifications. |
+| Name          | Type     | Required | Default   | Description                                                                     |
+| ------------- | -------- | -------- | --------- | ------------------------------------------------------------------------------- |
+| `title`       | string   | **yes**  | —         | Event title.                                                                    |
+| `date`        | string   | no       | today     | ISO date (e.g., `"2026-04-07"`).                                                |
+| `startTime`   | string   | no       | —         | Start time in HH:MM format. Ignored if `allDay: true`.                          |
+| `endTime`     | string   | no       | —         | End time in HH:MM format. Ignored if `allDay: true`.                            |
+| `allDay`      | boolean  | no       | false     | Create an all-day event.                                                        |
+| `location`    | string   | no       | —         | Event location.                                                                 |
+| `description` | string   | no       | —         | Event description/notes.                                                        |
+| `attendees`   | string[] | no       | —         | Array of attendee email addresses.                                              |
+| `save`        | boolean  | no       | **false** | Whether to save the event. Default `false` to prevent accidental modifications. |
 
 **Success Response**:
 
@@ -138,6 +141,7 @@ Open the event creation form and fill in fields.
 ```
 
 With `save: true`:
+
 ```json
 {
   "status": "saved",
@@ -151,6 +155,7 @@ With `save: true`:
 ```
 
 **Error Cases**:
+
 - Missing title → `ErrorResponse("Title is required for create_event. Example: { title: \"Meeting\", date: \"2026-04-07\", startTime: \"14:00\", endTime: \"15:00\" }", [...])`
 - Keyboard shortcuts disabled → `ErrorResponse("Google Calendar keyboard shortcuts are not enabled. Go to Calendar Settings → Keyboard shortcuts → Enable keyboard shortcuts.", [...])`
 
@@ -162,10 +167,10 @@ Search for events matching a keyword query.
 
 **Params**:
 
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `query` | string | **yes** | — | Search keywords. |
-| `limit` | number | no | 25 | Maximum results to return. |
+| Name    | Type   | Required | Default | Description                |
+| ------- | ------ | -------- | ------- | -------------------------- |
+| `query` | string | **yes**  | —       | Search keywords.           |
+| `limit` | number | no       | 25      | Maximum results to return. |
 
 **Success Response**:
 
@@ -182,6 +187,7 @@ Search for events matching a keyword query.
 ```
 
 **Error Cases**:
+
 - Missing query → `ErrorResponse("Query is required for search_events. Example: { query: \"standup\" }", [...])`
 - No results → Success response with empty `events` array and message "No events matching 'standup' were found."
 
@@ -193,19 +199,19 @@ Modify an existing event's fields.
 
 **Params**:
 
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `index` | number | conditional | — | 0-based positional index. |
-| `id` | string | conditional | — | Event ID. |
-| `title` | string | no | — | New title. |
-| `date` | string | no | — | New date (`"2026-04-08"`). |
-| `startTime` | string | no | — | New start time. |
-| `endTime` | string | no | — | New end time. |
-| `location` | string | no | — | New location. |
-| `description` | string | no | — | New description. |
-| `attendees` | string[] | no | — | New attendee list (replaces existing). |
-| `allDay` | boolean | no | — | Toggle all-day. |
-| `save` | boolean | no | **false** | Whether to save changes. |
+| Name          | Type     | Required    | Default   | Description                            |
+| ------------- | -------- | ----------- | --------- | -------------------------------------- |
+| `index`       | number   | conditional | —         | 0-based positional index.              |
+| `id`          | string   | conditional | —         | Event ID.                              |
+| `title`       | string   | no          | —         | New title.                             |
+| `date`        | string   | no          | —         | New date (`"2026-04-08"`).             |
+| `startTime`   | string   | no          | —         | New start time.                        |
+| `endTime`     | string   | no          | —         | New end time.                          |
+| `location`    | string   | no          | —         | New location.                          |
+| `description` | string   | no          | —         | New description.                       |
+| `attendees`   | string[] | no          | —         | New attendee list (replaces existing). |
+| `allDay`      | boolean  | no          | —         | Toggle all-day.                        |
+| `save`        | boolean  | no          | **false** | Whether to save changes.               |
 
 One of `index` or `id` is required to identify the event.
 
@@ -224,6 +230,7 @@ One of `index` or `id` is required to identify the event.
 ```
 
 **Error Cases**:
+
 - No event identifier → `ErrorResponse("Either 'index' or 'id' is required. Use list_events first to see available events.", [...])`
 - Recurring event → Success with note: `"recurringNote": "Only this single occurrence was edited. Series editing is not supported in v1."`
 
@@ -235,11 +242,11 @@ Respond to a calendar invitation.
 
 **Params**:
 
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `index` | number | conditional | — | 0-based positional index. |
-| `id` | string | conditional | — | Event ID. |
-| `response` | string | **yes** | — | One of: `"accept"`, `"decline"`, `"tentative"`. |
+| Name       | Type   | Required    | Default | Description                                     |
+| ---------- | ------ | ----------- | ------- | ----------------------------------------------- |
+| `index`    | number | conditional | —       | 0-based positional index.                       |
+| `id`       | string | conditional | —       | Event ID.                                       |
+| `response` | string | **yes**     | —       | One of: `"accept"`, `"decline"`, `"tentative"`. |
 
 **Success Response**:
 
@@ -256,6 +263,7 @@ Respond to a calendar invitation.
 ```
 
 **Error Cases**:
+
 - Invalid response value → `ErrorResponse("Response must be one of: accept, decline, tentative. Got: 'yes'", [...])`
 - User is organizer → `ErrorResponse("RSVP is only available for events you were invited to. You are the organizer of this event.", [...])`
 
@@ -267,10 +275,10 @@ Remove an event from the calendar.
 
 **Params**:
 
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `index` | number | conditional | — | 0-based positional index. |
-| `id` | string | conditional | — | Event ID. |
+| Name    | Type   | Required    | Default | Description               |
+| ------- | ------ | ----------- | ------- | ------------------------- |
+| `index` | number | conditional | —       | 0-based positional index. |
+| `id`    | string | conditional | —       | Event ID.                 |
 
 **Success Response**:
 
@@ -286,6 +294,7 @@ Remove an event from the calendar.
 ```
 
 **Error Cases**:
+
 - Recurring event → Success with note: `"recurringNote": "Only this single occurrence was deleted. Series deletion is not supported in v1."`
 
 ---
@@ -296,11 +305,11 @@ Determine whether a time window is free or busy.
 
 **Params**:
 
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `date` | string | **yes** | — | ISO date to check. |
-| `startTime` | string | **yes** | — | Window start (HH:MM). |
-| `endTime` | string | **yes** | — | Window end (HH:MM). |
+| Name        | Type   | Required | Default | Description           |
+| ----------- | ------ | -------- | ------- | --------------------- |
+| `date`      | string | **yes**  | —       | ISO date to check.    |
+| `startTime` | string | **yes**  | —       | Window start (HH:MM). |
+| `endTime`   | string | **yes**  | —       | Window end (HH:MM).   |
 
 **Success Response** (free):
 
@@ -310,9 +319,7 @@ Determine whether a time window is free or busy.
   "startTime": "14:00",
   "endTime": "15:00",
   "status": "free",
-  "slots": [
-    { "startTime": "14:00", "endTime": "15:00", "status": "free", "conflicts": [] }
-  ],
+  "slots": [{ "startTime": "14:00", "endTime": "15:00", "status": "free", "conflicts": [] }],
   "nextSteps": [
     "Use create_event to schedule an event in this free slot",
     "Use list_events to see all events for this day"
@@ -340,5 +347,6 @@ Determine whether a time window is free or busy.
 ```
 
 **Error Cases**:
+
 - Missing required params → `ErrorResponse("date, startTime, and endTime are all required for check_availability. Example: { date: \"2026-04-07\", startTime: \"14:00\", endTime: \"15:00\" }", [...])`
 - startTime >= endTime → `ErrorResponse("startTime must be before endTime.", [...])`

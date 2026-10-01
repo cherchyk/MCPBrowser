@@ -11,30 +11,35 @@ MCPBrowser/
 ├── src/
 │   ├── mcp-browser.js           # Main entry point (assembles tools)
 │   ├── core/
+│   │   ├── actions.js           # Action, CoreAction, and PluginAction contracts
 │   │   ├── responses.js         # Base response classes (MCPResponse, ErrorResponse)
 │   │   ├── browser.js           # Browser lifecycle management
 │   │   ├── page.js              # Page operations
 │   │   ├── auth.js              # Authentication flow handling
 │   │   └── html.js              # HTML processing
 │   └── actions/
-│       ├── fetch-page.js        # Fetch page action + tool definition + response classes
-│       ├── click-element.js     # Click action + tool definition + response classes
-│       ├── type-text.js         # Type action + tool definition + response classes
-│       ├── close-tab.js         # Close action + tool definition + response classes
-│       ├── get-current-html.js  # Get HTML action + tool definition + response classes
-│       └── take-screenshot.js   # Screenshot action + tool definition + response classes
+│       ├── index.js             # Complete ACTIONS array
+│       ├── fetch-page.js        # One exported CoreAction descriptor
+│       ├── click-element.js     # One exported CoreAction descriptor
+│       └── ...                  # One file per action
 ```
 
 ## Architecture Principles
 
 ### 1. Co-location
-Each action file contains **everything** related to that tool:
-- ✅ Response class (success response for this specific tool)
-- ✅ Tool definition (MCP tool descriptor with inline schemas)
-- ✅ Action function (implementation)
+
+Each action file contains **everything** related to that tool but exposes exactly one descriptor:
+
+- ✅ Private response class
+- ✅ Private MCP tool definition with inline schemas
+- ✅ Private action handler
+- ✅ One exported `CoreAction` or `PluginAction`
+- ✅ Optional CLI metadata on `CoreAction`
 
 **Benefits:**
+
 - Single source of truth
+- One stable module boundary
 - No duplication
 - Easy to maintain
 - Clear ownership
@@ -43,17 +48,21 @@ Each action file contains **everything** related to that tool:
 ### 2. Single Source of Truth
 
 **Problem we solved:**
+
 - Before: Tool definitions in `mcp-browser.js`, response classes in `responses.js`, schemas duplicated
 - Result: Changes required edits in multiple files
 
 **Solution:**
-- Each action file defines its own structure
-- `mcp-browser.js` simply imports and assembles
-- Schemas are derived from response classes
+
+- Each action file defines and exports one action descriptor
+- Each `actions/index.js` exports the folder's complete `ACTIONS` array
+- Production consumers use the folder index rather than individual action files
+- Tests select actions by immutable `action.id` and inspect `tool`, `response`, or `handler`
 
 ### 3. Type Safety
 
 **Response Class Hierarchy:**
+
 ```
 MCPResponse (base)
 ├── ErrorResponse (shared by all tools)
@@ -67,6 +76,7 @@ MCPResponse (base)
 ```
 
 **Benefits:**
+
 - Runtime validation of all fields
 - Type errors caught at response creation time
 - IDE autocomplete and type hints
@@ -77,93 +87,69 @@ MCPResponse (base)
 To add a new tool, create one file `src/actions/my-tool.js`:
 
 ```javascript
-import { MCPResponse, ErrorResponse, ERROR_RESPONSE_SCHEMA } from '../core/responses.js';
+import { CoreAction } from '../core/actions.js';
+import { MCPResponse, ErrorResponse } from '../core/responses.js';
 
-// ============================================================================
-// RESPONSE CLASS
-// ============================================================================
-
-export class MyToolSuccessResponse extends MCPResponse {
+class MyToolSuccessResponse extends MCPResponse {
   constructor(result, nextSteps) {
-    super(true, nextSteps);
+    super(nextSteps);
     if (typeof result !== 'string') throw new TypeError('result must be a string');
     this.result = result;
   }
-  
+
   _getAdditionalFields() {
     return { result: this.result };
   }
 }
 
-// ============================================================================
-// TOOL DEFINITION
-// ============================================================================
-
-export const MY_TOOL = {
-  name: "my_tool",
-  description: "Description of what this tool does",
+const MY_TOOL = {
+  name: 'my_tool',
+  description: 'Description of what this tool does',
   inputSchema: {
-    type: "object",
+    type: 'object',
     properties: {
-      input: { type: "string", description: "Input parameter" }
+      input: { type: 'string', description: 'Input parameter' },
     },
-    required: ["input"]
+    required: ['input'],
   },
   outputSchema: {
-    oneOf: [
-      {
-        type: "object",
-        properties: {
-          success: { type: "boolean", const: true },
-          result: { type: "string", description: "The result" },
-          nextSteps: { type: "array", items: { type: "string" } }
-        },
-        required: ["success", "result", "nextSteps"]
-      },
-      ERROR_RESPONSE_SCHEMA
-    ]
+    type: 'object',
+    properties: {
+      result: { type: 'string', description: 'The result' },
+      nextSteps: { type: 'array', items: { type: 'string' } },
+    },
+    required: ['result', 'nextSteps'],
   },
   annotations: {
-    title: "My Tool"
-  }
+    title: 'My Tool',
+  },
 };
 
-// ============================================================================
-// ACTION FUNCTION
-// ============================================================================
-
-export async function myTool({ input }) {
+async function myTool({ input }) {
   try {
-    // Implementation here
     const result = doSomething(input);
-    
-    return new MyToolSuccessResponse(
-      result,
-      ["Suggested next action"]
-    );
+    return new MyToolSuccessResponse(result, ['Suggested next action']);
   } catch (err) {
-    return new ErrorResponse(
-      err.message,
-      ["Recovery step"]
-    );
+    return new ErrorResponse(err.message, ['Recovery step']);
   }
 }
+
+export const MY_TOOL_ACTION = new CoreAction({
+  tool: MY_TOOL,
+  response: MyToolSuccessResponse,
+  handler: myTool,
+});
 ```
 
-Then add to `mcp-browser.js`:
+Then add the descriptor to `src/actions/index.js`:
 
 ```javascript
-import { myTool, MY_TOOL } from './actions/my-tool.js';
+import { MY_TOOL_ACTION } from './my-tool.js';
 
-const tools = [
-  // ...existing tools
-  MY_TOOL
+export const ACTIONS = [
+  // ...existing actions
+  MY_TOOL_ACTION,
 ];
-
-// In switch statement:
-case "my_tool":
-  result = await myTool(safeArgs);
-  break;
 ```
 
 ## MCP Compliance
@@ -177,13 +163,14 @@ Each tool defines an `outputSchema` that describes what it returns:
   oneOf: [
     // Success response schema
     { type: "object", properties: { ... } },
-    // Error response schema  
+    // Error response schema
     { type: "object", properties: { ... } }
   ]
 }
 ```
 
 **Benefits:**
+
 - Clients can validate responses
 - LLMs understand output structure better
 - Better documentation and developer experience
@@ -192,6 +179,7 @@ Each tool defines an `outputSchema` that describes what it returns:
 ### Response Format
 
 All tools return:
+
 ```javascript
 {
   content: [{ type: "text", text: "Human-readable summary" }],
@@ -201,6 +189,7 @@ All tools return:
 ```
 
 **Why this format?**
+
 - `content`: Human-readable summary for display
 - `isError`: Quick error checking
 - `structuredContent`: Machine-parseable data for LLMs
@@ -230,20 +219,24 @@ tests/
 ### Why co-location?
 
 **Before:**
+
 - Tool definition in `mcp-browser.js` (80+ lines per tool)
 - Response classes in `responses.js`
 - Schemas duplicated in both places
 - Changes required editing 2-3 files
 
 **After:**
-- Everything in one action file
-- `mcp-browser.js` is just 20 lines (imports + assembly)
+
+- Everything in one action file behind one exported descriptor
+- Folder indexes provide complete action arrays
+- `mcp-browser.js` derives registration and dispatch from the core array
 - One place to change when updating a tool
 - Clear single source of truth
 
 ### Why response classes instead of plain objects?
 
 **Benefits of classes:**
+
 1. Type validation at creation time (catches bugs early)
 2. IDE autocomplete and type hints
 3. Self-documenting through TypeScript-like constructors
@@ -251,12 +244,13 @@ tests/
 5. Better error messages
 
 **Example:**
+
 ```javascript
 // Plain object - no validation
-const response = { currentUrl: 123 };  // Wrong type, no error
+const response = { currentUrl: 123 }; // Wrong type, no error
 
 // Response class - immediate validation
-new FetchPageSuccessResponse(123, "html", []);  
+new FetchPageSuccessResponse(123, 'html', []);
 // ❌ TypeError: currentUrl must be a string
 ```
 
@@ -287,6 +281,7 @@ Result: 2 tabs (one per unique host)
 ```
 
 **Key files:**
+
 - `page.js` - Queue implementation (`queueRequest()`, `processQueue()`)
 - `browser.js` - Tab management (`domainPages` Map)
 - `fetch-page.js` - Uses queue via `queueRequest()`
@@ -294,6 +289,7 @@ Result: 2 tabs (one per unique host)
 ## Future Improvements
 
 Potential enhancements:
+
 - [ ] Generate TypeScript definitions from response classes
 - [ ] Add schema validation against actual responses
 - [ ] Create schema documentation generator

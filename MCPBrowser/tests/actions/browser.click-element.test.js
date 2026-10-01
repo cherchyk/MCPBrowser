@@ -4,11 +4,20 @@
  */
 
 import assert from 'assert';
-import { clickElement, fetchPage, executeJavascript, closeTab } from '../../src/mcp-browser.js';
+import { CLICK_ELEMENT_ACTION } from '../../src/actions/click-element.js';
+import { CLOSE_TAB_ACTION } from '../../src/actions/close-tab.js';
+import { EXECUTE_JAVASCRIPT_ACTION } from '../../src/actions/execute-javascript.js';
+import { FETCH_WEBPAGE_ACTION } from '../../src/actions/fetch-page.js';
 import { ErrorResponse, InformationalResponse } from '../../src/core/responses.js';
-import { ClickWithFallbackResponse } from '../../src/actions/click-element.js';
+
 import { runWithBrowsers } from '../browsers/browser-runner.js';
 import { getValidatedPage } from '../../src/core/browser.js';
+
+const clickElement = CLICK_ELEMENT_ACTION.execute;
+const fetchPage = FETCH_WEBPAGE_ACTION.execute;
+const executeJavascript = EXECUTE_JAVASCRIPT_ACTION.execute;
+const closeTab = CLOSE_TAB_ACTION.execute;
+const ClickWithFallbackResponse = CLICK_ELEMENT_ACTION.response;
 
 const browserParam = process.argv[2] || '';
 
@@ -42,7 +51,7 @@ function test(description, fn) {
 
 await runWithBrowsers(async (browserType) => {
   console.log('\n📋 Testing clickElement()');
-  
+
   await test(`[${browserType}] Should require url parameter`, async () => {
     try {
       await clickElement({});
@@ -51,7 +60,7 @@ await runWithBrowsers(async (browserType) => {
       assert.match(err.message, /url parameter is required/);
     }
   });
-  
+
   await test(`[${browserType}] Should require either selector or text parameter`, async () => {
     try {
       await clickElement({ url: testUrl });
@@ -60,13 +69,17 @@ await runWithBrowsers(async (browserType) => {
       assert.match(err.message, /Either selector or text parameter is required/);
     }
   });
-  
+
   await test(`[${browserType}] Should return informational response if page not loaded`, async () => {
-    const result = await clickElement({ 
-      url: 'https://unloaded-domain-test.com', 
-      selector: 'button' 
+    const result = await clickElement({
+      url: 'https://unloaded-domain-test.com',
+      selector: 'button',
     });
-    assert.strictEqual(result instanceof InformationalResponse, true, 'Should return InformationalResponse (not red error)');
+    assert.strictEqual(
+      result instanceof InformationalResponse,
+      true,
+      'Should return InformationalResponse (not red error)',
+    );
     assert.match(result.message, /No open page found/);
   });
 
@@ -74,7 +87,8 @@ await runWithBrowsers(async (browserType) => {
     await fetchPage({ url: testUrl, removeUnnecessaryHTML: false });
     await executeJavascript({
       url: testUrl,
-      script: "window.__clicks = []; let btn = document.getElementById('js-fallback'); if (!btn) { btn = document.createElement('button'); btn.id = 'js-fallback'; btn.textContent = 'fallback'; document.body.appendChild(btn); } btn.onclick = () => window.__clicks.push('fallback');"
+      script:
+        "window.__clicks = []; let btn = document.getElementById('js-fallback'); if (!btn) { btn = document.createElement('button'); btn.id = 'js-fallback'; btn.textContent = 'fallback'; document.body.appendChild(btn); } btn.onclick = () => window.__clicks.push('fallback');",
     });
 
     // Patch page.mouse.click so Puppeteer's native elementHandle.click() hangs.
@@ -85,7 +99,13 @@ await runWithBrowsers(async (browserType) => {
     page.mouse.click = () => new Promise(() => {}); // never resolves → timeout
 
     try {
-      const resp = await clickElement({ url: testUrl, selector: '#js-fallback', returnHtml: false, waitForElementTimeout: 500, postClickWait: 0 });
+      const resp = await clickElement({
+        url: testUrl,
+        selector: '#js-fallback',
+        returnHtml: false,
+        waitForElementTimeout: 500,
+        postClickWait: 0,
+      });
 
       assert.strictEqual(resp instanceof ClickWithFallbackResponse, true);
       assert.strictEqual(resp.status, 'success');
@@ -104,7 +124,8 @@ await runWithBrowsers(async (browserType) => {
     await fetchPage({ url: testUrl, removeUnnecessaryHTML: false });
     await executeJavascript({
       url: testUrl,
-      script: "let btn = document.getElementById('js-fallback-fail'); if (!btn) { btn = document.createElement('button'); btn.id = 'js-fallback-fail'; btn.textContent = 'fail'; document.body.appendChild(btn); }"
+      script:
+        "let btn = document.getElementById('js-fallback-fail'); if (!btn) { btn = document.createElement('button'); btn.id = 'js-fallback-fail'; btn.textContent = 'fail'; document.body.appendChild(btn); }",
     });
 
     // Patch page.mouse.click so native click hangs, AND remove the element
@@ -131,12 +152,20 @@ await runWithBrowsers(async (browserType) => {
     };
 
     try {
-      const resp = await clickElement({ url: testUrl, selector: '#js-fallback-fail', returnHtml: false, waitForElementTimeout: 500, postClickWait: 0 });
+      const resp = await clickElement({
+        url: testUrl,
+        selector: '#js-fallback-fail',
+        returnHtml: false,
+        waitForElementTimeout: 500,
+        postClickWait: 0,
+      });
 
       assert.strictEqual(resp.fallbackUsed, true);
       assert.strictEqual(resp.status, 'failed');
       assert.strictEqual(resp.nativeAttempt.status, 'timeout');
-      assert.ok(resp.fallbackAttempt.status === 'error' || resp.fallbackAttempt.status === 'timeout');
+      assert.ok(
+        resp.fallbackAttempt.status === 'error' || resp.fallbackAttempt.status === 'timeout',
+      );
       assert.strictEqual(resp.html, null);
     } finally {
       page.mouse.click = origMouseClick;
@@ -160,7 +189,7 @@ await test('ClickWithFallbackResponse should include metadata fields', async () 
     currentUrl: 'https://example.com',
     html: '<html></html>',
     message: 'Click failed after fallback',
-    nextSteps: ['step-one']
+    nextSteps: ['step-one'],
   });
 
   const json = resp.toJSON();

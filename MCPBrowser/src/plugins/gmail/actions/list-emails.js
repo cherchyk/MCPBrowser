@@ -13,9 +13,10 @@ import {
   folderToHash,
   waitForGmail,
   extractEmailRows,
-  GmailActionResponse
+  GmailActionResponse,
 } from '../helpers.js';
 import { EMAIL_ROW } from '../selectors.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /**
  * List emails from the current Gmail view or a specific folder.
@@ -26,12 +27,13 @@ import { EMAIL_ROW } from '../selectors.js';
  * @param {number} [opts.params.limit=25] - Maximum emails to return
  * @returns {Promise<GmailActionResponse|ErrorResponse>}
  */
-export async function listEmails({ page, params }) {
+async function listEmails({ page, params }) {
   // Precondition: must be on Gmail
   const pre = await checkPrecondition(page, 'on_gmail');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first.",
     ]);
   }
 
@@ -55,7 +57,29 @@ export async function listEmails({ page, params }) {
     [
       'Use read_email to open a specific email',
       'Use search_emails to find specific messages',
-      'Use compose_email to write a new email'
-    ]
+      'Use compose_email to write a new email',
+    ],
   );
 }
+
+export const listEmailsAction = new PluginAction({
+  name: 'list_emails',
+  description: 'List visible emails from the current Gmail folder/view',
+  params: [
+    {
+      name: 'folder',
+      type: 'string',
+      description: 'Gmail folder: inbox, sent, drafts, trash, spam, or a label name',
+      required: false,
+    },
+    {
+      name: 'limit',
+      type: 'number',
+      description: 'Maximum number of emails to return (default: 25)',
+      required: false,
+      default: 25,
+    },
+  ],
+  response: GmailActionResponse,
+  handler: listEmails,
+});

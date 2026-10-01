@@ -4,8 +4,18 @@
  */
 
 import assert from 'assert';
-import { fetchPage, clickElement, typeText, getCurrentHtml, closeTab } from '../src/mcp-browser.js';
+import { CLICK_ELEMENT_ACTION } from '../src/actions/click-element.js';
+import { CLOSE_TAB_ACTION } from '../src/actions/close-tab.js';
+import { FETCH_WEBPAGE_ACTION } from '../src/actions/fetch-page.js';
+import { GET_CURRENT_HTML_ACTION } from '../src/actions/get-current-html.js';
+import { TYPE_TEXT_ACTION } from '../src/actions/type-text.js';
 import { ErrorResponse, InformationalResponse } from '../src/core/responses.js';
+
+const fetchPage = FETCH_WEBPAGE_ACTION.execute;
+const clickElement = CLICK_ELEMENT_ACTION.execute;
+const typeText = TYPE_TEXT_ACTION.execute;
+const getCurrentHtml = GET_CURRENT_HTML_ACTION.execute;
+const closeTab = CLOSE_TAB_ACTION.execute;
 
 console.log('🧪 Testing nextSteps field in responses\n');
 
@@ -39,23 +49,44 @@ await test('browser_fetch_webpage success should include nextSteps', async () =>
   assert.ok(result.nextSteps, 'Should have nextSteps field');
   assert.ok(Array.isArray(result.nextSteps), 'nextSteps should be an array');
   assert.ok(result.nextSteps.length > 0, 'nextSteps should not be empty');
-  assert.ok(result.nextSteps.some(s => s.includes('browser_click_element')), 'Should suggest browser_click_element');
-  assert.ok(result.nextSteps.some(s => s.includes('browser_close_tab')), 'Should suggest browser_close_tab');
+  assert.ok(
+    result.nextSteps.some((s) => s.includes('browser_click_element')),
+    'Should suggest browser_click_element',
+  );
+  assert.ok(
+    result.nextSteps.some((s) => s.includes('browser_close_tab')),
+    'Should suggest browser_close_tab',
+  );
   console.log(`   nextSteps: ${result.nextSteps.join(', ')}`);
 });
 
 await test('browser_click_element error should include nextSteps', async () => {
-  const result = await clickElement({ url: 'https://never-loaded-domain-12345.com', selector: '#test' });
-  assert.ok(result instanceof InformationalResponse, 'Should return InformationalResponse for non-loaded page (not red error)');
+  const result = await clickElement({
+    url: 'https://never-loaded-domain-12345.com',
+    selector: '#test',
+  });
+  assert.ok(
+    result instanceof InformationalResponse,
+    'Should return InformationalResponse for non-loaded page (not red error)',
+  );
   assert.ok(result.nextSteps, 'Response should have nextSteps field');
   assert.ok(Array.isArray(result.nextSteps), 'nextSteps should be an array');
-  assert.ok(result.nextSteps.some(s => s.includes('MCPBrowser') && s.includes('browser_fetch_webpage')), 'Should suggest MCPBrowser browser_fetch_webpage');
+  assert.ok(
+    result.nextSteps.some((s) => s.includes('MCPBrowser') && s.includes('browser_fetch_webpage')),
+    'Should suggest MCPBrowser browser_fetch_webpage',
+  );
   console.log(`   nextSteps: ${result.nextSteps.join(', ')}`);
 });
 
 await test('browser_type_text error should include nextSteps', async () => {
-  const result = await typeText({ url: 'https://never-loaded-domain-12345.com', fields: [{ selector: '#test', text: 'hello' }] });
-  assert.ok(result instanceof InformationalResponse, 'Should return InformationalResponse for non-loaded page (not red error)');
+  const result = await typeText({
+    url: 'https://never-loaded-domain-12345.com',
+    fields: [{ selector: '#test', text: 'hello' }],
+  });
+  assert.ok(
+    result instanceof InformationalResponse,
+    'Should return InformationalResponse for non-loaded page (not red error)',
+  );
   assert.ok(result.nextSteps, 'Response should have nextSteps field');
   assert.ok(Array.isArray(result.nextSteps), 'nextSteps should be an array');
   console.log(`   nextSteps: ${result.nextSteps.join(', ')}`);
@@ -75,7 +106,10 @@ await test('browser_close_tab success should include nextSteps', async () => {
   assert.ok(!(result instanceof ErrorResponse), 'Should succeed');
   assert.ok(result.nextSteps, 'Should have nextSteps field');
   assert.ok(Array.isArray(result.nextSteps), 'nextSteps should be an array');
-  assert.ok(result.nextSteps.some(s => s.includes('browser_fetch_webpage')), 'Should suggest browser_fetch_webpage');
+  assert.ok(
+    result.nextSteps.some((s) => s.includes('browser_fetch_webpage')),
+    'Should suggest browser_fetch_webpage',
+  );
   console.log(`   nextSteps: ${result.nextSteps.join(', ')}`);
 });
 

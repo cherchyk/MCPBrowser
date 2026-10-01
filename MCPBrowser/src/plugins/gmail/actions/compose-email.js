@@ -12,8 +12,9 @@ import {
   checkPrecondition,
   checkKeyboardShortcuts,
   waitForGmail,
-  GmailActionResponse
+  GmailActionResponse,
 } from '../helpers.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /**
  * Compose a new email, optionally sending it immediately.
@@ -27,20 +28,20 @@ import {
  * @param {boolean} [opts.params.send] - If true, send immediately
  * @returns {Promise<GmailActionResponse|ErrorResponse>}
  */
-export async function composeEmail({ page, params }) {
+async function composeEmail({ page, params }) {
   // Validate required param
   if (!params.to) {
-    return new ErrorResponse(
-      'The "to" parameter is required to compose an email.',
-      ['Provide a recipient: compose_email({ to: "user@example.com", subject: "Hello" })']
-    );
+    return new ErrorResponse('The "to" parameter is required to compose an email.', [
+      'Provide a recipient: compose_email({ to: "user@example.com", subject: "Hello" })',
+    ]);
   }
 
   // Precondition: must be on Gmail
   const pre = await checkPrecondition(page, 'on_gmail');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first.",
     ]);
   }
 
@@ -48,7 +49,7 @@ export async function composeEmail({ page, params }) {
   const kb = await checkKeyboardShortcuts(page);
   if (!kb.enabled) {
     return new ErrorResponse(kb.error, [
-      'Enable keyboard shortcuts in Gmail Settings → General → Keyboard shortcuts → ON, then reload Gmail.'
+      'Enable keyboard shortcuts in Gmail Settings → General → Keyboard shortcuts → ON, then reload Gmail.',
     ]);
   }
 
@@ -57,7 +58,7 @@ export async function composeEmail({ page, params }) {
   if (existingDialog) {
     logger.debug('composeEmail: closing existing compose dialog');
     await page.keyboard.press('Escape');
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 300));
   }
 
   // T2: Press 'c' to open compose
@@ -72,8 +73,7 @@ export async function composeEmail({ page, params }) {
 
   // Fill CC if provided
   if (params.cc) {
-    const ccLink = await page.$('span[data-tooltip="Add Cc"]') ||
-                   await page.$('span.aB.gQ.pE');
+    const ccLink = (await page.$('span[data-tooltip="Add Cc"]')) || (await page.$('span.aB.gQ.pE'));
     if (ccLink) {
       await ccLink.click();
     }
@@ -111,6 +111,26 @@ export async function composeEmail({ page, params }) {
     summary,
     params.send
       ? ['Use list_emails to return to inbox']
-      : ['Review and send the draft manually in Gmail']
+      : ['Review and send the draft manually in Gmail'],
   );
 }
+
+export const composeEmailAction = new PluginAction({
+  name: 'compose_email',
+  description: 'Open Gmail compose window via keyboard shortcut and fill in email fields',
+  params: [
+    { name: 'to', type: 'string', description: 'Recipient email address', required: true },
+    { name: 'subject', type: 'string', description: 'Email subject', required: false, default: '' },
+    { name: 'body', type: 'string', description: 'Email body text', required: false, default: '' },
+    { name: 'cc', type: 'string', description: 'CC recipient email address', required: false },
+    {
+      name: 'send',
+      type: 'boolean',
+      description: 'If true, send immediately via Ctrl+Enter. Default: leave as draft',
+      required: false,
+      default: false,
+    },
+  ],
+  response: GmailActionResponse,
+  handler: composeEmail,
+});

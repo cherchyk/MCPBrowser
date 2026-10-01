@@ -13,8 +13,9 @@ import {
   detectView,
   selectEmailRow,
   VIEW,
-  GmailActionResponse
+  GmailActionResponse,
 } from '../helpers.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /**
  * Delete an email (move to trash) from thread view or list view.
@@ -25,12 +26,13 @@ import {
  * @param {string} [opts.params.id] - Email ID in list view
  * @returns {Promise<GmailActionResponse|ErrorResponse>}
  */
-export async function deleteEmail({ page, params }) {
+async function deleteEmail({ page, params }) {
   // Precondition: must be on Gmail
   const pre = await checkPrecondition(page, 'on_gmail');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first.",
     ]);
   }
 
@@ -45,7 +47,7 @@ export async function deleteEmail({ page, params }) {
     const sel = await selectEmailRow(page, { index: params.index, id: params.id });
     if (!sel.selected) {
       return new ErrorResponse(sel.error || 'Could not select email to delete.', [
-        'Provide an index or id parameter to target a specific email.'
+        'Provide an index or id parameter to target a specific email.',
       ]);
     }
     await page.keyboard.type('#');
@@ -53,13 +55,22 @@ export async function deleteEmail({ page, params }) {
   } else {
     return new ErrorResponse(
       'Cannot delete from the current view. Navigate to inbox or open an email first.',
-      ["Use list_emails to view the inbox, or read_email to open a thread."]
+      ['Use list_emails to view the inbox, or read_email to open a thread.'],
     );
   }
 
-  return new GmailActionResponse(
-    { deleted: true },
-    'Email moved to trash.',
-    ['Use list_emails to return to inbox']
-  );
+  return new GmailActionResponse({ deleted: true }, 'Email moved to trash.', [
+    'Use list_emails to return to inbox',
+  ]);
 }
+
+export const deleteEmailAction = new PluginAction({
+  name: 'delete_email',
+  description: 'Move an email to Trash via keyboard shortcut',
+  params: [
+    { name: 'index', type: 'number', description: '0-based index in email list', required: false },
+    { name: 'id', type: 'string', description: 'Gmail message/thread ID', required: false },
+  ],
+  response: GmailActionResponse,
+  handler: deleteEmail,
+});

@@ -17,11 +17,18 @@ const selectorsPath = join(__dirname, '../../../src/plugins/gcal/selectors.js');
 
 describe('GCal Selectors — exports', () => {
   const expectedSelectors = [
-    'EVENT_CHIP', 'EVENT_TITLE_IN_CHIP', 'EVENT_TIME_IN_CHIP',
-    'EVENT_LOCATION_IN_DETAIL', 'EVENT_DESCRIPTION_IN_DETAIL',
-    'ATTENDEE_ROW', 'ATTENDEE_RSVP_STATUS',
-    'RSVP_YES_BUTTON', 'RSVP_NO_BUTTON', 'RSVP_MAYBE_BUTTON',
-    'CALENDAR_COLOR_DOT', 'SAVE_BUTTON'
+    'EVENT_CHIP',
+    'EVENT_TITLE_IN_CHIP',
+    'EVENT_TIME_IN_CHIP',
+    'EVENT_LOCATION_IN_DETAIL',
+    'EVENT_DESCRIPTION_IN_DETAIL',
+    'ATTENDEE_ROW',
+    'ATTENDEE_RSVP_STATUS',
+    'RSVP_YES_BUTTON',
+    'RSVP_NO_BUTTON',
+    'RSVP_MAYBE_BUTTON',
+    'CALENDAR_COLOR_DOT',
+    'SAVE_BUTTON',
   ];
 
   for (const name of expectedSelectors) {
@@ -41,7 +48,7 @@ describe('GCal Selectors — exports', () => {
   it('has no duplicate selector values', () => {
     const values = Object.values(selectors);
     // EVENT_TITLE_IN_CHIP and EVENT_TIME_IN_CHIP may both be 'span' — skip those
-    const nonGeneric = values.filter(v => v !== 'span');
+    const nonGeneric = values.filter((v) => v !== 'span');
     const unique = new Set(nonGeneric);
     assert.equal(unique.size, nonGeneric.length, 'Duplicate non-generic selector values found');
   });
@@ -57,13 +64,16 @@ describe('GCal Selectors — module integrity', () => {
   it('contains Tier 4 documentation', () => {
     assert.ok(
       source.includes('Tier 4') || source.includes('TIER 4'),
-      'selectors.js must document that it contains Tier 4 selectors'
+      'selectors.js must document that it contains Tier 4 selectors',
     );
   });
 
   it('does not contain function definitions (no action logic)', () => {
     assert.ok(!source.includes('export function'), 'selectors.js must not export functions');
-    assert.ok(!source.includes('export async function'), 'selectors.js must not export async functions');
+    assert.ok(
+      !source.includes('export async function'),
+      'selectors.js must not export async functions',
+    );
     assert.ok(!source.includes('export class'), 'selectors.js must not export classes');
   });
 

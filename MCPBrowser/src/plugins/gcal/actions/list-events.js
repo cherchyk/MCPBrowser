@@ -15,9 +15,10 @@ import {
   waitForCalendar,
   extractVisibleEvents,
   detectView,
-  GCalActionResponse
+  GCalActionResponse,
 } from '../helpers.js';
 import { EVENT_CHIP } from '../selectors.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /**
  * List events from the current Calendar view or navigate to a specific date/view.
@@ -29,12 +30,13 @@ import { EVENT_CHIP } from '../selectors.js';
  * @param {number} [opts.params.limit=25] - Maximum events to return
  * @returns {Promise<GCalActionResponse|ErrorResponse>}
  */
-export async function listEvents({ page, params }) {
+async function listEvents({ page, params }) {
   // Precondition: must be on Google Calendar
   const pre = await checkPrecondition(page, 'on_calendar');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to open Google Calendar first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to open Google Calendar first.",
     ]);
   }
 
@@ -45,10 +47,9 @@ export async function listEvents({ page, params }) {
   // Validate view param if provided
   const validViews = ['day', 'week', 'month', 'schedule', 'custom'];
   if (view && !validViews.includes(view)) {
-    return new ErrorResponse(
-      `Invalid view "${view}". Must be one of: ${validViews.join(', ')}.`,
-      ['Use list_events({ view: "week" }) or list_events({ view: "day", date: "2026-04-10" })']
-    );
+    return new ErrorResponse(`Invalid view "${view}". Must be one of: ${validViews.join(', ')}.`, [
+      'Use list_events({ view: "week" }) or list_events({ view: "day", date: "2026-04-10" })',
+    ]);
   }
 
   // T1: Navigate to date/view if either is provided
@@ -70,8 +71,8 @@ export async function listEvents({ page, params }) {
       [
         'Try a different date or view: list_events({ date: "2026-04-10", view: "week" })',
         'Use search_events to find events by keyword',
-        'Use create_event to add a new event'
-      ]
+        'Use create_event to add a new event',
+      ],
     );
   }
 
@@ -84,13 +85,41 @@ export async function listEvents({ page, params }) {
       events,
       view: currentView,
       dateRange: date || 'current',
-      total: events.length
+      total: events.length,
     },
     `Found ${events.length} event(s) in ${currentView} view.`,
     [
       'Use read_event({ index: N }) to open a specific event',
       'Use search_events to find events by keyword',
-      'Use create_event to add a new event'
-    ]
+      'Use create_event to add a new event',
+    ],
   );
 }
+
+export const listEventsAction = new PluginAction({
+  name: 'list_events',
+  description: 'List visible events from the current Google Calendar view',
+  params: [
+    {
+      name: 'date',
+      type: 'string',
+      description: "ISO date to navigate to (e.g., '2026-04-10'). If omitted, uses current view.",
+      required: false,
+    },
+    {
+      name: 'view',
+      type: 'string',
+      description: 'Calendar view: day, week, month, schedule. If omitted, uses current view.',
+      required: false,
+    },
+    {
+      name: 'limit',
+      type: 'number',
+      description: 'Maximum number of events to return (default: 25)',
+      required: false,
+      default: 25,
+    },
+  ],
+  response: GCalActionResponse,
+  handler: listEvents,
+});

@@ -36,7 +36,7 @@ console.log('\n📋 Testing MCP Server initialization and tool listing\n');
 
 await test('Should start and respond to initialize request', async () => {
   const mcpProcess = spawn('node', [join(__dirname, '..', 'src', 'mcp-browser.js')], {
-    stdio: ['pipe', 'pipe', 'inherit']
+    stdio: ['pipe', 'pipe', 'inherit'],
   });
 
   try {
@@ -47,8 +47,8 @@ await test('Should start and respond to initialize request', async () => {
       params: {
         protocolVersion: '2024-11-05',
         capabilities: {},
-        clientInfo: { name: 'test', version: '1.0' }
-      }
+        clientInfo: { name: 'test', version: '1.0' },
+      },
     };
 
     const response = await new Promise((resolve, reject) => {
@@ -60,7 +60,7 @@ await test('Should start and respond to initialize request', async () => {
       mcpProcess.stdout.on('data', (data) => {
         buffer += data.toString();
         const lines = buffer.split('\n');
-        
+
         for (const line of lines) {
           if (line.trim()) {
             try {
@@ -91,9 +91,17 @@ await test('Should start and respond to initialize request', async () => {
     });
 
     assert.ok(response.result, 'Initialize response should have result');
-    assert.strictEqual(response.result.protocolVersion, '2024-11-05', 'Protocol version should match');
+    assert.strictEqual(
+      response.result.protocolVersion,
+      '2024-11-05',
+      'Protocol version should match',
+    );
     assert.ok(response.result.serverInfo, 'Server info should be present');
-    assert.strictEqual(response.result.serverInfo.name, 'MCPBrowser', 'Server name should be MCPBrowser');
+    assert.strictEqual(
+      response.result.serverInfo.name,
+      'MCPBrowser',
+      'Server name should be MCPBrowser',
+    );
   } finally {
     mcpProcess.kill();
   }
@@ -101,7 +109,7 @@ await test('Should start and respond to initialize request', async () => {
 
 await test('Should respond to tools/list request', async () => {
   const mcpProcess = spawn('node', [join(__dirname, '..', 'src', 'mcp-browser.js')], {
-    stdio: ['pipe', 'pipe', 'inherit']
+    stdio: ['pipe', 'pipe', 'inherit'],
   });
 
   try {
@@ -113,21 +121,21 @@ await test('Should respond to tools/list request', async () => {
       params: {
         protocolVersion: '2024-11-05',
         capabilities: {},
-        clientInfo: { name: 'test', version: '1.0' }
-      }
+        clientInfo: { name: 'test', version: '1.0' },
+      },
     };
 
     mcpProcess.stdin.write(JSON.stringify(initRequest) + '\n');
 
     // Wait a bit for initialization
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Then request tools list
     const toolsRequest = {
       jsonrpc: '2.0',
       id: 2,
       method: 'tools/list',
-      params: {}
+      params: {},
     };
 
     const response = await new Promise((resolve, reject) => {
@@ -139,7 +147,7 @@ await test('Should respond to tools/list request', async () => {
       mcpProcess.stdout.on('data', (data) => {
         buffer += data.toString();
         const lines = buffer.split('\n');
-        
+
         for (const line of lines) {
           if (line.trim()) {
             try {
@@ -168,8 +176,8 @@ await test('Should respond to tools/list request', async () => {
     assert.ok(response.result.tools, 'Result should have tools array');
     assert.ok(Array.isArray(response.result.tools), 'Tools should be an array');
     assert.ok(response.result.tools.length > 0, 'Should have at least one tool');
-    
-    const fetchTool = response.result.tools.find(t => t.name === 'browser_fetch_webpage');
+
+    const fetchTool = response.result.tools.find((t) => t.name === 'browser_fetch_webpage');
     assert.ok(fetchTool, 'Should have browser_fetch_webpage tool');
     assert.ok(fetchTool.description, 'Tool should have description');
     assert.ok(fetchTool.inputSchema, 'Tool should have input schema');

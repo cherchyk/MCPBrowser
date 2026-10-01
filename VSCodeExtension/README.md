@@ -20,6 +20,7 @@
 ## How It Works
 
 When your AI agent needs to fetch a web page via browser:
+
 1. MCPBrowser opens the URL in your Chrome/Edge/Brave browser
 2. If authentication is required, you log in normally in the browser
 3. MCPBrowser waits for the web page to fully load (handles redirects automatically)
@@ -42,6 +43,7 @@ Both installation and `mcp.json` use `mcpbrowser@latest`. Enterprise registries 
 Once configured, your AI agent (GitHub Copilot, Kiro Agent, Antigravity Agent, etc.) will automatically use MCPBrowser when it encounters auth/crawler blocks. You can also explicitly request it:
 
 **Example prompts:**
+
 ```
 Fetch https://internal.company.com/docs (I'm already logged in)
 
@@ -55,6 +57,7 @@ Your AI agent will use your Chrome/Edge/Brave browser session to fetch these pag
 ### Manual Commands
 
 Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P`):
+
 - **Configure MCPBrowser** - Set up or update MCP server configuration
 - **Remove MCPBrowser** - Remove MCP server configuration
 
@@ -65,6 +68,7 @@ Alternative web fetcher for AI agents when normal URL fetch fails. Uses Chrome D
 **Supported editors:** VS Code, Kiro, Antigravity, VSCodium, and any editor supporting Open VSX extensions.
 
 **Use cases:**
+
 1. **Auth-required pages**: 401/403 errors, login pages, SSO, corporate intranets
 2. **Anti-bot/crawler blocks**: CAPTCHA, human verification, bot detection
 3. **JavaScript-heavy sites**: SPAs, dynamic content requiring browser rendering
