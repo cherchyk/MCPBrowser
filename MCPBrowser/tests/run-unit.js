@@ -18,6 +18,7 @@ const parallelTests = [
   'core/http-status-response.test.js', // HttpStatusResponse (HTTP 4xx/5xx)
   'core/output-schema-validation.test.js', // outputSchema vs structuredContent compliance
   'core/auth.test.js', // Auth flows with mock pages
+  'actions/plugin-action.test.js', // Plugin dispatch and tracked-page affinity
   'validate-schema-compatibility.test.js', // MCP tool schema cross-client compatibility
   'plugins/word/word-plugin.test.js', // Word plugin manifest and action catalog
   'plugins/word/word-helpers.test.js', // Word plugin URL and payload validation

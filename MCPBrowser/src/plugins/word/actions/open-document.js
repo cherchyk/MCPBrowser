@@ -13,10 +13,17 @@ async function openDocument({ page, params }) {
   const prepared = await prepareEditor(page, params, params?.mode ?? 'edit');
   if (isPreparationResponse(prepared)) return prepared;
   const state = await getDocumentState(page, { maxCharacters: 1 });
+  const status = state.wordCountState === 'ready' ? 'ready' : 'loading';
   return new WordActionResponse(
-    { status: 'ready', ...state },
-    `Word document opened in ${state.mode} mode.`,
-    ['Use read_document, get_outline, or get_document_info next.'],
+    { status, ...state },
+    status === 'ready'
+      ? `Word document opened in ${state.mode} mode.`
+      : `Word document opened in ${state.mode} mode and is still loading.`,
+    status === 'ready'
+      ? ['Use read_document, get_outline, or get_document_info next.']
+      : [
+          'Use read_document for currently rendered content, or retry open_document after Word finishes counting.',
+        ],
   );
 }
 

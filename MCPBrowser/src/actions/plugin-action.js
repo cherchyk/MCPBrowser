@@ -8,7 +8,8 @@
 import { MCPResponse, ErrorResponse } from '../core/responses.js';
 import { CoreAction } from '../core/actions.js';
 import { getLoadedPlugins, getPlugin } from '../core/plugin-loader.js';
-import { getBrowser, getValidatedPage } from '../core/browser.js';
+import { getBrowser } from '../core/browser.js';
+import { resolvePluginPage } from '../core/plugin-page.js';
 import logger from '../core/logger.js';
 
 /**
@@ -135,31 +136,8 @@ async function pluginAction({ plugin: pluginName, action: actionName, params = {
   // Get browser page — check if on correct domain (US5/T032)
   let page;
   try {
-    // Try to get a validated page for any of the plugin's URL patterns
     const browser = await getBrowser();
-    const pages = await browser.pages();
-
-    // Find a page matching any of the plugin's URL patterns
-    let matchedPage = null;
-    let highestConfidence = -1;
-    for (const p of pages) {
-      try {
-        const pageUrl = p.url();
-        for (const pattern of pluginInstance.manifest.urlPatterns) {
-          if (pageUrl.includes(pattern)) {
-            const detection = pluginInstance.matchesPage(pageUrl, '');
-            const confidence = detection?.matched ? (detection.confidence ?? 0.5) : 0.5;
-            if (confidence > highestConfidence) {
-              matchedPage = p;
-              highestConfidence = confidence;
-            }
-            break;
-          }
-        }
-      } catch {
-        /* skip closed/errored pages */
-      }
-    }
+    const matchedPage = await resolvePluginPage(browser, pluginInstance);
 
     if (!matchedPage) {
       const targetPatterns = pluginInstance.manifest.urlPatterns.join(', ');

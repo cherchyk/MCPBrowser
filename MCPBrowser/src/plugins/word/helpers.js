@@ -11,6 +11,7 @@ export const MAX_TEXT_CHARACTERS = 100_000;
 export const MAX_READ_CHARACTERS = 100_000;
 
 const WORD_HOSTS = new Set(['word.cloud.microsoft', 'word.office.com', 'onedrive.live.com']);
+const wordEditorFrameAffinities = new WeakMap();
 
 export class WordActionResponse extends MCPResponse {
   constructor(data, summary, nextSteps = []) {
@@ -146,20 +147,56 @@ async function inspectWordEditor(frame) {
 }
 
 async function findWordEditorContext(page) {
-  const frames = [...getPageFrames(page)].sort(
-    (left, right) =>
-      Number(frameMatchesUrl(right, isOfficeEditorHost)) -
-      Number(frameMatchesUrl(left, isOfficeEditorHost)),
-  );
+  const affinity = wordEditorFrameAffinities.get(page);
   let hiddenEditor = null;
+  if (affinity) {
+    const editor = await inspectWordEditor(affinity);
+    if (editor) {
+      const result = { frame: affinity, editor };
+      if (editor.visible) return result;
+      hiddenEditor = result;
+    } else {
+      wordEditorFrameAffinities.delete(page);
+    }
+  }
+
+  const frames = [...getPageFrames(page)]
+    .filter((frame) => frame !== affinity)
+    .sort(
+      (left, right) =>
+        Number(frameMatchesUrl(right, isOfficeEditorHost)) -
+        Number(frameMatchesUrl(left, isOfficeEditorHost)),
+    );
   for (const frame of frames) {
     const editor = await inspectWordEditor(frame);
     if (!editor) continue;
     const result = { frame, editor };
-    if (editor.visible) return result;
+    if (editor.visible) {
+      wordEditorFrameAffinities.set(page, frame);
+      return result;
+    }
     hiddenEditor ??= result;
   }
+  if (hiddenEditor) wordEditorFrameAffinities.set(page, hiddenEditor.frame);
   return hiddenEditor;
+}
+
+async function requireWordEditorContext(page) {
+  const editorContext = await findWordEditorContext(page);
+  if (!editorContext) throw new Error('Word editor context was not found');
+  return editorContext.frame;
+}
+
+async function focusWordEditor(page, context, selector = WORD_EDITOR_SELECTOR) {
+  if (typeof page.bringToFront === 'function') await page.bringToFront();
+  const focused = await context.evaluate((editorSelector) => {
+    const editor = document.querySelector(editorSelector);
+    if (!editor) return false;
+    editor.click();
+    editor.focus();
+    return document.hasFocus() && document.activeElement === editor;
+  }, selector);
+  if (!focused) throw new Error('Word editor could not be focused');
 }
 
 async function waitForWordEditorContext(page, timeout = DEFAULT_NAVIGATION_TIMEOUT) {
@@ -296,9 +333,19 @@ export async function getDocumentState(page, options = {}) {
   }
 
   const editorContext = await findWordEditorContext(page);
-  const context = editorContext?.frame ?? page;
+  if (!editorContext) {
+    return {
+      editorFound: false,
+      mode: 'unknown',
+      pageCount: 0,
+      paragraphCount: 0,
+      textLength: 0,
+      saveState: 'unknown',
+    };
+  }
+  const context = editorContext.frame;
   return context.evaluate(
-    ({ selector, includeText, maxChars, textOffset, prefix, suffix }) => {
+    ({ selector, wordCountSelector, includeText, maxChars, textOffset, prefix, suffix }) => {
       const editor = document.querySelector(selector);
       if (!editor) {
         return {
@@ -351,6 +398,9 @@ export async function getDocumentState(page, options = {}) {
       } else if (signals.some((value) => /\b(saved|saved to|all changes saved)\b/.test(value))) {
         saveState = 'saved';
       }
+      const wordCountLabel =
+        document.querySelector(wordCountSelector)?.getAttribute('aria-label') || '';
+      const wordCountMatch = wordCountLabel.match(/([\d,]+)\s+words?/i);
 
       const result = {
         editorFound: true,
@@ -358,6 +408,12 @@ export async function getDocumentState(page, options = {}) {
         pageCount: editor.querySelectorAll('.Page').length,
         paragraphCount: editor.querySelectorAll('.CanvasParagraph').length,
         textLength: text.length,
+        wordCount: wordCountMatch ? Number(wordCountMatch[1].replace(/,/g, '')) : null,
+        wordCountState: wordCountMatch
+          ? 'ready'
+          : /\bcounting\b/i.test(wordCountLabel)
+            ? 'counting'
+            : 'unavailable',
         saveState,
       };
       if (includeText) {
@@ -373,6 +429,7 @@ export async function getDocumentState(page, options = {}) {
     },
     {
       selector: WORD_EDITOR_SELECTOR,
+      wordCountSelector: sel.WORD_COUNT,
       includeText: options.includeText === true,
       maxChars: maxCharacters,
       textOffset: offset,
@@ -441,9 +498,8 @@ export async function updateDocumentContent(page, { html, plainText, placement =
     }
   }
 
-  const editorContext = await findWordEditorContext(page);
-  const context = editorContext?.frame ?? page;
-  await context.click(EDITABLE_WORD_EDITOR_SELECTOR);
+  const context = await requireWordEditorContext(page);
+  await focusWordEditor(page, context, EDITABLE_WORD_EDITOR_SELECTOR);
 
   const result = await context.evaluate(
     async ({ selector, richHtml, text, sanitization, targetPlacement }) => {
@@ -544,8 +600,7 @@ export async function updateDocumentContent(page, { html, plainText, placement =
 }
 
 async function openFindReplacePane(page) {
-  const editorContext = await findWordEditorContext(page);
-  const context = editorContext?.frame ?? page;
+  const context = await requireWordEditorContext(page);
   const findVisible = await context
     .$eval('#FindSearchBoxV2', (element) => {
       const rect = element.getBoundingClientRect();
@@ -554,10 +609,8 @@ async function openFindReplacePane(page) {
     .catch(() => false);
 
   if (!findVisible) {
-    await context.click(EDITABLE_WORD_EDITOR_SELECTOR);
-    const modifier = await page.evaluate(() =>
-      /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? 'Meta' : 'Control',
-    );
+    await focusWordEditor(page, context, EDITABLE_WORD_EDITOR_SELECTOR);
+    const modifier = await keyboardModifier(context);
     await page.keyboard.down(modifier);
     await page.keyboard.press('h');
     await page.keyboard.up(modifier);
@@ -586,9 +639,7 @@ async function openFindReplacePane(page) {
 
 async function replaceInputValue(page, context, selector, value) {
   await context.click(selector);
-  const modifier = await page.evaluate(() =>
-    /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? 'Meta' : 'Control',
-  );
+  const modifier = await keyboardModifier(context);
   await page.keyboard.down(modifier);
   await page.keyboard.press('a');
   await page.keyboard.up(modifier);
@@ -749,8 +800,7 @@ export async function replaceDocumentTextSurgically(page, options) {
     };
   }
 
-  const editorContext = await findWordEditorContext(page);
-  const context = editorContext?.frame ?? page;
+  const context = await requireWordEditorContext(page);
   if (occurrence !== undefined) {
     for (let current = found.currentMatch || 1; current < occurrence; current++) {
       await context.click('#NextSearchResult');
@@ -775,32 +825,46 @@ export async function replaceDocumentTextSurgically(page, options) {
   };
 }
 
-async function keyboardModifier(page) {
-  return page.evaluate(() =>
+async function keyboardModifier(context) {
+  return context.evaluate(() =>
     /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? 'Meta' : 'Control',
   );
 }
 
 async function openNavigationPane(page) {
-  const headingsTabVisible = await page
+  const context = await requireWordEditorContext(page);
+  const headingsTabVisible = await context
     .$eval(sel.NAVIGATION_HEADINGS_TAB, (element) => {
       const rect = element.getBoundingClientRect();
       return rect.width > 0 && rect.height > 0;
     })
     .catch(() => false);
   if (!headingsTabVisible) {
-    await page.click(sel.WORD_EDITOR);
-    const modifier = await keyboardModifier(page);
-    await page.keyboard.down(modifier);
-    await page.keyboard.press('f');
-    await page.keyboard.up(modifier);
+    const opened = await context.evaluate((selector) => {
+      const button = document.querySelector(selector);
+      if (!button) return false;
+      button.click();
+      return true;
+    }, sel.NAVIGATION_OPEN);
+    if (!opened) {
+      await focusWordEditor(page, context);
+      const modifier = await keyboardModifier(context);
+      await page.keyboard.down(modifier);
+      await page.keyboard.press('f');
+      await page.keyboard.up(modifier);
+    }
   }
-  await page.waitForSelector(sel.NAVIGATION_HEADINGS_TAB, { visible: true, timeout: 10_000 });
+  await context.waitForSelector(sel.NAVIGATION_HEADINGS_TAB, {
+    visible: true,
+    timeout: DEFAULT_STATE_TIMEOUT,
+  });
+  return context;
 }
 
 export async function getDocumentInfo(page) {
   const state = await getDocumentState(page, { maxCharacters: 1 });
-  const metadata = await page.evaluate(
+  const context = await requireWordEditorContext(page);
+  const metadata = await context.evaluate(
     ({ titleSelector, wordCountSelector, modeSelector }) => {
       const titleElement = document.querySelector(titleSelector);
       const wordCountLabel =
@@ -822,11 +886,14 @@ export async function getDocumentInfo(page) {
 }
 
 export async function getDocumentOutline(page) {
-  await openNavigationPane(page);
-  await page.click(sel.NAVIGATION_HEADINGS_TAB);
-  await page.waitForSelector(sel.NAVIGATION_HEADINGS_PANEL, { visible: true, timeout: 10_000 });
+  const context = await openNavigationPane(page);
+  await context.click(sel.NAVIGATION_HEADINGS_TAB);
+  await context.waitForSelector(sel.NAVIGATION_HEADINGS_PANEL, {
+    visible: true,
+    timeout: DEFAULT_STATE_TIMEOUT,
+  });
   await new Promise((resolve) => setTimeout(resolve, 300));
-  return page.evaluate(
+  return context.evaluate(
     (headingSelector) =>
       Array.from(document.querySelectorAll(headingSelector))
         .map((element, index) => ({
@@ -850,7 +917,8 @@ export async function navigateToHeading(page, headingText, occurrence = 1) {
     return { navigated: false, reason: 'heading_not_found', matches: matches.length };
   }
   const targetIndex = matches[occurrence - 1].index;
-  const headings = await page.$$(sel.NAVIGATION_HEADING);
+  const context = await requireWordEditorContext(page);
+  const headings = await context.$$(sel.NAVIGATION_HEADING);
   await headings[targetIndex].click();
   await new Promise((resolve) => setTimeout(resolve, 500));
   return { navigated: true, heading: matches[occurrence - 1] };
@@ -874,7 +942,8 @@ export async function readRenderedParagraphRange(page, options = {}) {
   if (!Number.isInteger(paragraphCount) || paragraphCount < 1 || paragraphCount > 500) {
     throw new Error('paragraphCount must be an integer between 1 and 500');
   }
-  return page.evaluate(
+  const context = await requireWordEditorContext(page);
+  return context.evaluate(
     ({ paragraphSelector, pageSelector, start, count, heading, anchorToHeading }) => {
       const pages = Array.from(document.querySelectorAll(pageSelector));
       const all = Array.from(document.querySelectorAll(paragraphSelector))
@@ -929,8 +998,9 @@ export async function getDocumentTextContext(page, options) {
   const snippet = found.snippets.find((item) => item.occurrence === occurrence);
   if (snippet)
     return { found: true, matchCount: found.matchCount, occurrence, context: snippet.text };
+  const context = await requireWordEditorContext(page);
   for (let current = found.currentMatch || 1; current < occurrence; current++) {
-    await page.click(sel.NEXT_FIND_RESULT);
+    await context.click(sel.NEXT_FIND_RESULT);
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   return { found: true, matchCount: found.matchCount, occurrence, context: null };
@@ -951,17 +1021,18 @@ export async function selectDocumentText(page, options) {
   if (!Number.isInteger(occurrence) || occurrence < 1 || occurrence > found.matchCount) {
     return { selected: false, reason: 'occurrence_out_of_range', matchCount: found.matchCount };
   }
+  const context = await requireWordEditorContext(page);
   for (let current = found.currentMatch || 1; current < occurrence; current++) {
-    await page.click(sel.NEXT_FIND_RESULT);
+    await context.click(sel.NEXT_FIND_RESULT);
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  const resultButton = await page.$(`${sel.FIND_RESULT}[data-unique-id="${occurrence}"]`);
+  const resultButton = await context.$(`${sel.FIND_RESULT}[data-unique-id="${occurrence}"]`);
   if (resultButton) {
     await resultButton.click();
     await new Promise((resolve) => setTimeout(resolve, 150));
   }
   if (options?.closePane !== false) {
-    const close = await page.$(sel.NAVIGATION_CLOSE);
+    const close = await context.$(sel.NAVIGATION_CLOSE);
     if (close) {
       await close.click();
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -973,7 +1044,8 @@ export async function selectDocumentText(page, options) {
 export async function applySelectedFormatting(page, options) {
   const selected = await selectDocumentText(page, { ...options, closePane: false });
   if (!selected.selected) return selected;
-  const modifier = await keyboardModifier(page);
+  const context = await requireWordEditorContext(page);
+  const modifier = await keyboardModifier(context);
   const shortcuts = [];
   if (options.bold === true) shortcuts.push(['b']);
   if (options.italic === true) shortcuts.push(['i']);
@@ -995,7 +1067,8 @@ export async function applySelectedFormatting(page, options) {
 }
 
 export async function listRenderedTables(page) {
-  return page.evaluate(
+  const context = await requireWordEditorContext(page);
+  return context.evaluate(
     (tableSelector) =>
       Array.from(document.querySelectorAll(tableSelector)).map((table, index) => {
         const rows = Array.from(table.querySelectorAll('tr'));
@@ -1019,7 +1092,8 @@ export async function readRenderedTable(page, tableIndex) {
   if (!Number.isInteger(tableIndex) || tableIndex < 0) {
     throw new Error('tableIndex must be a non-negative integer');
   }
-  return page.evaluate(
+  const context = await requireWordEditorContext(page);
+  return context.evaluate(
     ({ tableSelector, index }) => {
       const table = document.querySelectorAll(tableSelector)[index];
       if (!table) return null;
@@ -1040,7 +1114,8 @@ export async function readRenderedTable(page, tableIndex) {
 }
 
 export async function listRenderedLinks(page) {
-  return page.evaluate(
+  const context = await requireWordEditorContext(page);
+  return context.evaluate(
     (linkSelector) =>
       Array.from(document.querySelectorAll(linkSelector))
         .map((link, index) => ({
@@ -1066,7 +1141,8 @@ export async function addLinkToSelection(page, options) {
   if (!['http:', 'https:', 'mailto:'].includes(url.protocol)) {
     throw new Error('url must use http, https, or mailto');
   }
-  const inserted = await page.evaluate(
+  const context = await requireWordEditorContext(page);
+  const inserted = await context.evaluate(
     ({ editorSelector, text, href }) => {
       const editor = document.querySelector(editorSelector);
       if (!editor) return false;
@@ -1103,7 +1179,8 @@ export async function addLinkToSelection(page, options) {
 export async function removeLinkFromSelection(page, options) {
   const selected = await selectDocumentText(page, { ...options, closePane: false });
   if (!selected.selected) return selected;
-  const removed = await page.evaluate(
+  const context = await requireWordEditorContext(page);
+  const removed = await context.evaluate(
     ({ editorSelector, text }) => {
       const editor = document.querySelector(editorSelector);
       if (!editor) return false;
@@ -1125,11 +1202,12 @@ export async function removeLinkFromSelection(page, options) {
 }
 
 export async function listDocumentComments(page) {
-  const button = await page.$(sel.COMMENTS_BUTTON);
+  const context = await requireWordEditorContext(page);
+  const button = await context.$(sel.COMMENTS_BUTTON);
   if (!button) return [];
   await button.click();
   await new Promise((resolve) => setTimeout(resolve, 500));
-  return page.evaluate(() => {
+  return context.evaluate(() => {
     const candidates = document.querySelectorAll('[role="comment"]');
     return Array.from(candidates)
       .map((element, index) => ({
@@ -1145,19 +1223,20 @@ export async function addCommentToSelection(page, options) {
   validateSearchValue(options?.comment, 'comment', 5_000);
   const selected = await selectDocumentText(page, { ...options, closePane: false });
   if (!selected.selected) return selected;
-  const modifier = await keyboardModifier(page);
+  const context = await requireWordEditorContext(page);
+  const modifier = await keyboardModifier(context);
   await page.keyboard.down(modifier);
   await page.keyboard.down('Alt');
   await page.keyboard.press('m');
   await page.keyboard.up('Alt');
   await page.keyboard.up(modifier);
-  const editor = await page.waitForSelector(
+  const editor = await context.waitForSelector(
     '[contenteditable="true"][aria-label*="comment" i], textarea[aria-label*="comment" i]',
     { visible: true, timeout: 5_000 },
   );
   await editor.click();
   await page.keyboard.type(options.comment);
-  const submit = await page.$('button[id^="sendReplyButton_"][aria-label="Comment"]');
+  const submit = await context.$('button[id^="sendReplyButton_"][aria-label="Comment"]');
   if (!submit) throw new Error('Word comment submit button was not found');
   await submit.click();
   return { ...selected, commented: true, operationId: randomUUID() };
@@ -1167,11 +1246,12 @@ export async function resolveDocumentComment(page, commentIndex) {
   if (!Number.isInteger(commentIndex) || commentIndex < 0) {
     throw new Error('commentIndex must be a non-negative integer');
   }
-  const button = await page.$(sel.COMMENTS_BUTTON);
+  const context = await requireWordEditorContext(page);
+  const button = await context.$(sel.COMMENTS_BUTTON);
   if (!button) return { resolved: false, reason: 'comments_unavailable' };
   await button.click();
   await new Promise((resolve) => setTimeout(resolve, 500));
-  const candidates = await page.$$('[role="comment"]');
+  const candidates = await context.$$('[role="comment"]');
   const candidate = candidates[commentIndex];
   if (!candidate) return { resolved: false, reason: 'comment_not_found' };
   const cardHandle = await candidate.evaluateHandle((element) =>
@@ -1182,7 +1262,7 @@ export async function resolveDocumentComment(page, commentIndex) {
   if (!menu) return { resolved: false, reason: 'resolve_action_unavailable' };
   await menu.click();
   await new Promise((resolve) => setTimeout(resolve, 200));
-  const menuItems = await page.$$('[role="menuitem"]');
+  const menuItems = await context.$$('[role="menuitem"]');
   for (const item of menuItems) {
     const text = await item.evaluate((element) => (element.textContent || '').trim());
     if (/^resolve\b/i.test(text)) {

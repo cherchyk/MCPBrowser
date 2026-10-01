@@ -17,6 +17,7 @@ export const REPLACE_ALL_BUTTON = '#ReplaceAllButton';
 export const NAVIGATION_HEADINGS_TAB = '#navigationTab1';
 export const NAVIGATION_HEADINGS_PANEL = '#navigationTab1-panel';
 export const NAVIGATION_HEADING = '[data-automation-id="navigationPaneHeadingButton"]';
+export const NAVIGATION_OPEN = '#ToggleTotalPageCount';
 export const NAVIGATION_CLOSE = '#TaskPaneActionButtonFindReplaceTaskPane';
 export const DOCUMENT_TITLE = '[data-unique-id="CommitNewDocumentTitle-input"]';
 export const WORD_COUNT = '#ShowWordCountDialog';
