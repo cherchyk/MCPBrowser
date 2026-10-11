@@ -461,6 +461,8 @@ The enabled `word` plugin reads and replaces content in authenticated Word Onlin
 | `replace_document_html`                                   | Replace the entire document with sanitized rich HTML and a plain-text fallback              |
 | `insert_document_text`                                    | Prepend or append plain text without replacing existing content                             |
 | `insert_document_html`                                    | Prepend or append sanitized rich HTML without replacing existing content                    |
+| `import_markdown`                                         | Import a local Markdown file and local images by absolute file path                         |
+| `export_markdown`                                         | Export the complete document to a local Markdown path and sibling image folder              |
 | `find_text`                                               | Search the full document with optional case and whole-word matching                         |
 | `replace_text`                                            | Surgically replace one occurrence or every occurrence using Word's native document model    |
 | `get_document_info`                                       | Read title, mode, word count, rendered layout, and save state                               |
@@ -479,7 +481,9 @@ The enabled `word` plugin reads and replaces content in authenticated Word Onlin
 
 Supported entry points include `https://word.cloud.microsoft/`, HTTPS SharePoint/OneDrive Word links, and Word editor hosts under `*.officeapps.live.com`. The plugin uses the existing browser session; complete sign-in, MFA, or consent directly in the browser.
 
-Rich HTML updates remove active content, event handlers, embedded resources, forms, images, and unsafe URL schemes before dispatch. Payload size and document element counts are bounded. The plugin never reads or returns the SharePoint WOPI access token, cookies, or authorization headers.
+Rich HTML updates remove active content, event handlers, embedded resources, forms, images, and unsafe URL schemes before dispatch. `import_markdown` is the exception for images: it reads supported local image files referenced by the Markdown, validates their type and size, and embeds them through the bounded Word clipboard operation. Remote and data URL images in Markdown input are rejected. The plugin never reads or returns the Markdown body, image data, SharePoint WOPI access token, cookies, or authorization headers.
+
+Use `import_markdown` with an absolute `sourcePath` and `placement` of `replace`, `start`, or `end`. Large documents are split at Markdown block boundaries rather than being sent through the MCP request. Use `export_markdown` with an absolute `outputPath`; for `D:\docs\guide.md`, extracted images are written to `D:\docs\guide.assets\` with their Word-provided names preserved when available. The action returns paths, counts, and unresolved-image metadata rather than the exported content. Existing Markdown files are not replaced unless `overwrite` is true.
 
 `read_document` supports `offset` and `maxCharacters` for chunked reading. It reflects Word's currently rendered pages and reports `mayBePartial: true` because Word virtualizes large documents. `wait_for_save` fails rather than assuming persistence when Word's save indicator is unavailable.
 

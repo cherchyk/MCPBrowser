@@ -3,6 +3,7 @@ import { addCommentAction } from './add-comment.js';
 import { listCommentsAction } from './list-comments.js';
 import { resolveCommentAction } from './resolve-comment.js';
 import { deleteRangeAction } from './delete-range.js';
+import { exportMarkdownAction } from './export-markdown.js';
 import { findTextAction } from './find-text.js';
 import { formatRangeAction } from './format-range.js';
 import { getDocumentInfoPluginAction } from './get-document-info.js';
@@ -12,6 +13,7 @@ import { getTextContextAction } from './get-text-context.js';
 import { insertAtAction } from './insert-at.js';
 import { insertDocumentHtmlAction } from './insert-document-html.js';
 import { insertDocumentTextAction } from './insert-document-text.js';
+import { importMarkdownAction } from './import-markdown.js';
 import { addLinkAction } from './add-link.js';
 import { removeLinkAction } from './remove-link.js';
 import { updateLinkAction } from './update-link.js';
@@ -35,6 +37,8 @@ export const ACTIONS = [
   replaceDocumentHtmlAction,
   insertDocumentTextAction,
   insertDocumentHtmlAction,
+  importMarkdownAction,
+  exportMarkdownAction,
   findTextAction,
   getDocumentInfoPluginAction,
   getOutlineAction,

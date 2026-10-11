@@ -67,6 +67,8 @@ describe('Word Plugin — action catalog', () => {
         'replace_document_html',
         'insert_document_text',
         'insert_document_html',
+        'import_markdown',
+        'export_markdown',
         'find_text',
         'get_document_info',
         'get_outline',

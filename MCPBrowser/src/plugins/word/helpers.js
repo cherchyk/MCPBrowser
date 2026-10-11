@@ -85,7 +85,8 @@ export function validateReadOffset(value) {
   return offset;
 }
 
-export function validateMutationPayload({ html, plainText }) {
+export function validateMutationPayload({ html, plainText }, options = {}) {
+  const maxHtmlBytes = options.maxHtmlBytes ?? MAX_HTML_BYTES;
   if (typeof plainText !== 'string') {
     throw new Error('plainText is required and must be a string');
   }
@@ -96,8 +97,8 @@ export function validateMutationPayload({ html, plainText }) {
     if (typeof html !== 'string') {
       throw new Error('html must be a string');
     }
-    if (Buffer.byteLength(html, 'utf8') > MAX_HTML_BYTES) {
-      throw new Error(`html exceeds the ${MAX_HTML_BYTES} byte limit`);
+    if (Buffer.byteLength(html, 'utf8') > maxHtmlBytes) {
+      throw new Error(`html exceeds the ${maxHtmlBytes} byte limit`);
     }
   }
 }
@@ -439,8 +440,11 @@ export async function getDocumentState(page, options = {}) {
   );
 }
 
-export async function updateDocumentContent(page, { html, plainText, placement = 'replace' }) {
-  validateMutationPayload({ html, plainText });
+export async function updateDocumentContent(
+  page,
+  { html, plainText, placement = 'replace', allowImages = false, maxHtmlBytes = MAX_HTML_BYTES },
+) {
+  validateMutationPayload({ html, plainText }, { maxHtmlBytes });
   if (!['replace', 'start', 'end'].includes(placement)) {
     throw new Error("placement must be 'replace', 'start', or 'end'");
   }
@@ -448,41 +452,56 @@ export async function updateDocumentContent(page, { html, plainText, placement =
   if (html !== undefined) {
     const sanitizerPage = await page.browser().newPage();
     try {
-      sanitized = await sanitizerPage.evaluate((richHtml) => {
-        const documentFragment = new DOMParser().parseFromString(richHtml, 'text/html');
-        const blocked =
-          'script,style,link,meta,iframe,frame,object,embed,form,input,button,textarea,select,option,video,audio,source,canvas,svg,math,img';
-        documentFragment.querySelectorAll(blocked).forEach((element) => element.remove());
-        for (const element of documentFragment.body.querySelectorAll('*')) {
-          for (const attribute of Array.from(element.attributes)) {
-            const name = attribute.name.toLowerCase();
-            if (
-              name.startsWith('on') ||
-              ['style', 'src', 'srcset', 'action', 'formaction', 'poster'].includes(name)
-            ) {
-              element.removeAttribute(attribute.name);
-              continue;
-            }
-            if (name === 'href') {
-              try {
-                const target = new URL(attribute.value, 'https://word.cloud.microsoft/');
-                if (!['http:', 'https:', 'mailto:'].includes(target.protocol)) {
+      sanitized = await sanitizerPage.evaluate(
+        ({ richHtml, permitImages }) => {
+          const documentFragment = new DOMParser().parseFromString(richHtml, 'text/html');
+          const blocked =
+            'script,style,link,meta,iframe,frame,object,embed,form,input,button,textarea,select,option,video,audio,source,canvas,svg,math';
+          documentFragment.querySelectorAll(blocked).forEach((element) => element.remove());
+          if (!permitImages)
+            documentFragment.querySelectorAll('img').forEach((element) => element.remove());
+          for (const element of documentFragment.body.querySelectorAll('*')) {
+            for (const attribute of Array.from(element.attributes)) {
+              const name = attribute.name.toLowerCase();
+              if (
+                name.startsWith('on') ||
+                ['style', 'srcset', 'action', 'formaction', 'poster'].includes(name)
+              ) {
+                element.removeAttribute(attribute.name);
+                continue;
+              }
+              if (name === 'src') {
+                const safeImage =
+                  permitImages &&
+                  element.tagName === 'IMG' &&
+                  /^data:image\/(?:bmp|gif|jpeg|png|webp);base64,[a-z0-9+/=\s]+$/i.test(
+                    attribute.value,
+                  );
+                if (!safeImage) element.removeAttribute(attribute.name);
+              }
+              if (name === 'href') {
+                try {
+                  const target = new URL(attribute.value, 'https://word.cloud.microsoft/');
+                  if (!['http:', 'https:', 'mailto:'].includes(target.protocol)) {
+                    element.removeAttribute(attribute.name);
+                  }
+                } catch {
                   element.removeAttribute(attribute.name);
                 }
-              } catch {
-                element.removeAttribute(attribute.name);
               }
             }
           }
-        }
 
-        return {
-          html: documentFragment.body.innerHTML,
-          nodeCount: documentFragment.body.querySelectorAll('*').length,
-          tableCount: documentFragment.body.querySelectorAll('table').length,
-          linkCount: documentFragment.body.querySelectorAll('a[href]').length,
-        };
-      }, html);
+          return {
+            html: documentFragment.body.innerHTML,
+            nodeCount: documentFragment.body.querySelectorAll('*').length,
+            tableCount: documentFragment.body.querySelectorAll('table').length,
+            linkCount: documentFragment.body.querySelectorAll('a[href]').length,
+            imageCount: documentFragment.body.querySelectorAll('img[src]').length,
+          };
+        },
+        { richHtml: html, permitImages: allowImages },
+      );
     } finally {
       await sanitizerPage.close();
     }
@@ -574,6 +593,7 @@ export async function updateDocumentContent(page, { html, plainText, placement =
         nodeCount: sanitization.nodeCount,
         tableCount: sanitization.tableCount,
         linkCount: sanitization.linkCount,
+        imageCount: sanitization.imageCount,
         placement: targetPlacement,
       };
     },
@@ -588,6 +608,7 @@ export async function updateDocumentContent(page, { html, plainText, placement =
             nodeCount: sanitized.nodeCount,
             tableCount: sanitized.tableCount,
             linkCount: sanitized.linkCount,
+            imageCount: sanitized.imageCount,
           }
         : null,
     },
@@ -597,6 +618,69 @@ export async function updateDocumentContent(page, { html, plainText, placement =
     ...result,
     operationId: randomUUID(),
   };
+}
+
+export async function copyDocumentContent(page) {
+  const context = await requireWordEditorContext(page);
+  await focusWordEditor(page, context, WORD_EDITOR_SELECTOR);
+  return context.evaluate(async (selector) => {
+    const editor = document.querySelector(selector);
+    if (!editor) return { accepted: false, html: '', text: '', files: [] };
+
+    editor.focus();
+    const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+    const keyOptions = {
+      key: 'a',
+      code: 'KeyA',
+      keyCode: 65,
+      which: 65,
+      ctrlKey: !isMac,
+      metaKey: isMac,
+      bubbles: true,
+      cancelable: true,
+    };
+    let selectionHandled = false;
+    for (const type of ['keydown', 'keypress', 'keyup']) {
+      const event = new KeyboardEvent(type, keyOptions);
+      editor.dispatchEvent(event);
+      if (type === 'keydown') selectionHandled = event.defaultPrevented;
+    }
+    if (!selectionHandled) {
+      return { accepted: false, reason: 'select_all_not_handled', html: '', text: '', files: [] };
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const data = new DataTransfer();
+    const copy = new ClipboardEvent('copy', {
+      clipboardData: data,
+      bubbles: true,
+      cancelable: true,
+    });
+    editor.dispatchEvent(copy);
+
+    const files = [];
+    for (const file of Array.from(data.files)) {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.addEventListener('error', () => reject(reader.error));
+        reader.addEventListener('load', () => {
+          const encoded = String(reader.result).split(',', 2)[1] || '';
+          resolve(encoded);
+        });
+        reader.readAsDataURL(file);
+      });
+      files.push({ name: file.name, mimeType: file.type, base64 });
+    }
+
+    const html = data.getData('text/html');
+    const text = data.getData('text/plain');
+    return {
+      accepted: copy.defaultPrevented || Boolean(html || text || files.length),
+      html,
+      text,
+      files,
+    };
+  }, WORD_EDITOR_SELECTOR);
 }
 
 async function openFindReplacePane(page) {
