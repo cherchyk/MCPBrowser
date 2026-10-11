@@ -22,6 +22,7 @@ const parallelTests = [
   'validate-schema-compatibility.test.js', // MCP tool schema cross-client compatibility
   'plugins/word/word-plugin.test.js', // Word plugin manifest and action catalog
   'plugins/word/word-helpers.test.js', // Word plugin URL and payload validation
+  'plugins/word/word-mutations.test.js', // Verified native Word mutations and action coordination
   'plugins/word/markdown-files.test.js', // File-based Word Markdown import/export
   'plugins/example/example-plugin.test.js', // Example plugin structure and contract
   // Browser tests: see run-browser.js

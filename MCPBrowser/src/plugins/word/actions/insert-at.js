@@ -1,6 +1,6 @@
 import { ErrorResponse } from '../../../core/responses.js';
 import { WordActionResponse, replaceDocumentTextSurgically } from '../helpers.js';
-import { isPreparationResponse, prepareEditor } from './common.js';
+import { isPreparationResponse, mutationFailure, prepareEditor } from './common.js';
 import { PluginAction } from '../../../core/actions.js';
 
 async function insertAt({ page, params }) {
@@ -24,9 +24,7 @@ async function insertAt({ page, params }) {
     replaceAll: false,
   });
   if (!result.changed) {
-    return new ErrorResponse(`Word did not insert content (${result.reason}).`, [
-      'Use find_text and specify an unambiguous occurrence.',
-    ]);
+    return mutationFailure(result);
   }
   return new WordActionResponse(
     result,

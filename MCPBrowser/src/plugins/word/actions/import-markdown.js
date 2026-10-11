@@ -3,6 +3,7 @@ import { PluginAction } from '../../../core/actions.js';
 import { WordActionResponse, updateDocumentContent } from '../helpers.js';
 import { MAX_MARKDOWN_CHUNK_HTML_BYTES, loadMarkdownForWord } from '../markdown-files.js';
 import { isPreparationResponse, prepareEditor } from './common.js';
+import logger from '../../../core/logger.js';
 
 async function importMarkdown({ page, params }) {
   if (!['replace', 'start', 'end'].includes(params?.placement)) {
@@ -27,18 +28,28 @@ async function importMarkdown({ page, params }) {
   for (let index = 0; index < chunks.length; index++) {
     const placement =
       params.placement === 'replace' ? (index === 0 ? 'replace' : 'end') : params.placement;
-    const result = await updateDocumentContent(page, {
-      ...chunks[index],
-      placement,
-      allowImages: true,
-      maxHtmlBytes: MAX_MARKDOWN_CHUNK_HTML_BYTES,
-    });
+    let result;
+    try {
+      result = await updateDocumentContent(page, {
+        ...chunks[index],
+        placement,
+        allowImages: true,
+        maxHtmlBytes: MAX_MARKDOWN_CHUNK_HTML_BYTES,
+      });
+    } catch {
+      logger.warn(`Word Markdown import stopped at chunk ${index + 1}; inspect before retrying`);
+      result = { accepted: false, changed: null, reason: 'mutation_outcome_unknown' };
+    }
     if (!result.accepted) {
       return new ErrorResponse(
-        `Word rejected Markdown chunk ${index + 1} of ${chunks.length} (${result.reason}). ${
-          index > 0 ? `${index} chunk(s) were already inserted.` : 'The document was not changed.'
-        }`,
-        ['Inspect the Word document before retrying to avoid duplicate content.'],
+        `Markdown import stopped at chunk ${index + 1} of ${chunks.length} (${result.reason}). ` +
+          `${index} chunk(s) have verified document text. ` +
+          (result.changed === null
+            ? 'The current chunk may have changed Word; its outcome is unknown.'
+            : 'The current chunk was not inserted.'),
+        [
+          'Inspect the affected text and save state before retrying. Do not blindly re-import or append.',
+        ],
       );
     }
   }
@@ -52,9 +63,13 @@ async function importMarkdown({ page, params }) {
       imageReferences: imported.imageReferences,
       imageBytes: imported.imageBytes,
       placement: params.placement,
+      verification: 'full_document_text',
     },
-    `Imported Markdown from ${imported.sourcePath} in ${imported.chunks.length} chunk(s).`,
-    ['Use wait_for_save before closing the document.'],
+    `Verified Word text after importing ${imported.chunks.length} Markdown chunk(s).`,
+    [
+      'Inspect heading styles, tables, and images separately; text verification does not prove formatting.',
+      'Use wait_for_save before closing the document.',
+    ],
   );
 }
 

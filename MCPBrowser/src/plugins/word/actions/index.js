@@ -29,6 +29,11 @@ import { replaceRangeAction } from './replace-range.js';
 import { replaceTextAction } from './replace-text.js';
 import { updateTableCellAction } from './update-table-cell.js';
 import { waitForSaveAction } from './wait-for-save.js';
+import { PluginAction } from '../../../core/actions.js';
+import { ErrorResponse } from '../../../core/responses.js';
+
+// Even reads navigate/select in Word. Reject overlaps instead of queueing past MCP deadlines.
+let activeAction = null;
 
 export const ACTIONS = [
   openDocumentAction,
@@ -62,4 +67,26 @@ export const ACTIONS = [
   getStateAction,
   waitForSaveAction,
   closeDocumentAction,
-];
+].map(
+  (action) =>
+    new PluginAction({
+      name: action.name,
+      description: action.description,
+      params: action.params,
+      response: action.response,
+      handler: async (context) => {
+        if (activeAction) {
+          return new ErrorResponse(
+            `Word is busy with '${activeAction}'. '${action.name}' was not started.`,
+            ['Wait for the active Word action to finish. Do not run Word actions in parallel.'],
+          );
+        }
+        activeAction = action.name;
+        try {
+          return await action.execute(context);
+        } finally {
+          activeAction = null;
+        }
+      },
+    }),
+);

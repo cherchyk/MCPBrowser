@@ -1,6 +1,5 @@
-import { ErrorResponse } from '../../../core/responses.js';
 import { WordActionResponse, updateDocumentContent } from '../helpers.js';
-import { isPreparationResponse, prepareEditor } from './common.js';
+import { isPreparationResponse, mutationFailure, prepareEditor } from './common.js';
 import { PluginAction } from '../../../core/actions.js';
 
 async function replaceDocumentText({ page, params }) {
@@ -11,11 +10,9 @@ async function replaceDocumentText({ page, params }) {
     placement: 'replace',
   });
   if (!result.accepted) {
-    return new ErrorResponse(`Word rejected the text replacement (${result.reason}).`, [
-      'Verify the document is editable and retry.',
-    ]);
+    return mutationFailure(result);
   }
-  return new WordActionResponse(result, 'Word accepted the whole-document text replacement.', [
+  return new WordActionResponse(result, 'Word document text matches the requested replacement.', [
     'Use wait_for_save before closing.',
   ]);
 }

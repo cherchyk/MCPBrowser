@@ -121,6 +121,7 @@ describe('Word helpers — embedded editor context', () => {
         down: async () => {},
         press: async () => {},
         type: async () => {},
+        sendCharacter: async () => {},
         up: async () => {},
       },
     };
@@ -211,22 +212,24 @@ describe('Word helpers — embedded editor context', () => {
       async () => null,
     );
     let calls = 0;
+    let text = '';
+    const keys = [];
     const word = {
       ...frame(
         'https://contoso-word-edit.officeapps.live.com/we/wordeditorframe.aspx',
         async (_fn, argument) => {
           calls++;
+          if (argument === undefined) return 'Control';
           if (typeof argument === 'string') {
             return { editable: true, visible: true };
           }
-          assert.equal(Object.getPrototypeOf(argument), Object.prototype);
-          assert.equal(argument.selector, '#PagesContainer[contenteditable="true"]');
-          assert.equal(argument.text, 'Hello');
-          return {
-            accepted: true,
-            format: 'text',
-            placement: 'replace',
-          };
+          if (argument.selector === '#PagesContainer[contenteditable="true"]') {
+            text = argument.text;
+            return { format: 'text', placement: argument.targetPlacement };
+          }
+          assert.equal(argument.selector, '#PagesContainer');
+          assert.equal(argument.onlyText, true);
+          return { accepted: true, text };
         },
       ),
     };
@@ -235,6 +238,14 @@ describe('Word helpers — embedded editor context', () => {
       click: async () => assert.fail('the SharePoint parent must not receive the editor click'),
       evaluate: async () =>
         assert.fail('the SharePoint parent must not execute the document update'),
+      keyboard: {
+        down: async () => {},
+        up: async () => {},
+        press: async (key) => keys.push(key),
+        sendCharacter: async (value) => {
+          text = value;
+        },
+      },
     };
 
     const result = await updateDocumentContent(page, {
@@ -242,9 +253,11 @@ describe('Word helpers — embedded editor context', () => {
       placement: 'replace',
     });
 
-    assert.equal(calls, 3);
+    assert.ok(calls > 3);
+    assert.deepEqual(keys, ['Home', 'a', 'Home', 'a', 'Home', 'a']);
     assert.equal(result.accepted, true);
     assert.equal(result.format, 'text');
+    assert.equal(result.verification, 'full_document_text');
     assert.match(result.operationId, /^[0-9a-f-]{36}$/);
   });
 

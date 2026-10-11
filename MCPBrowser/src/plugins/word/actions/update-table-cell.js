@@ -4,7 +4,7 @@ import {
   readRenderedTable,
   replaceDocumentTextSurgically,
 } from '../helpers.js';
-import { isPreparationResponse, prepareEditor } from './common.js';
+import { isPreparationResponse, mutationFailure, prepareEditor } from './common.js';
 import { PluginAction } from '../../../core/actions.js';
 
 async function updateTableCell({ page, params }) {
@@ -32,9 +32,7 @@ async function updateTableCell({ page, params }) {
     replaceAll: false,
   });
   if (!result.changed) {
-    return new ErrorResponse(`Word did not update the cell (${result.reason}).`, [
-      'Provide occurrence or expectedMatchCount when cell text is duplicated.',
-    ]);
+    return mutationFailure(result);
   }
   return new WordActionResponse(
     result,

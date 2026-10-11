@@ -21,11 +21,11 @@ For supported workflows, option 3 should be the fastest, least expensive, and mo
 
 ![Three paths from an agent to a browser controller: direct control, generic controller MCP, and MCPBrowser's agent-oriented layer](./Diagram.png)
 
-| Path | Agent responsibility | Token and latency cost | Result |
-|---|---|---|---|
-| **1. Direct controller access** | Select every operation, inspect every result, maintain state, retry, and verify success | **Highest** | Powerful but heavy for the agent |
-| **2. Generic controller MCP** | Use MCP tools, but still sequence primitives, aggregate outputs, handle application logic, and choose recovery steps | **High** | Easier tool access, but much orchestration remains in the agent |
-| **3. Agent-oriented layer** | State the task and act on a structured result or suggested next step | **Lowest for supported workflows** | Deterministic orchestration, an agent-ready response, and domain-specific plugins |
+| Path                            | Agent responsibility                                                                                                 | Token and latency cost             | Result                                                                            |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------- |
+| **1. Direct controller access** | Select every operation, inspect every result, maintain state, retry, and verify success                              | **Highest**                        | Powerful but heavy for the agent                                                  |
+| **2. Generic controller MCP**   | Use MCP tools, but still sequence primitives, aggregate outputs, handle application logic, and choose recovery steps | **High**                           | Easier tool access, but much orchestration remains in the agent                   |
+| **3. Agent-oriented layer**     | State the task and act on a structured result or suggested next step                                                 | **Lowest for supported workflows** | Deterministic orchestration, an agent-ready response, and domain-specific plugins |
 
 The important distinction is not MCP versus non-MCP. The distinction is **where the orchestration runs**:
 
@@ -36,18 +36,18 @@ The important distinction is not MCP versus non-MCP. The distinction is **where 
 
 Option 3 is not only a shorter route to the same controller functions. It creates a reusable capability platform above the controller:
 
-| Benefit | Why it matters |
-|---|---|
-| **Lower cost and latency** | Fewer model decisions, tool calls, snapshots, and round trips reduce token usage and cumulative latency. |
-| **Higher reliability** | Waits, checks, retries, extraction, and known edge cases run in tested code instead of being reconstructed by the model for every task. |
-| **Smaller context** | The agent receives relevant, aggregated content rather than every intermediate browser result. |
-| **Clearer outcomes** | Structured responses distinguish success, partial success, retryable failure, terminal failure, and user action required. |
-| **Guided continuation** | `nextSteps` tell the agent which actions are valid and useful from the current state. |
-| **Consistent behavior across agents** | Different agents reuse the same orchestration instead of producing different plans for the same browser task. |
-| **Central maintenance** | When a site changes, the deterministic layer or plugin is updated once rather than relying on every agent to rediscover the new interaction pattern. |
-| **Better governance** | Semantic actions provide clearer approval, safety, telemetry, and audit boundaries than a long sequence of low-level clicks. |
-| **Graceful fallback** | Plugins and high-level tools handle known workflows while Playwright controls remain available for unsupported cases and diagnostics. |
-| **Domain extensibility** | Plugins can turn complex commercial web applications into discoverable, typed, task-level capabilities. |
+| Benefit                               | Why it matters                                                                                                                                       |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Lower cost and latency**            | Fewer model decisions, tool calls, snapshots, and round trips reduce token usage and cumulative latency.                                             |
+| **Higher reliability**                | Waits, checks, retries, extraction, and known edge cases run in tested code instead of being reconstructed by the model for every task.              |
+| **Smaller context**                   | The agent receives relevant, aggregated content rather than every intermediate browser result.                                                       |
+| **Clearer outcomes**                  | Structured responses distinguish success, partial success, retryable failure, terminal failure, and user action required.                            |
+| **Guided continuation**               | `nextSteps` tell the agent which actions are valid and useful from the current state.                                                                |
+| **Consistent behavior across agents** | Different agents reuse the same orchestration instead of producing different plans for the same browser task.                                        |
+| **Central maintenance**               | When a site changes, the deterministic layer or plugin is updated once rather than relying on every agent to rediscover the new interaction pattern. |
+| **Better governance**                 | Semantic actions provide clearer approval, safety, telemetry, and audit boundaries than a long sequence of low-level clicks.                         |
+| **Graceful fallback**                 | Plugins and high-level tools handle known workflows while Playwright controls remain available for unsupported cases and diagnostics.                |
+| **Domain extensibility**              | Plugins can turn complex commercial web applications into discoverable, typed, task-level capabilities.                                              |
 
 ## The orchestration tax
 
@@ -155,14 +155,14 @@ These plugins move application knowledge out of the agent's prompt and into test
 
 Option 3 can host domain-specific plugins for any strategic application with a complex or frequently changing UI:
 
-| Domain | Potential plugin targets | Example semantic capabilities |
-|---|---|---|
-| **Productivity** | Microsoft 365 (Office 365), Google Docs, Google Sheets, Google Slides | Read and edit documents, ranges, tables, formulas, comments, formatting, and save state |
-| **Business intelligence** | Power BI, Tableau | Open reports, select filters, inspect visuals, extract data, change parameters, and export results |
-| **CRM and sales** | Salesforce, Dynamics 365 | Find accounts and opportunities, update fields, create activities, progress workflows, and verify saves |
-| **Enterprise operations** | SAP, ServiceNow, Workday | Complete governed forms and workflows, inspect status, update records, and handle approvals |
-| **Developer and project systems** | Azure DevOps, GitHub, Jira | Query work, update items, manage pull requests, inspect pipelines, and perform workflow actions |
-| **Other strategic web applications** | Any heavy UI selected by the platform team | Expose the application's most valuable operations as typed, discoverable agent capabilities |
+| Domain                               | Potential plugin targets                                              | Example semantic capabilities                                                                           |
+| ------------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Productivity**                     | Microsoft 365 (Office 365), Google Docs, Google Sheets, Google Slides | Read and edit documents, ranges, tables, formulas, comments, formatting, and save state                 |
+| **Business intelligence**            | Power BI, Tableau                                                     | Open reports, select filters, inspect visuals, extract data, change parameters, and export results      |
+| **CRM and sales**                    | Salesforce, Dynamics 365                                              | Find accounts and opportunities, update fields, create activities, progress workflows, and verify saves |
+| **Enterprise operations**            | SAP, ServiceNow, Workday                                              | Complete governed forms and workflows, inspect status, update records, and handle approvals             |
+| **Developer and project systems**    | Azure DevOps, GitHub, Jira                                            | Query work, update items, manage pull requests, inspect pipelines, and perform workflow actions         |
+| **Other strategic web applications** | Any heavy UI selected by the platform team                            | Expose the application's most valuable operations as typed, discoverable agent capabilities             |
 
 A domain plugin is more than a collection of selectors. It understands:
 

@@ -22,6 +22,7 @@ export async function prepareEditor(page, params, defaultMode) {
     read_only: 'The document is read-only or the requested edit mode is unavailable.',
     editor_missing: 'The Word document editing surface did not appear before the timeout.',
     editor_not_visible: 'The Word document editing surface is present but not visible.',
+    editor_loading: 'Word has not finished loading its document layout; no action was started.',
   };
   return new ErrorResponse(
     messages[result.status] || `Word editor preparation failed: ${result.status}`,
@@ -34,4 +35,18 @@ export async function prepareEditor(page, params, defaultMode) {
 
 export function isPreparationResponse(value) {
   return value instanceof ErrorResponse || value instanceof InformationalResponse;
+}
+
+export function mutationFailure(result) {
+  const uncertain = result.changed === null;
+  return new ErrorResponse(
+    uncertain
+      ? `Word mutation outcome is unverified (${result.reason}); the document may have changed.`
+      : `Word did not change the document (${result.reason}).`,
+    uncertain
+      ? [
+          'Inspect the affected text and save state before any retry; do not append or replace blindly.',
+        ]
+      : ['Check the target text, permissions, and editor state before retrying.'],
+  );
 }

@@ -1,6 +1,6 @@
 import { ErrorResponse } from '../../../core/responses.js';
 import { WordActionResponse, updateDocumentContent } from '../helpers.js';
-import { isPreparationResponse, prepareEditor } from './common.js';
+import { isPreparationResponse, mutationFailure, prepareEditor } from './common.js';
 
 export async function insertDocument({ page, params }, rich) {
   if (!['start', 'end'].includes(params?.position)) {
@@ -21,13 +21,11 @@ export async function insertDocument({ page, params }, rich) {
     placement: params.position,
   });
   if (!result.accepted) {
-    return new ErrorResponse(`Word rejected the insertion (${result.reason}).`, [
-      'Verify the document is editable and retry.',
-    ]);
+    return mutationFailure(result);
   }
   return new WordActionResponse(
     result,
-    `Word accepted the insertion at the document ${params.position}.`,
+    `Verified document text after insertion at the ${params.position}.`,
     ['Use wait_for_save before closing.'],
   );
 }

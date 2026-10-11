@@ -1,6 +1,8 @@
 import { randomUUID } from 'crypto';
 import { MCPResponse } from '../../core/responses.js';
 import * as sel from './selectors.js';
+import { planTextReplacement, verifyDocumentText } from './mutation-verification.js';
+import logger from '../../core/logger.js';
 
 export const WORD_EDITOR_SELECTOR = sel.WORD_EDITOR;
 export const EDITABLE_WORD_EDITOR_SELECTOR = sel.EDITABLE_WORD_EDITOR;
@@ -140,6 +142,7 @@ async function inspectWordEditor(frame) {
       return {
         editable: element.getAttribute('contenteditable') === 'true',
         visible: rect.width >= 100 && rect.height >= 100,
+        ready: Boolean(element.querySelector('.ParagraphTextContent')),
       };
     }, WORD_EDITOR_SELECTOR);
   } catch {
@@ -200,12 +203,31 @@ async function focusWordEditor(page, context, selector = WORD_EDITOR_SELECTOR) {
   if (!focused) throw new Error('Word editor could not be focused');
 }
 
+async function documentShortcut(page, context, key) {
+  const modifier = await keyboardModifier(context);
+  await page.keyboard.down(modifier);
+  try {
+    await page.keyboard.press(
+      modifier === 'Meta' && key === 'Home'
+        ? 'ArrowUp'
+        : modifier === 'Meta' && key === 'End'
+          ? 'ArrowDown'
+          : key,
+    );
+  } finally {
+    await page.keyboard.up(modifier);
+  }
+  // Word processes native selection commands asynchronously before the next key can target it.
+  await new Promise((resolve) => setTimeout(resolve, 100));
+}
+
 async function waitForWordEditorContext(page, timeout = DEFAULT_NAVIGATION_TIMEOUT) {
   const deadline = Date.now() + timeout;
   let result = null;
   do {
     result = await findWordEditorContext(page);
-    if (result?.editor.visible || Date.now() >= deadline) return result;
+    if ((result?.editor.visible && result.editor.ready !== false) || Date.now() >= deadline)
+      return result;
     await new Promise((resolve) => setTimeout(resolve, 200));
   } while (true);
 }
@@ -315,6 +337,7 @@ export async function ensureWordEditor(page, { url, mode = 'edit' } = {}) {
   if (!editor?.visible) {
     return { status: 'editor_not_visible' };
   }
+  if (editor.ready === false) return { status: 'editor_loading' };
   if (mode === 'edit' && !editor.editable) {
     return { status: 'read_only' };
   }
@@ -518,169 +541,198 @@ export async function updateDocumentContent(
   }
 
   const context = await requireWordEditorContext(page);
+  const before = await copyDocumentContent(page, { textOnly: true });
+  if (!before.accepted) {
+    return { accepted: false, changed: false, reason: 'document_snapshot_unavailable' };
+  }
+  const separator = html === undefined ? '' : '\n';
+  const expected =
+    placement === 'replace'
+      ? plainText
+      : placement === 'start'
+        ? plainText + separator + before.text
+        : before.text + separator + plainText;
   await focusWordEditor(page, context, EDITABLE_WORD_EDITOR_SELECTOR);
+  await documentShortcut(page, context, placement === 'end' ? 'End' : 'Home');
+  if (placement === 'replace') await documentShortcut(page, context, 'a');
 
-  const result = await context.evaluate(
-    async ({ selector, richHtml, text, sanitization, targetPlacement }) => {
+  let result;
+  try {
+    if (html === undefined && !plainText) {
+      if (placement === 'replace') await page.keyboard.press('Backspace');
+      result = { format: 'text', placement };
+    } else {
+      result = await context.evaluate(
+        async ({ selector, richHtml, text, sanitization, targetPlacement }) => {
+          const editor = document.querySelector(selector);
+          if (!editor) return { accepted: false, reason: 'editor_missing' };
+          if (editor.getAttribute('contenteditable') !== 'true') {
+            return { accepted: false, reason: 'read_only' };
+          }
+
+          const target = document.activeElement;
+          if (
+            !document.hasFocus() ||
+            (target !== editor && target?.id !== 'WACViewPanel_ClipboardElement')
+          ) {
+            return { accepted: false, reason: 'editor_not_focused' };
+          }
+
+          const data = new DataTransfer();
+          if (richHtml !== undefined) data.setData('text/html', richHtml);
+          data.setData('text/plain', text);
+          const paste = new ClipboardEvent('paste', {
+            clipboardData: data,
+            bubbles: true,
+            cancelable: true,
+          });
+          target.dispatchEvent(paste);
+          return {
+            pasteHandled: paste.defaultPrevented,
+            format: richHtml === undefined ? 'text' : 'html',
+            ...(sanitization
+              ? {
+                  sanitized: sanitization.changed,
+                  nodeCount: sanitization.nodeCount,
+                  tableCount: sanitization.tableCount,
+                  linkCount: sanitization.linkCount,
+                  imageCount: sanitization.imageCount,
+                }
+              : {}),
+            placement: targetPlacement,
+          };
+        },
+        {
+          selector: EDITABLE_WORD_EDITOR_SELECTOR,
+          richHtml: sanitized?.html,
+          text: plainText,
+          targetPlacement: placement,
+          sanitization: sanitized
+            ? {
+                changed: sanitized.html !== html,
+                nodeCount: sanitized.nodeCount,
+                tableCount: sanitized.tableCount,
+                linkCount: sanitized.linkCount,
+                imageCount: sanitized.imageCount,
+              }
+            : null,
+        },
+      );
+    }
+    if (result.reason) return { ...result, changed: false };
+    const verified = await verifyDocumentText(
+      () => copyDocumentContent(page, { textOnly: true }),
+      before.text,
+      expected,
+    );
+    return { ...result, ...verified, operationId: randomUUID() };
+  } catch {
+    // Dispatch may already have reached Word. A thrown transport/read error is not a rejection.
+    logger.warn('Word document mutation could not be verified; do not retry blindly');
+    return {
+      accepted: false,
+      changed: null,
+      reason: 'mutation_outcome_unknown',
+      operationId: randomUUID(),
+    };
+  }
+}
+
+export async function copyDocumentContent(page, { textOnly = false } = {}) {
+  const context = await requireWordEditorContext(page);
+  await focusWordEditor(page, context, WORD_EDITOR_SELECTOR);
+  await documentShortcut(page, context, 'Home');
+  await documentShortcut(page, context, 'a');
+  return context.evaluate(
+    async ({ selector, onlyText }) => {
       const editor = document.querySelector(selector);
-      if (!editor) return { accepted: false, reason: 'editor_missing' };
-      if (editor.getAttribute('contenteditable') !== 'true') {
-        return { accepted: false, reason: 'read_only' };
-      }
+      if (!editor) return { accepted: false, html: '', text: '', files: [] };
 
-      editor.focus();
-      if (!document.hasFocus() || document.activeElement !== editor) {
-        return { accepted: false, reason: 'editor_not_focused' };
+      // Native navigation can transfer focus to Word's hidden clipboard surface.
+      const target = document.activeElement;
+      if (target !== editor && target?.id !== 'WACViewPanel_ClipboardElement') {
+        return { accepted: false, reason: 'editor_not_focused', html: '', text: '', files: [] };
       }
-
-      const keyConfig =
-        targetPlacement === 'replace'
-          ? { key: 'a', code: 'KeyA', keyCode: 65 }
-          : targetPlacement === 'start'
-            ? { key: 'Home', code: 'Home', keyCode: 36 }
-            : { key: 'End', code: 'End', keyCode: 35 };
-      const keyOptions = {
-        ...keyConfig,
-        which: keyConfig.keyCode,
-        ctrlKey: !/Mac|iPhone|iPad|iPod/.test(navigator.platform),
-        metaKey: /Mac|iPhone|iPad|iPod/.test(navigator.platform),
-        bubbles: true,
-        cancelable: true,
-      };
-      let navigationHandled = false;
-      const eventTypes =
-        targetPlacement === 'replace' ? ['keydown', 'keypress', 'keyup'] : ['keydown', 'keyup'];
-      for (const type of eventTypes) {
-        const event = new KeyboardEvent(type, keyOptions);
-        editor.dispatchEvent(event);
-        if (type === 'keydown') navigationHandled = event.defaultPrevented;
-      }
-      if (!navigationHandled) {
-        return {
-          accepted: false,
-          reason:
-            targetPlacement === 'replace'
-              ? 'select_all_not_handled'
-              : 'document_navigation_not_handled',
-        };
-      }
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      if (richHtml === undefined) {
-        const inserted = document.execCommand('insertText', false, text);
-        return {
-          accepted: inserted,
-          reason: inserted ? undefined : 'text_insertion_rejected',
-          format: 'text',
-          placement: targetPlacement,
-        };
+      // Word materializes the native selection here, including offscreen document content.
+      if (target?.id === 'WACViewPanel_ClipboardElement' && target.querySelector('p, table')) {
+        const text = target.innerText || target.textContent || '';
+        return onlyText
+          ? { accepted: true, text }
+          : { accepted: true, text, html: target.innerHTML, files: [] };
       }
 
       const data = new DataTransfer();
-      data.setData('text/html', richHtml);
-      data.setData('text/plain', text);
-      const paste = new ClipboardEvent('paste', {
+      const copy = new ClipboardEvent('copy', {
         clipboardData: data,
         bubbles: true,
         cancelable: true,
       });
-      editor.dispatchEvent(paste);
+      target.dispatchEvent(copy);
+
+      if (!Array.from(data.types).includes('text/plain')) {
+        const deadline = Date.now() + 1_500;
+        do {
+          const clipboard = document.activeElement;
+          if (
+            clipboard?.id === 'WACViewPanel_ClipboardElement' &&
+            clipboard.querySelector('p, table')
+          ) {
+            const text = clipboard.innerText || clipboard.textContent || '';
+            return onlyText
+              ? { accepted: true, text }
+              : { accepted: true, text, html: clipboard.innerHTML, files: [] };
+          }
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        } while (Date.now() < deadline);
+        const wordCountLabel =
+          document.querySelector('#ShowWordCountDialog')?.getAttribute('aria-label') || '';
+        const count = wordCountLabel.match(/([\d,]+)\s+words?/i);
+        const paragraphs = Array.from(editor.querySelectorAll('.ParagraphTextContent'));
+        if (
+          count &&
+          Number(count[1].replace(/,/g, '')) === 0 &&
+          editor.querySelectorAll('.Page').length === 1 &&
+          paragraphs.length === 1 &&
+          !(paragraphs[0].textContent || '').replace(/[\s\u200B]/gu, '')
+        ) {
+          // Word emits no copy payload for a loaded, empty body.
+          return onlyText
+            ? { accepted: true, text: '', empty: true }
+            : { accepted: true, text: '', html: '', files: [], empty: true };
+        }
+      }
+
+      if (onlyText) {
+        return {
+          accepted: Array.from(data.types).includes('text/plain'),
+          text: data.getData('text/plain'),
+        };
+      }
+      const files = [];
+      for (const file of Array.from(data.files)) {
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.addEventListener('error', () => reject(reader.error));
+          reader.addEventListener('load', () => {
+            const encoded = String(reader.result).split(',', 2)[1] || '';
+            resolve(encoded);
+          });
+          reader.readAsDataURL(file);
+        });
+        files.push({ name: file.name, mimeType: file.type, base64 });
+      }
+
+      const html = data.getData('text/html');
+      const text = data.getData('text/plain');
       return {
-        accepted: paste.defaultPrevented,
-        reason: paste.defaultPrevented ? undefined : 'paste_not_handled',
-        format: 'html',
-        sanitized: sanitization.changed,
-        nodeCount: sanitization.nodeCount,
-        tableCount: sanitization.tableCount,
-        linkCount: sanitization.linkCount,
-        imageCount: sanitization.imageCount,
-        placement: targetPlacement,
+        accepted: Array.from(data.types).includes('text/plain') || Boolean(html || files.length),
+        html,
+        text,
+        files,
       };
     },
-    {
-      selector: EDITABLE_WORD_EDITOR_SELECTOR,
-      richHtml: sanitized?.html,
-      text: plainText,
-      targetPlacement: placement,
-      sanitization: sanitized
-        ? {
-            changed: sanitized.html !== html,
-            nodeCount: sanitized.nodeCount,
-            tableCount: sanitized.tableCount,
-            linkCount: sanitized.linkCount,
-            imageCount: sanitized.imageCount,
-          }
-        : null,
-    },
+    { selector: WORD_EDITOR_SELECTOR, onlyText: textOnly },
   );
-
-  return {
-    ...result,
-    operationId: randomUUID(),
-  };
-}
-
-export async function copyDocumentContent(page) {
-  const context = await requireWordEditorContext(page);
-  await focusWordEditor(page, context, WORD_EDITOR_SELECTOR);
-  return context.evaluate(async (selector) => {
-    const editor = document.querySelector(selector);
-    if (!editor) return { accepted: false, html: '', text: '', files: [] };
-
-    editor.focus();
-    const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
-    const keyOptions = {
-      key: 'a',
-      code: 'KeyA',
-      keyCode: 65,
-      which: 65,
-      ctrlKey: !isMac,
-      metaKey: isMac,
-      bubbles: true,
-      cancelable: true,
-    };
-    let selectionHandled = false;
-    for (const type of ['keydown', 'keypress', 'keyup']) {
-      const event = new KeyboardEvent(type, keyOptions);
-      editor.dispatchEvent(event);
-      if (type === 'keydown') selectionHandled = event.defaultPrevented;
-    }
-    if (!selectionHandled) {
-      return { accepted: false, reason: 'select_all_not_handled', html: '', text: '', files: [] };
-    }
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    const data = new DataTransfer();
-    const copy = new ClipboardEvent('copy', {
-      clipboardData: data,
-      bubbles: true,
-      cancelable: true,
-    });
-    editor.dispatchEvent(copy);
-
-    const files = [];
-    for (const file of Array.from(data.files)) {
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.addEventListener('error', () => reject(reader.error));
-        reader.addEventListener('load', () => {
-          const encoded = String(reader.result).split(',', 2)[1] || '';
-          resolve(encoded);
-        });
-        reader.readAsDataURL(file);
-      });
-      files.push({ name: file.name, mimeType: file.type, base64 });
-    }
-
-    const html = data.getData('text/html');
-    const text = data.getData('text/plain');
-    return {
-      accepted: copy.defaultPrevented || Boolean(html || text || files.length),
-      html,
-      text,
-      files,
-    };
-  }, WORD_EDITOR_SELECTOR);
 }
 
 async function openFindReplacePane(page) {
@@ -723,11 +775,9 @@ async function openFindReplacePane(page) {
 
 async function replaceInputValue(page, context, selector, value) {
   await context.click(selector);
-  const modifier = await keyboardModifier(context);
-  await page.keyboard.down(modifier);
-  await page.keyboard.press('a');
-  await page.keyboard.up(modifier);
-  await page.keyboard.type(value);
+  await documentShortcut(page, context, 'a');
+  if (value) await page.keyboard.sendCharacter(value);
+  else await page.keyboard.press('Backspace');
 }
 
 async function setFindFilter(page, context, label, enabled) {
@@ -843,6 +893,10 @@ export async function replaceDocumentTextSurgically(page, options) {
     throw new Error('expectedMatchCount must be a non-negative integer');
   }
 
+  const before = await copyDocumentContent(page, { textOnly: true });
+  if (!before.accepted) {
+    return { changed: false, reason: 'document_snapshot_unavailable' };
+  }
   const found = await findDocumentText(page, {
     query,
     matchCase: options?.matchCase,
@@ -884,25 +938,49 @@ export async function replaceDocumentTextSurgically(page, options) {
     };
   }
 
+  const expected = planTextReplacement(
+    before.text,
+    query,
+    replacement,
+    { ...options, occurrence },
+    found.matchCount,
+  );
+  if (expected === null) {
+    return { changed: false, reason: 'document_search_mismatch' };
+  }
+  if (expected === before.text) {
+    return { changed: false, reason: 'replacement_is_identical' };
+  }
+
   const context = await requireWordEditorContext(page);
   if (occurrence !== undefined) {
-    for (let current = found.currentMatch || 1; current < occurrence; current++) {
+    const steps = (occurrence - (found.currentMatch || 1) + found.matchCount) % found.matchCount;
+    for (let step = 0; step < steps; step++) {
       await context.click('#NextSearchResult');
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
   await replaceInputValue(page, context, '#ReplaceSearchBoxV2', replacement);
-  await context.click(options?.replaceAll === true ? '#ReplaceAllButton' : '#ReplaceButton');
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  const after = await readFindResults(context);
+  let verified;
+  try {
+    await context.click(options?.replaceAll === true ? '#ReplaceAllButton' : '#ReplaceButton');
+    verified = await verifyDocumentText(
+      () => copyDocumentContent(page, { textOnly: true }),
+      before.text,
+      expected,
+    );
+  } catch {
+    logger.warn('Word text replacement could not be verified; do not retry blindly');
+    return { changed: null, reason: 'mutation_outcome_unknown', operationId: randomUUID() };
+  }
+  if (!verified.accepted) return { ...verified, operationId: randomUUID() };
 
   return {
-    changed: true,
+    ...verified,
     operationId: randomUUID(),
     replacedCount: options?.replaceAll === true ? found.matchCount : 1,
     matchCountBefore: found.matchCount,
-    matchCountAfter: after.matchCount,
     occurrence: options?.replaceAll === true ? undefined : occurrence,
     matchCase: options?.matchCase === true,
     wholeWords: options?.wholeWords === true,

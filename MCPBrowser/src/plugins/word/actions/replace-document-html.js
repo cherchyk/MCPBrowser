@@ -1,6 +1,6 @@
 import { ErrorResponse } from '../../../core/responses.js';
 import { WordActionResponse, updateDocumentContent } from '../helpers.js';
-import { isPreparationResponse, prepareEditor } from './common.js';
+import { isPreparationResponse, mutationFailure, prepareEditor } from './common.js';
 import { PluginAction } from '../../../core/actions.js';
 
 async function replaceDocumentHtml({ page, params }) {
@@ -17,13 +17,11 @@ async function replaceDocumentHtml({ page, params }) {
     placement: 'replace',
   });
   if (!result.accepted) {
-    return new ErrorResponse(`Word rejected the rich document replacement (${result.reason}).`, [
-      'Reduce or simplify the HTML and retry.',
-    ]);
+    return mutationFailure(result);
   }
   return new WordActionResponse(
     result,
-    'Word accepted the sanitized whole-document HTML replacement.',
+    'Word document text matches the requested HTML replacement; inspect rich formatting separately.',
     ['Use wait_for_save before closing.'],
   );
 }
