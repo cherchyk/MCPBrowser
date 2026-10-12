@@ -282,8 +282,24 @@ describe('Word mutation verification', () => {
     assert.equal(result.changed, null);
     assert.equal(result.reason, 'content_not_verified');
   });
-  it('does not interpret an unavailable copy as an empty document', async () => {
-    const result = await verifyDocumentText(async () => ({ accepted: false, text: '' }), 'old', '');
+  it('retries a temporarily unavailable copy before verifying the document', async (t) => {
+    let attempts = 0;
+    const result = await finishWithTimers(t, () =>
+      verifyDocumentText(async () => {
+        attempts++;
+        return attempts < 3
+          ? { accepted: false, text: '' }
+          : { accepted: true, text: 'new' };
+      }, 'old', 'new'),
+    );
+    assert.equal(result.accepted, true);
+    assert.equal(result.verification, 'full_document_text');
+    assert.equal(attempts, 3);
+  });
+  it('does not interpret persistently unavailable copies as an empty document', async (t) => {
+    const result = await finishWithTimers(t, () =>
+      verifyDocumentText(async () => ({ accepted: false, text: '' }), 'old', ''),
+    );
     assert.equal(result.reason, 'verification_unavailable');
   });
   it('does not accept an ignored whitespace-only change', async (t) => {

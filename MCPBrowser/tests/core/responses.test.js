@@ -313,16 +313,17 @@ test('NavigateHistorySuccessResponse accepts null html', () => {
   assert.strictEqual(response.html, null);
 });
 
-test('toMcpFormat can omit serialized JSON while retaining structuredContent', () => {
+test('toMcpFormat keeps structured data out of text content', () => {
   const response = new CloseTabSuccessResponse('Tab closed successfully', 'example.com', [
     'Use browser_fetch_webpage to open new page',
   ]);
 
-  const result = response.toMcpFormat({ includeSerializedContent: false });
+  const result = response.toMcpFormat();
 
   assert.strictEqual(result.content.length, 1);
   assert.strictEqual(result.content[0].type, 'text');
   assert.ok(!result.content[0].text.startsWith('{'));
+  assert.ok(!result.content.some((item) => item.text === JSON.stringify(response.toJSON())));
   assert.deepStrictEqual(result.structuredContent, response.toJSON());
 });
 

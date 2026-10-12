@@ -102,6 +102,15 @@ test('[US2] browser_plugin_info: plugin detail has nextSteps guiding to browser_
   );
 });
 
+test('[US2] browser_plugin_info: Word catalog stays below 16 KiB', () => {
+  const result = pluginInfo({ plugin: loadedPluginName });
+  const payloadBytes = Buffer.byteLength(JSON.stringify(result.toJSON()), 'utf8');
+  assert.ok(payloadBytes < 16 * 1024, `Plugin info payload is ${payloadBytes} bytes`);
+  for (const action of result.pluginInfo.actions) {
+    assert.deepStrictEqual(Object.keys(action), ['name', 'description', 'params']);
+  }
+});
+
 console.log('\n--- Action Detail ---');
 
 test('[US2] browser_plugin_info: valid plugin + action returns single action details', () => {
@@ -169,7 +178,7 @@ test('[US6] browser_plugin_info: does NOT expose CSS selectors or JS code', () =
 
 test('[US6] toMcpFormat conforms to MCPResponse', () => {
   const result = pluginInfo({ plugin: loadedPluginName });
-  const mcpFormat = result.toMcpFormat({ includeSerializedContent: false });
+  const mcpFormat = result.toMcpFormat();
   assert.ok(mcpFormat.content, 'Must have content');
   assert.strictEqual(mcpFormat.content.length, 1, 'Must not duplicate JSON as text');
   assert.ok(!mcpFormat.content[0].text.startsWith('{'), 'Content must remain a readable summary');

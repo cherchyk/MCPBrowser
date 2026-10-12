@@ -67,7 +67,14 @@ const [pluginAction] = definePluginActions(TestResponse, [
 assert.ok(pluginAction instanceof PluginAction);
 assert.deepStrictEqual(pluginAction.tool.inputSchema.required, ['query']);
 assert.strictEqual(pluginAction.tool.inputSchema.properties.limit.default, 10);
-assert.strictEqual(pluginAction.toInfo().inputSchema, pluginAction.tool.inputSchema);
+assert.deepStrictEqual(pluginAction.toInfo(), {
+  name: 'example',
+  description: 'Example action',
+  params: [
+    { name: 'query', type: 'string', description: 'Search text', required: true },
+    { name: 'limit', type: 'number', required: false, default: 10 },
+  ],
+});
 assert.ok(pluginAction.execute({ page: {}, params: { query: 'ok' } }) instanceof TestResponse);
 
 for (const action of [...exampleActions, ...gcalActions, ...gmailActions, ...wordActions]) {

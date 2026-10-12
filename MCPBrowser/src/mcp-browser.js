@@ -183,11 +183,7 @@ async function main() {
       logger.clearProgressToken();
     }
 
-    // Plugin results are consumed as structured data; avoid duplicating their
-    // potentially large payloads as serialized JSON text.
-    return result.toMcpFormat({
-      includeSerializedContent: !pluginActionNames.has(name),
-    });
+    return result.toMcpFormat();
   });
 
   const transport = new StdioServerTransport();

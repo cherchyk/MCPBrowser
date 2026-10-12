@@ -183,8 +183,6 @@ export class PluginAction extends Action {
       name: this.name,
       description: this.description,
       params: this.params,
-      inputSchema: this.tool.inputSchema,
-      outputSchema: this.tool.outputSchema,
     };
   }
 }

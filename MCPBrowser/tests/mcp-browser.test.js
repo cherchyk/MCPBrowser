@@ -186,6 +186,74 @@ await test('Should respond to tools/list request', async () => {
   }
 });
 
+await test('Should return compact plugin info without serialized JSON duplication', async () => {
+  const mcpProcess = spawn('node', [join(__dirname, '..', 'src', 'mcp-browser.js')], {
+    stdio: ['pipe', 'pipe', 'inherit'],
+  });
+  const pending = new Map();
+  let buffer = '';
+
+  mcpProcess.stdout.on('data', (data) => {
+    buffer += data.toString();
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const message = JSON.parse(line);
+      const handler = pending.get(message.id);
+      if (handler) {
+        pending.delete(message.id);
+        handler.resolve(message);
+      }
+    }
+  });
+
+  const request = (message) =>
+    new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        pending.delete(message.id);
+        reject(new Error(`Server did not respond to ${message.method} within 5 seconds`));
+      }, 5000);
+      pending.set(message.id, {
+        resolve: (response) => {
+          clearTimeout(timeout);
+          resolve(response);
+        },
+      });
+      mcpProcess.stdin.write(`${JSON.stringify(message)}\n`);
+    });
+
+  try {
+    await request({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-11-25',
+        capabilities: {},
+        clientInfo: { name: 'test', version: '1.0' },
+      },
+    });
+    const response = await request({
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'tools/call',
+      params: {
+        name: 'browser_plugin_info',
+        arguments: { plugin: 'word' },
+      },
+    });
+
+    assert.ok(response.result, 'Plugin info response should have a result');
+    assert.strictEqual(response.result.content.length, 1, 'JSON must not be repeated as text');
+    assert.ok(response.result.structuredContent, 'Plugin info must remain structured');
+    const payloadBytes = Buffer.byteLength(JSON.stringify(response.result), 'utf8');
+    assert.ok(payloadBytes < 16 * 1024, `Plugin info MCP result is ${payloadBytes} bytes`);
+  } finally {
+    mcpProcess.kill();
+  }
+});
+
 // ============================================================================
 // Test Summary
 // ============================================================================

@@ -24,7 +24,7 @@ function assertSuccessfulResponse(response, actionName) {
       response instanceof InformationalResponse ? response.reason : 'unknown reason'
     }`,
   );
-  const mcp = response.toMcpFormat({ includeSerializedContent: false });
+  const mcp = response.toMcpFormat();
   assert.strictEqual(mcp.isError, false);
   assert.strictEqual(mcp.content.length, 1, `${actionName} must not serialize JSON as text`);
   assert.ok(mcp.structuredContent, `${actionName} must return structured JSON`);

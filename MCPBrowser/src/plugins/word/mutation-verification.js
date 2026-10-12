@@ -32,23 +32,29 @@ export async function verifyDocumentText(readText, before, expected, timeoutMs =
   const normalizedBefore = normalizeDocumentText(before);
   const normalizedExpected = normalizeDocumentText(expected);
   let observedChange = false;
+  let observedReadableText = false;
   do {
     const current = await readText();
-    if (!current.accepted || typeof current.text !== 'string') {
-      return { accepted: false, changed: null, reason: 'verification_unavailable', observedChange };
-    }
-    const normalized = normalizeDocumentText(current.text);
-    observedChange ||= normalized !== normalizedBefore;
-    const whitespaceOnlyChange = before !== expected && normalizedBefore === normalizedExpected;
-    if (normalized === normalizedExpected && (!whitespaceOnlyChange || current.text === expected)) {
-      return {
-        accepted: true,
-        changed: current.text !== before,
-        verification: 'full_document_text',
-      };
+    if (current.accepted && typeof current.text === 'string') {
+      observedReadableText = true;
+      const normalized = normalizeDocumentText(current.text);
+      observedChange ||= normalized !== normalizedBefore;
+      const whitespaceOnlyChange = before !== expected && normalizedBefore === normalizedExpected;
+      if (normalized === normalizedExpected && (!whitespaceOnlyChange || current.text === expected)) {
+        return {
+          accepted: true,
+          changed: current.text !== before,
+          verification: 'full_document_text',
+        };
+      }
     }
     if (Date.now() >= deadline) break;
     await new Promise((resolve) => setTimeout(resolve, 250));
   } while (true);
-  return { accepted: false, changed: null, reason: 'content_not_verified', observedChange };
+  return {
+    accepted: false,
+    changed: null,
+    reason: observedReadableText ? 'content_not_verified' : 'verification_unavailable',
+    observedChange,
+  };
 }
