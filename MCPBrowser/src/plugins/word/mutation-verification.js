@@ -40,7 +40,10 @@ export async function verifyDocumentText(readText, before, expected, timeoutMs =
       const normalized = normalizeDocumentText(current.text);
       observedChange ||= normalized !== normalizedBefore;
       const whitespaceOnlyChange = before !== expected && normalizedBefore === normalizedExpected;
-      if (normalized === normalizedExpected && (!whitespaceOnlyChange || current.text === expected)) {
+      if (
+        normalized === normalizedExpected &&
+        (!whitespaceOnlyChange || current.text === expected)
+      ) {
         return {
           accepted: true,
           changed: current.text !== before,

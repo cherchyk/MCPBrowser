@@ -285,12 +285,14 @@ describe('Word mutation verification', () => {
   it('retries a temporarily unavailable copy before verifying the document', async (t) => {
     let attempts = 0;
     const result = await finishWithTimers(t, () =>
-      verifyDocumentText(async () => {
-        attempts++;
-        return attempts < 3
-          ? { accepted: false, text: '' }
-          : { accepted: true, text: 'new' };
-      }, 'old', 'new'),
+      verifyDocumentText(
+        async () => {
+          attempts++;
+          return attempts < 3 ? { accepted: false, text: '' } : { accepted: true, text: 'new' };
+        },
+        'old',
+        'new',
+      ),
     );
     assert.equal(result.accepted, true);
     assert.equal(result.verification, 'full_document_text');
