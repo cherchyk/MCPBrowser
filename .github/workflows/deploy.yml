@@ -6,7 +6,6 @@ on:
 
 permissions:
   contents: write
-  id-token: write # Required for MCP Registry OIDC authentication
 
 jobs:
   deploy:
@@ -120,41 +119,11 @@ jobs:
           cd VSCodeExtension
           ovsx publish mcpbrowser-${{ steps.version.outputs.version }}.vsix -p ${{ secrets.OVSX_PAT }}
 
-      - name: Publish to MCP Registry
-        run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
-          ./mcp-publisher login github-oidc
-
-          for attempt in {1..6}; do
-            set +e
-            output=$(./mcp-publisher publish 2>&1)
-            status=$?
-            set -e
-            printf '%s\n' "$output"
-
-            if [ "$status" -eq 0 ]; then
-              exit 0
-            fi
-
-            if ! grep -q "newly published release can take a moment" <<< "$output"; then
-              exit "$status"
-            fi
-
-            if [ "$attempt" -eq 6 ]; then
-              echo "::error::MCP Registry publication failed after $attempt attempts"
-              exit "$status"
-            fi
-
-            echo "npm propagation is pending; retrying in 20 seconds..."
-            sleep 20
-          done
-
       - name: Deployment Summary
         run: |
           VERSION=${{ steps.version.outputs.version }}
           echo "🎉 Successfully deployed version $VERSION to:"
           echo "  ✅ npm registry"
-          echo "  ✅ MCP Registry (Visual Studio & other MCP clients)"
           echo "  ✅ VS Code Marketplace"
           echo "  ✅ Open VSX Registry"
           echo "  ✅ GitHub Releases (with .vsix)"
