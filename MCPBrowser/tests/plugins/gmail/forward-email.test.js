@@ -4,8 +4,13 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { forwardEmail } from '../../../src/plugins/gmail/actions/forward-email.js';
+
 import { ErrorResponse } from '../../../src/core/responses.js';
+import { ACTIONS as GMAIL_ACTIONS } from '../../../src/plugins/gmail/actions/index.js';
+
+const forwardEmailAction = GMAIL_ACTIONS.find((action) => action.id === 'forward_email');
+
+const forwardEmail = forwardEmailAction.handler;
 
 function mockPage(url) {
   return {
@@ -13,10 +18,15 @@ function mockPage(url) {
     evaluate: async () => false,
     $: async () => null,
     $$: async () => [],
-    keyboard: { press: async () => {}, down: async () => {}, up: async () => {}, type: async () => {} },
+    keyboard: {
+      press: async () => {},
+      down: async () => {},
+      up: async () => {},
+      type: async () => {},
+    },
     type: async () => {},
     click: async () => {},
-    waitForSelector: async () => null
+    waitForSelector: async () => null,
   };
 }
 

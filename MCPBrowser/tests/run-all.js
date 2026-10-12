@@ -23,9 +23,9 @@ function runRunner(runnerFile, description, args = []) {
     console.log(`\n${'='.repeat(60)}`);
     console.log(`${description}`);
     console.log('='.repeat(60));
-    
+
     const child = spawn('node', [join(__dirname, runnerFile), ...args], {
-      stdio: 'inherit'
+      stdio: 'inherit',
     });
 
     child.on('close', (code) => {
@@ -47,15 +47,19 @@ function runRunner(runnerFile, description, args = []) {
 
 async function runAllTests() {
   const startTime = Date.now();
-  
+
   // Run unit tests (fast, parallel, no browser)
   const unitCode = await runRunner('run-unit.js', '🚀 UNIT TESTS (No Browser Required)');
-  
+
   // Run browser tests (sequential, requires browser) - pass browser param if provided
-  const browserCode = await runRunner('run-browser.js', '🌐 BROWSER TESTS (Integration)', browserParam ? [browserParam] : []);
-  
+  const browserCode = await runRunner(
+    'run-browser.js',
+    '🌐 BROWSER TESTS (Integration)',
+    browserParam ? [browserParam] : [],
+  );
+
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-  
+
   console.log('\n' + '='.repeat(60));
   console.log('📊 OVERALL TEST SUMMARY');
   console.log('='.repeat(60));
@@ -64,7 +68,7 @@ async function runAllTests() {
   console.log(`   Total Duration: ${duration}s`);
   console.log('='.repeat(60));
 
-  process.exit((unitCode === 0 && browserCode === 0) ? 0 : 1);
+  process.exit(unitCode === 0 && browserCode === 0 ? 0 : 1);
 }
 
 runAllTests().catch((err) => {

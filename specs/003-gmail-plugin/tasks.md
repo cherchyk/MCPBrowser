@@ -25,12 +25,12 @@
 
 **Purpose**: Create project structure, directories, and plugin registration
 
-- [X] T001 Create directory structure: `MCPBrowser/src/plugins/gmail/actions/` and `MCPBrowser/tests/plugins/gmail/`
-- [X] T002 Enable the gmail plugin in `MCPBrowser/src/plugins.json` by adding `"gmail"` to the `enabled` array
-- [X] T003 [P] Create `MCPBrowser/src/plugins/gmail/selectors.js` with Tier 4 CSS selectors ONLY — centralized, versioned, with tier documentation comments per FR-023 and research R4. Include: email row (`tr.zA`), unread (`.zE`), subject (`span.bog`), snippet (`span.y2`), date cell (`td.xW span`), message container (`div.adn`), message body (`div.a3s.aiL`), message date (`span.g3`), thread subject (`h2.hP`), attachment area (`div.aQH`), attachment name (`span.aV3`), attachment size (`span.SaH2Ve`), label picker items (`div.J-N-Jz`). NO action buttons, NO toolbar buttons, NO compose trigger — those are handled by Tier 1/2
-- [X] T004 [P] Create `MCPBrowser/src/plugins/gmail/helpers.js` with tiered utility functions: `getAccountIndex(url)` extracts `/u/N/` from URL (R7/FR-020); `gmailNavigate(page, hash)` constructs full URL with account index and navigates (T1 per FR-020); `detectView(page)` parses URL hash as primary signal, falls back to `div[role="dialog"]` for compose overlay (FR-024/R6), and detects CAPTCHA/security interstitial states (e.g., "Confirm it's you" prompts) returning a `not_ready` view with actionable error per spec edge case; `waitForGmail(page, selector, timeout)` with 10s default, timeout errors include selector name and tier level (FR-012/Constitution IV); `checkKeyboardShortcuts(page)` sends `?` key and detects help dialog, returns error with enablement instructions if disabled (FR-019/R5); `checkPrecondition(page, requirement)` validates state (thread_open, row_selected, on_gmail) via URL/DOM before shortcuts (FR-025/R2); `selectEmailRow(page, {index, id})` locates row via `[data-legacy-message-id]` (T3) or positional index (T4), clicks `div[role="checkbox"]` (T3) for hybrid DOM+keyboard targeting (FR-016); `extractEmailRows(page, limit)` extracts EmailSummary[] via T3 `span[email]` + T4 selectors from selectors.js; `GmailActionResponse` class extending MCPResponse with structured data, summary, and nextSteps
-- [X] T005 Create `MCPBrowser/src/plugins/gmail/index.js` with plugin entry point: manifest (name: "gmail", version: "1.0.0", urlPatterns: ["mail.google.com"], interfaceVersion: 1, domPatterns), `matchesPage(url, html)` per FR-001/FR-002, `getActions()` returning all 11 action descriptors wired to action modules, `getInfo()` returning plugin context per contracts. Import all action modules from `actions/` directory
-- [X] T006 Create unit test `MCPBrowser/tests/plugins/gmail/gmail-plugin.test.js` testing: manifest fields valid, matchesPage returns matched:true for Gmail URLs and matched:false for non-Gmail, getActions returns 11 actions each with name/description/params/execute, getInfo has no execute functions (serialization safety)
+- [x] T001 Create directory structure: `MCPBrowser/src/plugins/gmail/actions/` and `MCPBrowser/tests/plugins/gmail/`
+- [x] T002 Enable the gmail plugin in `MCPBrowser/src/plugins.json` by adding `"gmail"` to the `enabled` array
+- [x] T003 [P] Create `MCPBrowser/src/plugins/gmail/selectors.js` with Tier 4 CSS selectors ONLY — centralized, versioned, with tier documentation comments per FR-023 and research R4. Include: email row (`tr.zA`), unread (`.zE`), subject (`span.bog`), snippet (`span.y2`), date cell (`td.xW span`), message container (`div.adn`), message body (`div.a3s.aiL`), message date (`span.g3`), thread subject (`h2.hP`), attachment area (`div.aQH`), attachment name (`span.aV3`), attachment size (`span.SaH2Ve`), label picker items (`div.J-N-Jz`). NO action buttons, NO toolbar buttons, NO compose trigger — those are handled by Tier 1/2
+- [x] T004 [P] Create `MCPBrowser/src/plugins/gmail/helpers.js` with tiered utility functions: `getAccountIndex(url)` extracts `/u/N/` from URL (R7/FR-020); `gmailNavigate(page, hash)` constructs full URL with account index and navigates (T1 per FR-020); `detectView(page)` parses URL hash as primary signal, falls back to `div[role="dialog"]` for compose overlay (FR-024/R6), and detects CAPTCHA/security interstitial states (e.g., "Confirm it's you" prompts) returning a `not_ready` view with actionable error per spec edge case; `waitForGmail(page, selector, timeout)` with 10s default, timeout errors include selector name and tier level (FR-012/Constitution IV); `checkKeyboardShortcuts(page)` sends `?` key and detects help dialog, returns error with enablement instructions if disabled (FR-019/R5); `checkPrecondition(page, requirement)` validates state (thread_open, row_selected, on_gmail) via URL/DOM before shortcuts (FR-025/R2); `selectEmailRow(page, {index, id})` locates row via `[data-legacy-message-id]` (T3) or positional index (T4), clicks `div[role="checkbox"]` (T3) for hybrid DOM+keyboard targeting (FR-016); `extractEmailRows(page, limit)` extracts EmailSummary[] via T3 `span[email]` + T4 selectors from selectors.js; `GmailActionResponse` class extending MCPResponse with structured data, summary, and nextSteps
+- [x] T005 Create `MCPBrowser/src/plugins/gmail/index.js` with plugin entry point: manifest (name: "gmail", version: "1.0.0", urlPatterns: ["mail.google.com"], interfaceVersion: 1, domPatterns), `matchesPage(url, html)` per FR-001/FR-002, `getActions()` returning all 11 action descriptors wired to action modules, `getInfo()` returning plugin context per contracts. Import all action modules from `actions/` directory
+- [x] T006 Create unit test `MCPBrowser/tests/plugins/gmail/gmail-plugin.test.js` testing: manifest fields valid, matchesPage returns matched:true for Gmail URLs and matched:false for non-Gmail, getActions returns 11 actions each with name/description/params/execute, getInfo has no execute functions (serialization safety)
 
 **Checkpoint**: Plugin structure exists, loads via plugin system, detected on Gmail pages. Run T006 test.
 
@@ -42,9 +42,9 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [X] T007 Create unit test `MCPBrowser/tests/plugins/gmail/gmail-helpers.test.js` testing: `getAccountIndex()` extraction for `/u/0/`, `/u/1/`, `/u/2/` and missing-index fallback to '0'; `gmailNavigate()` URL construction preserving account index for all folder hashes (#inbox, #sent, #drafts, #trash, #spam, #label/Name, #search/query); `detectView()` URL hash parsing for all view states (email_list for #inbox/#sent/#drafts, thread for #inbox/ABC123, search_results for #search/query, compose overlay via div[role="dialog"], loading, not_gmail); `checkPrecondition()` validation logic for thread_open (URL hash contains thread ID), row_selected, on_gmail; `selectEmailRow()` by ID via `[data-legacy-message-id]` and by positional index
-- [X] T008 [P] Create unit test `MCPBrowser/tests/plugins/gmail/gmail-selectors.test.js` testing: all Tier 4 selectors exported as named string constants, no undefined/null values, no action logic in selectors module, tier version comment present
-- [X] T009 Run foundational tests (T007, T008) — helpers and selectors modules must pass before user stories begin
+- [x] T007 Create unit test `MCPBrowser/tests/plugins/gmail/gmail-helpers.test.js` testing: `getAccountIndex()` extraction for `/u/0/`, `/u/1/`, `/u/2/` and missing-index fallback to '0'; `gmailNavigate()` URL construction preserving account index for all folder hashes (#inbox, #sent, #drafts, #trash, #spam, #label/Name, #search/query); `detectView()` URL hash parsing for all view states (email_list for #inbox/#sent/#drafts, thread for #inbox/ABC123, search_results for #search/query, compose overlay via div[role="dialog"], loading, not_gmail); `checkPrecondition()` validation logic for thread_open (URL hash contains thread ID), row_selected, on_gmail; `selectEmailRow()` by ID via `[data-legacy-message-id]` and by positional index
+- [x] T008 [P] Create unit test `MCPBrowser/tests/plugins/gmail/gmail-selectors.test.js` testing: all Tier 4 selectors exported as named string constants, no undefined/null values, no action logic in selectors module, tier version comment present
+- [x] T009 Run foundational tests (T007, T008) — helpers and selectors modules must pass before user stories begin
 
 **Checkpoint**: Foundation ready — all helper utilities and selectors validated. User story implementation can now begin.
 
@@ -58,12 +58,12 @@
 
 ### Tests for US1 (MANDATORY)
 
-- [X] T010 [P] [US1] Create unit test `MCPBrowser/tests/plugins/gmail/list-emails.test.js` testing: URL hash navigation to `#inbox`, `#sent`, `#drafts`, `#trash`, `#spam`, `#label/LabelName` with account index preserved (FR-020); email row extraction from fixture HTML matching data-model EmailSummary fields (index, id, sender, senderEmail, subject, snippet, date, isUnread); limit parameter respected; error when not on Gmail page with browser_fetch_webpage guidance; nextSteps match contracts/gmail_actions.md
+- [x] T010 [P] [US1] Create unit test `MCPBrowser/tests/plugins/gmail/list-emails.test.js` testing: URL hash navigation to `#inbox`, `#sent`, `#drafts`, `#trash`, `#spam`, `#label/LabelName` with account index preserved (FR-020); email row extraction from fixture HTML matching data-model EmailSummary fields (index, id, sender, senderEmail, subject, snippet, date, isUnread); limit parameter respected; error when not on Gmail page with browser_fetch_webpage guidance; nextSteps match contracts/gmail_actions.md
 
 ### Implementation for US1
 
-- [X] T011 [US1] Implement `MCPBrowser/src/plugins/gmail/actions/list-emails.js` — detect view via `detectView()`, if folder param provided navigate via `gmailNavigate(page, '#' + folder)` for standard folders or `gmailNavigate(page, '#label/' + folder)` for labels (T1/FR-020), `waitForGmail()` for email rows (FR-012), extract rows via `extractEmailRows()` (T3+T4), return GmailActionResponse with `{ emails: EmailSummary[], folder, totalVisible }` and nextSteps per contracts
-- [X] T012 [US1] Run US1 planned test (T010) and verify pass — story is complete only if test passes
+- [x] T011 [US1] Implement `MCPBrowser/src/plugins/gmail/actions/list-emails.js` — detect view via `detectView()`, if folder param provided navigate via `gmailNavigate(page, '#' + folder)` for standard folders or `gmailNavigate(page, '#label/' + folder)` for labels (T1/FR-020), `waitForGmail()` for email rows (FR-012), extract rows via `extractEmailRows()` (T3+T4), return GmailActionResponse with `{ emails: EmailSummary[], folder, totalVisible }` and nextSteps per contracts
+- [x] T012 [US1] Run US1 planned test (T010) and verify pass — story is complete only if test passes
 
 **Checkpoint**: `list_emails` functional — can list inbox, sent, drafts, labels via URL hash navigation.
 
@@ -77,12 +77,12 @@
 
 ### Tests for US2 (MANDATORY)
 
-- [X] T013 [P] [US2] Create unit test `MCPBrowser/tests/plugins/gmail/read-email.test.js` testing: ID-based navigation via URL hash `#inbox/<id>` (T1); index-based targeting via `selectEmailRow()` + keyboard `o` (T2); thread data extraction from fixture HTML: subject from `h2` in `div[role="main"]` (T3 + T4 `.hP`), messages from T4 `div.adn` in chronological order, sender/senderEmail from `span[email]` (T3), recipients, date from T4 `span.g3`, HTML body from T4 `div.a3s.aiL`, attachment metadata from T4; index out-of-range error with list_emails suggestion; not-in-list-view error; nextSteps per contracts
+- [x] T013 [P] [US2] Create unit test `MCPBrowser/tests/plugins/gmail/read-email.test.js` testing: ID-based navigation via URL hash `#inbox/<id>` (T1); index-based targeting via `selectEmailRow()` + keyboard `o` (T2); thread data extraction from fixture HTML: subject from `h2` in `div[role="main"]` (T3 + T4 `.hP`), messages from T4 `div.adn` in chronological order, sender/senderEmail from `span[email]` (T3), recipients, date from T4 `span.g3`, HTML body from T4 `div.a3s.aiL`, attachment metadata from T4; index out-of-range error with list_emails suggestion; not-in-list-view error; nextSteps per contracts
 
 ### Implementation for US2
 
-- [X] T014 [US2] Implement `MCPBrowser/src/plugins/gmail/actions/read-email.js` — if ID provided, navigate via `gmailNavigate(page, '#inbox/' + id)` (T1); if index, locate row via `selectEmailRow()` then keyboard `o` or Enter (T2), `checkKeyboardShortcuts()` first (FR-019); `waitForGmail()` for thread content (FR-012); extract thread: subject from `h2` within `div[role="main"]` (T3 refined by T4 `.hP`), iterate `div.adn` message containers (T4), extract sender from `span[email]` (T3), date from `span.g3` (T4), body innerHTML from `div.a3s.aiL` (T4), attachments from `div.aQH` (T4); return GmailActionResponse with EmailThread per data-model
-- [X] T015 [US2] Run US2 planned test (T013) and verify pass
+- [x] T014 [US2] Implement `MCPBrowser/src/plugins/gmail/actions/read-email.js` — if ID provided, navigate via `gmailNavigate(page, '#inbox/' + id)` (T1); if index, locate row via `selectEmailRow()` then keyboard `o` or Enter (T2), `checkKeyboardShortcuts()` first (FR-019); `waitForGmail()` for thread content (FR-012); extract thread: subject from `h2` within `div[role="main"]` (T3 refined by T4 `.hP`), iterate `div.adn` message containers (T4), extract sender from `span[email]` (T3), date from `span.g3` (T4), body innerHTML from `div.a3s.aiL` (T4), attachments from `div.aQH` (T4); return GmailActionResponse with EmailThread per data-model
+- [x] T015 [US2] Run US2 planned test (T013) and verify pass
 
 **Checkpoint**: `read_email` functional — can open email by index or ID, extract full thread.
 
@@ -96,12 +96,12 @@
 
 ### Tests for US3 (MANDATORY)
 
-- [X] T016 [P] [US3] Create unit test `MCPBrowser/tests/plugins/gmail/search-emails.test.js` testing: URL hash construction with encoded query `#search/from:boss@company.com` (T1); account index `/u/N/` preserved from current URL (FR-020); result extraction identical to list_emails EmailSummary format; empty results handling (empty array + no-match message); limit parameter; empty query validation error; nextSteps per contracts
+- [x] T016 [P] [US3] Create unit test `MCPBrowser/tests/plugins/gmail/search-emails.test.js` testing: URL hash construction with encoded query `#search/from:boss@company.com` (T1); account index `/u/N/` preserved from current URL (FR-020); result extraction identical to list_emails EmailSummary format; empty results handling (empty array + no-match message); limit parameter; empty query validation error; nextSteps per contracts
 
 ### Implementation for US3
 
-- [X] T017 [US3] Implement `MCPBrowser/src/plugins/gmail/actions/search-emails.js` — validate query not empty, encode query for URL hash, navigate via `gmailNavigate(page, '#search/' + encodedQuery)` (T1 per FR-005/FR-020), `waitForGmail()` for result rows or no-results indicator, extract rows via `extractEmailRows()` (same T3+T4 as list_emails), handle no-results case (empty array + message), return GmailActionResponse with `{ emails, query, resultCount }` and nextSteps
-- [X] T018 [US3] Run US3 planned test (T016) and verify pass
+- [x] T017 [US3] Implement `MCPBrowser/src/plugins/gmail/actions/search-emails.js` — validate query not empty, encode query for URL hash, navigate via `gmailNavigate(page, '#search/' + encodedQuery)` (T1 per FR-005/FR-020), `waitForGmail()` for result rows or no-results indicator, extract rows via `extractEmailRows()` (same T3+T4 as list_emails), handle no-results case (empty array + message), return GmailActionResponse with `{ emails, query, resultCount }` and nextSteps
+- [x] T018 [US3] Run US3 planned test (T016) and verify pass
 
 **Checkpoint**: P1 complete — all read-path actions (list, read, search) functional with T1 URL navigation and T3+T4 extraction. MVP deliverable.
 
@@ -115,12 +115,12 @@
 
 ### Tests for US4 (MANDATORY)
 
-- [X] T019 [P] [US4] Create unit test `MCPBrowser/tests/plugins/gmail/compose-email.test.js` testing: `checkKeyboardShortcuts()` called before `c` (FR-019); precondition check (on Gmail); keyboard `c` triggers compose (T2); compose dialog detected via `div[role="dialog"]` (T3); form fill via `textarea[name="to"]`, `input[name="subjectbox"]`, `div[aria-label="Message Body"]` (all T3); CC expansion and fill via `textarea[name="cc"]` (T3); send:false leaves draft (FR-015); send:true sends via `Ctrl+Enter` (T2); empty-to validation error; existing compose window detection and close; nextSteps for draft vs sent states
+- [x] T019 [P] [US4] Create unit test `MCPBrowser/tests/plugins/gmail/compose-email.test.js` testing: `checkKeyboardShortcuts()` called before `c` (FR-019); precondition check (on Gmail); keyboard `c` triggers compose (T2); compose dialog detected via `div[role="dialog"]` (T3); form fill via `textarea[name="to"]`, `input[name="subjectbox"]`, `div[aria-label="Message Body"]` (all T3); CC expansion and fill via `textarea[name="cc"]` (T3); send:false leaves draft (FR-015); send:true sends via `Ctrl+Enter` (T2); empty-to validation error; existing compose window detection and close; nextSteps for draft vs sent states
 
 ### Implementation for US4
 
-- [X] T020 [US4] Implement `MCPBrowser/src/plugins/gmail/actions/compose-email.js` — validate `to` not empty, `checkKeyboardShortcuts(page)` (FR-019), detect and close existing compose dialog (`div[role="dialog"]` T3), press `c` keyboard (T2), wait for compose dialog (`div[role="dialog"]` T3), fill To via `textarea[name="to"]` (T3) + Tab to confirm recipient chip, fill CC if provided (expand CC link then `textarea[name="cc"]` T3), fill Subject via `input[name="subjectbox"]` (T3), fill Body via `div[aria-label="Message Body"]` (T3) using innerHTML or page.type(), if send:true press `Ctrl+Enter` (T2) else leave as draft, return GmailActionResponse with `{ status: "sent"|"draft", to, subject }`
-- [X] T021 [US4] Run US4 planned test (T019) and verify pass
+- [x] T020 [US4] Implement `MCPBrowser/src/plugins/gmail/actions/compose-email.js` — validate `to` not empty, `checkKeyboardShortcuts(page)` (FR-019), detect and close existing compose dialog (`div[role="dialog"]` T3), press `c` keyboard (T2), wait for compose dialog (`div[role="dialog"]` T3), fill To via `textarea[name="to"]` (T3) + Tab to confirm recipient chip, fill CC if provided (expand CC link then `textarea[name="cc"]` T3), fill Subject via `input[name="subjectbox"]` (T3), fill Body via `div[aria-label="Message Body"]` (T3) using innerHTML or page.type(), if send:true press `Ctrl+Enter` (T2) else leave as draft, return GmailActionResponse with `{ status: "sent"|"draft", to, subject }`
+- [x] T021 [US4] Run US4 planned test (T019) and verify pass
 
 **Checkpoint**: `compose_email` functional — compose via keyboard, fill via name attrs, send via shortcut.
 
@@ -134,12 +134,12 @@
 
 ### Tests for US5 (MANDATORY)
 
-- [X] T022 [P] [US5] Create unit test `MCPBrowser/tests/plugins/gmail/reply-email.test.js` testing: `checkPrecondition(page, 'thread_open')` via URL hash containing thread ID (FR-025); `checkKeyboardShortcuts()` (FR-019); keyboard `r` for reply, `a` for reply-all (T2); body fill via `div[aria-label="Message Body"]` (T3); send:false leaves draft; send:true via `Ctrl+Enter` (T2); error when no thread open with read_email suggestion; nextSteps per contracts
+- [x] T022 [P] [US5] Create unit test `MCPBrowser/tests/plugins/gmail/reply-email.test.js` testing: `checkPrecondition(page, 'thread_open')` via URL hash containing thread ID (FR-025); `checkKeyboardShortcuts()` (FR-019); keyboard `r` for reply, `a` for reply-all (T2); body fill via `div[aria-label="Message Body"]` (T3); send:false leaves draft; send:true via `Ctrl+Enter` (T2); error when no thread open with read_email suggestion; nextSteps per contracts
 
 ### Implementation for US5
 
-- [X] T023 [US5] Implement `MCPBrowser/src/plugins/gmail/actions/reply-email.js` — `checkKeyboardShortcuts(page)` (FR-019), `checkPrecondition(page, 'thread_open')` verifies URL hash contains thread ID (FR-025), press `r` or `a` based on `replyAll` param (T2), wait for reply editor by detecting `div[aria-label="Message Body"]` within compose area (T3), fill body, if send:true press `Ctrl+Enter` (T2), return GmailActionResponse with `{ status, replyAll }`
-- [X] T024 [US5] Run US5 planned test (T022) and verify pass
+- [x] T023 [US5] Implement `MCPBrowser/src/plugins/gmail/actions/reply-email.js` — `checkKeyboardShortcuts(page)` (FR-019), `checkPrecondition(page, 'thread_open')` verifies URL hash contains thread ID (FR-025), press `r` or `a` based on `replyAll` param (T2), wait for reply editor by detecting `div[aria-label="Message Body"]` within compose area (T3), fill body, if send:true press `Ctrl+Enter` (T2), return GmailActionResponse with `{ status, replyAll }`
+- [x] T024 [US5] Run US5 planned test (T022) and verify pass
 
 **Checkpoint**: P2 complete — compose and reply functional. Agent can read, search, compose, and reply.
 
@@ -153,18 +153,18 @@
 
 ### Tests for US6 (MANDATORY)
 
-- [X] T025 [P] [US6] Create unit test `MCPBrowser/tests/plugins/gmail/forward-email.test.js` testing: `checkPrecondition(page, 'thread_open')` via URL hash (FR-025); `checkKeyboardShortcuts()` (FR-019); keyboard `f` (T2); To fill via `textarea[name="to"]` (T3); body prepend via `div[aria-label="Message Body"]` (T3); send:true/false; error when no thread open; nextSteps
-- [X] T026 [P] [US6] Create unit test `MCPBrowser/tests/plugins/gmail/archive-email.test.js` testing: hybrid DOM+keyboard — `selectEmailRow()` clicks checkbox (`div[role="checkbox"]` T3) then keyboard `e` (T2); thread-view direct `e` without row selection; `checkPrecondition()` errors (no selection, not Gmail); index and ID targeting via FR-016; nextSteps
-- [X] T027 [P] [US6] Create unit test `MCPBrowser/tests/plugins/gmail/delete-email.test.js` testing: same hybrid pattern as archive but keyboard `#` (Shift+3, T2); thread-view and list-view modes; precondition errors
-- [X] T028 [P] [US6] Create unit test `MCPBrowser/tests/plugins/gmail/label-email.test.js` testing: hybrid select + keyboard `l` (T2) opens label picker; label item selection from T4 picker (`div.J-N-Jz`); label-not-found error listing available labels; index and ID targeting; nextSteps
+- [x] T025 [P] [US6] Create unit test `MCPBrowser/tests/plugins/gmail/forward-email.test.js` testing: `checkPrecondition(page, 'thread_open')` via URL hash (FR-025); `checkKeyboardShortcuts()` (FR-019); keyboard `f` (T2); To fill via `textarea[name="to"]` (T3); body prepend via `div[aria-label="Message Body"]` (T3); send:true/false; error when no thread open; nextSteps
+- [x] T026 [P] [US6] Create unit test `MCPBrowser/tests/plugins/gmail/archive-email.test.js` testing: hybrid DOM+keyboard — `selectEmailRow()` clicks checkbox (`div[role="checkbox"]` T3) then keyboard `e` (T2); thread-view direct `e` without row selection; `checkPrecondition()` errors (no selection, not Gmail); index and ID targeting via FR-016; nextSteps
+- [x] T027 [P] [US6] Create unit test `MCPBrowser/tests/plugins/gmail/delete-email.test.js` testing: same hybrid pattern as archive but keyboard `#` (Shift+3, T2); thread-view and list-view modes; precondition errors
+- [x] T028 [P] [US6] Create unit test `MCPBrowser/tests/plugins/gmail/label-email.test.js` testing: hybrid select + keyboard `l` (T2) opens label picker; label item selection from T4 picker (`div.J-N-Jz`); label-not-found error listing available labels; index and ID targeting; nextSteps
 
 ### Implementation for US6
 
-- [X] T029 [US6] Implement `MCPBrowser/src/plugins/gmail/actions/forward-email.js` — `checkKeyboardShortcuts()`, `checkPrecondition(page, 'thread_open')` (FR-025), press `f` (T2), wait for forward compose (`div[role="dialog"]` T3), fill To via `textarea[name="to"]` (T3) + Tab, fill body if provided via `div[aria-label="Message Body"]` (T3), if send:true `Ctrl+Enter` (T2), return GmailActionResponse
-- [X] T030 [US6] Implement `MCPBrowser/src/plugins/gmail/actions/archive-email.js` — detect view via `detectView()`: if thread view, `checkPrecondition(page, 'thread_open')` then press `e` (T2); if list view, `selectEmailRow(page, {index, id})` clicks checkbox (T3/FR-016) then press `e` (T2); wait for row removal or view change; return GmailActionResponse with `{ archived: true }`
-- [X] T031 [P] [US6] Implement `MCPBrowser/src/plugins/gmail/actions/delete-email.js` — same pattern as archive but press `#` (T2) instead of `e`; return GmailActionResponse with `{ deleted: true }`
-- [X] T032 [US6] Implement `MCPBrowser/src/plugins/gmail/actions/label-email.js` — detect view, `selectEmailRow()` if list view or use current thread, `checkKeyboardShortcuts()`, press `l` (T2) to open label picker, wait for picker overlay, find label item matching `label` param in T4 `div.J-N-Jz` elements, click it; if not found return error listing visible labels; return GmailActionResponse with `{ labeled: true, label }`
-- [X] T033 [US6] Run US6 planned tests (T025, T026, T027, T028) and verify all pass
+- [x] T029 [US6] Implement `MCPBrowser/src/plugins/gmail/actions/forward-email.js` — `checkKeyboardShortcuts()`, `checkPrecondition(page, 'thread_open')` (FR-025), press `f` (T2), wait for forward compose (`div[role="dialog"]` T3), fill To via `textarea[name="to"]` (T3) + Tab, fill body if provided via `div[aria-label="Message Body"]` (T3), if send:true `Ctrl+Enter` (T2), return GmailActionResponse
+- [x] T030 [US6] Implement `MCPBrowser/src/plugins/gmail/actions/archive-email.js` — detect view via `detectView()`: if thread view, `checkPrecondition(page, 'thread_open')` then press `e` (T2); if list view, `selectEmailRow(page, {index, id})` clicks checkbox (T3/FR-016) then press `e` (T2); wait for row removal or view change; return GmailActionResponse with `{ archived: true }`
+- [x] T031 [P] [US6] Implement `MCPBrowser/src/plugins/gmail/actions/delete-email.js` — same pattern as archive but press `#` (T2) instead of `e`; return GmailActionResponse with `{ deleted: true }`
+- [x] T032 [US6] Implement `MCPBrowser/src/plugins/gmail/actions/label-email.js` — detect view, `selectEmailRow()` if list view or use current thread, `checkKeyboardShortcuts()`, press `l` (T2) to open label picker, wait for picker overlay, find label item matching `label` param in T4 `div.J-N-Jz` elements, click it; if not found return error listing visible labels; return GmailActionResponse with `{ labeled: true, label }`
+- [x] T033 [US6] Run US6 planned tests (T025, T026, T027, T028) and verify all pass
 
 **Checkpoint**: Forward, archive, delete, label all functional with hybrid DOM+keyboard approach.
 
@@ -178,13 +178,13 @@
 
 ### Tests for US7 (MANDATORY)
 
-- [X] T034 [P] [US7] Create unit test `MCPBrowser/tests/plugins/gmail/mark-readunread.test.js` testing: hybrid DOM+keyboard — `selectEmailRow()` clicks checkbox (T3) then `Shift+i` for mark_read / `Shift+u` for mark_unread (T2); `checkKeyboardShortcuts()` (FR-019); precondition: must be in list view; index and ID targeting; nextSteps per contracts
+- [x] T034 [P] [US7] Create unit test `MCPBrowser/tests/plugins/gmail/mark-readunread.test.js` testing: hybrid DOM+keyboard — `selectEmailRow()` clicks checkbox (T3) then `Shift+i` for mark_read / `Shift+u` for mark_unread (T2); `checkKeyboardShortcuts()` (FR-019); precondition: must be in list view; index and ID targeting; nextSteps per contracts
 
 ### Implementation for US7
 
-- [X] T035 [US7] Implement `MCPBrowser/src/plugins/gmail/actions/mark-read.js` — `checkKeyboardShortcuts()`, detect list view via `detectView()`, `selectEmailRow(page, {index, id})` clicks checkbox (T3), press `Shift+i` (T2), return GmailActionResponse with `{ markedRead: true }`
-- [X] T036 [P] [US7] Implement `MCPBrowser/src/plugins/gmail/actions/mark-unread.js` — same as mark-read but press `Shift+u` (T2), return GmailActionResponse with `{ markedUnread: true }`
-- [X] T037 [US7] Run US7 planned test (T034) and verify pass
+- [x] T035 [US7] Implement `MCPBrowser/src/plugins/gmail/actions/mark-read.js` — `checkKeyboardShortcuts()`, detect list view via `detectView()`, `selectEmailRow(page, {index, id})` clicks checkbox (T3), press `Shift+i` (T2), return GmailActionResponse with `{ markedRead: true }`
+- [x] T036 [P] [US7] Implement `MCPBrowser/src/plugins/gmail/actions/mark-unread.js` — same as mark-read but press `Shift+u` (T2), return GmailActionResponse with `{ markedUnread: true }`
+- [x] T037 [US7] Run US7 planned test (T034) and verify pass
 
 **Checkpoint**: All 11 actions implemented and tested. Full P1+P2+P3 feature complete.
 
@@ -194,11 +194,11 @@
 
 **Purpose**: Validation, documentation, and cleanup across all stories
 
-- [X] T038 [P] Verify all 11 actions wired in `getActions()` and `getInfo()` returns complete catalog in `MCPBrowser/src/plugins/gmail/index.js` — action names, descriptions, params must match contracts/gmail_actions.md
-- [X] T039 [P] Run full plugin test suite: `node MCPBrowser/tests/plugins/gmail/gmail-plugin.test.js; node MCPBrowser/tests/plugins/gmail/gmail-helpers.test.js; node MCPBrowser/tests/plugins/gmail/gmail-selectors.test.js` plus all action test files — all must pass
-- [X] T040 Validate quickstart.md scenario: enable plugin, navigate to Gmail, list_emails → read_email → reply_email chain works end-to-end
-- [X] T041 [P] Verify SC-007 tier coverage: confirm ≥70% of interactions use T1/T2 methods. Count: navigation (T1: 3 actions) + action triggers (T2: 10 actions) vs total interaction types. Document in selectors.js header comment
-- [X] T042 [P] Verify SC-008: confirm no action file under `actions/` imports CSS class names directly — all CSS access goes through `selectors.js`. Run: `grep -r "\\." MCPBrowser/src/plugins/gmail/actions/ | grep -v "import.*selectors"` should find no class-name strings
+- [x] T038 [P] Verify all 11 actions wired in `getActions()` and `getInfo()` returns complete catalog in `MCPBrowser/src/plugins/gmail/index.js` — action names, descriptions, params must match contracts/gmail_actions.md
+- [x] T039 [P] Run full plugin test suite: `node MCPBrowser/tests/plugins/gmail/gmail-plugin.test.js; node MCPBrowser/tests/plugins/gmail/gmail-helpers.test.js; node MCPBrowser/tests/plugins/gmail/gmail-selectors.test.js` plus all action test files — all must pass
+- [x] T040 Validate quickstart.md scenario: enable plugin, navigate to Gmail, list_emails → read_email → reply_email chain works end-to-end
+- [x] T041 [P] Verify SC-007 tier coverage: confirm ≥70% of interactions use T1/T2 methods. Count: navigation (T1: 3 actions) + action triggers (T2: 10 actions) vs total interaction types. Document in selectors.js header comment
+- [x] T042 [P] Verify SC-008: confirm no action file under `actions/` imports CSS class names directly — all CSS access goes through `selectors.js`. Run: `grep -r "\\." MCPBrowser/src/plugins/gmail/actions/ | grep -v "import.*selectors"` should find no class-name strings
 
 ---
 

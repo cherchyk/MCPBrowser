@@ -4,7 +4,7 @@
  */
 
 import { ChromiumBrowser } from './ChromiumBrowser.js';
-import os from "os";
+import os from 'os';
 import { isWSL } from '../utils.js';
 
 /**
@@ -14,29 +14,27 @@ import { isWSL } from '../utils.js';
  */
 function getDefaultEdgePaths() {
   const platform = os.platform();
-  
-  if (platform === "win32") {
+
+  if (platform === 'win32') {
     return [
-      "C:/Program Files/Microsoft/Edge/Application/msedge.exe",
-      "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+      'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
+      'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
     ];
-  } else if (platform === "darwin") {
-    return [
-      "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-    ];
+  } else if (platform === 'darwin') {
+    return ['/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'];
   } else {
     const paths = [
-      "/usr/bin/microsoft-edge",
-      "/usr/bin/microsoft-edge-stable",
-      "/usr/bin/microsoft-edge-beta",
-      "/usr/bin/microsoft-edge-dev",
-      "/opt/microsoft/msedge/msedge",
+      '/usr/bin/microsoft-edge',
+      '/usr/bin/microsoft-edge-stable',
+      '/usr/bin/microsoft-edge-beta',
+      '/usr/bin/microsoft-edge-dev',
+      '/opt/microsoft/msedge/msedge',
     ];
     // In WSL, also look for Windows-side Edge via /mnt/c/
     if (isWSL()) {
       paths.push(
-        "/mnt/c/Program Files/Microsoft/Edge/Application/msedge.exe",
-        "/mnt/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+        '/mnt/c/Program Files/Microsoft/Edge/Application/msedge.exe',
+        '/mnt/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
       );
     }
     return paths;
@@ -51,12 +49,12 @@ export class EdgeBrowser extends ChromiumBrowser {
   constructor() {
     const config = {
       name: 'Edge',
-      host: process.env.EDGE_REMOTE_DEBUG_HOST || "127.0.0.1",
+      host: process.env.EDGE_REMOTE_DEBUG_HOST || '127.0.0.1',
       port: Number(process.env.EDGE_REMOTE_DEBUG_PORT || 9223),
       wsEndpoint: process.env.EDGE_WS_ENDPOINT,
       executablePath: process.env.EDGE_PATH,
       defaultPaths: getDefaultEdgePaths(),
-      userDataDirName: 'EdgeDebug'
+      userDataDirName: 'EdgeDebug',
     };
     super(config);
   }

@@ -1,6 +1,6 @@
 {
   "name": "mcpbrowser",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "mcpName": "io.github.cherchyk/mcpbrowser",
   "type": "module",
   "description": "MCP browser server — loads and interacts with web pages using the user's Chromium-based browser with full JavaScript execution. Handles authentication, SSO, and anti-bot protection automatically via the user's existing browser session.",
@@ -59,6 +59,7 @@
   "homepage": "https://github.com/cherchyk/MCPBrowser#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
+    "marked": "^15.0.12",
     "puppeteer-core": "^23.4.1"
   },
   "engines": {

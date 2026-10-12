@@ -16,8 +16,9 @@ import {
   waitForCalendar,
   detectView,
   VIEW,
-  GCalActionResponse
+  GCalActionResponse,
 } from '../helpers.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /**
  * Delete an event by index or event ID.
@@ -28,59 +29,55 @@ import {
  * @param {string} [opts.params.id] - Google Calendar event ID
  * @returns {Promise<GCalActionResponse|ErrorResponse>}
  */
-export async function deleteEvent({ page, params }) {
+async function deleteEvent({ page, params }) {
   // Validate: at least one identifier required
   if (params.index == null && params.id == null) {
-    return new ErrorResponse(
-      'Either index or id is required to delete an event.',
-      [
-        'Use list_events to see available events and their indices',
-        'Use search_events to find a specific event by keyword'
-      ]
-    );
+    return new ErrorResponse('Either index or id is required to delete an event.', [
+      'Use list_events to see available events and their indices',
+      'Use search_events to find a specific event by keyword',
+    ]);
   }
 
   // Precondition: must be on Google Calendar
   const pre = await checkPrecondition(page, 'on_calendar');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to open Google Calendar first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to open Google Calendar first.",
     ]);
   }
 
   // T3: Select (click) the target event to open detail popup
   const sel = await selectEvent(page, { index: params.index, id: params.id });
   if (!sel.selected) {
-    return new ErrorResponse(
-      sel.error || 'Could not select the event to delete.',
-      ['Use list_events to refresh the event list and check indices']
-    );
+    return new ErrorResponse(sel.error || 'Could not select the event to delete.', [
+      'Use list_events to refresh the event list and check indices',
+    ]);
   }
 
   // Wait for detail popup
   try {
     await waitForCalendar(page, 'div[role="dialog"]');
   } catch {
-    return new ErrorResponse(
-      'Event detail popup did not appear after clicking the event.',
-      ['Try list_events to refresh, then delete_event with a valid index']
-    );
+    return new ErrorResponse('Event detail popup did not appear after clicking the event.', [
+      'Try list_events to refresh, then delete_event with a valid index',
+    ]);
   }
 
   // Detect recurring event dialog — if it appears, select "This event"
   const recurringDialog = await page.evaluate(() => {
     const buttons = Array.from(document.querySelectorAll('button, span[role="radio"]'));
-    return buttons.some(b => b.textContent?.includes('This event'));
+    return buttons.some((b) => b.textContent?.includes('This event'));
   });
   let recurringNote = null;
   if (recurringDialog) {
     const thisEventBtn = await page.evaluateHandle(() => {
       const elements = Array.from(document.querySelectorAll('button, span[role="radio"], label'));
-      return elements.find(el => el.textContent?.includes('This event'));
+      return elements.find((el) => el.textContent?.includes('This event'));
     });
     if (thisEventBtn && thisEventBtn.asElement()) {
       await thisEventBtn.asElement().click();
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 300));
       recurringNote = 'Deleted this single occurrence of a recurring event.';
       logger.debug('deleteEvent: selected "This event" for recurring event');
     }
@@ -93,14 +90,15 @@ export async function deleteEvent({ page, params }) {
   if (!hasDialog && view === VIEW.NOT_CALENDAR) {
     return new ErrorResponse(
       'Cannot delete: lost context. The event dialog is no longer visible.',
-      ['Use list_events to refresh, then try delete_event again']
+      ['Use list_events to refresh, then try delete_event again'],
     );
   }
 
   // T2: Click the "Delete event" button or press Delete/Backspace
-  const deleteBtn = await page.$('button[aria-label="Delete event"]') ||
-                    await page.$('button[aria-label*="delete" i]') ||
-                    await page.$('[data-deletebtn]');
+  const deleteBtn =
+    (await page.$('button[aria-label="Delete event"]')) ||
+    (await page.$('button[aria-label*="delete" i]')) ||
+    (await page.$('[data-deletebtn]'));
   if (deleteBtn) {
     await deleteBtn.click();
     logger.debug('deleteEvent: clicked Delete button');
@@ -111,28 +109,43 @@ export async function deleteEvent({ page, params }) {
   }
 
   // Wait for confirmation or undo toast
-  await new Promise(r => setTimeout(r, 500));
+  await new Promise((r) => setTimeout(r, 500));
 
   // Check for confirmation dialog (some events require explicit confirmation)
   const confirmBtn = await page.evaluateHandle(() => {
     const buttons = Array.from(document.querySelectorAll('button'));
-    return buttons.find(b =>
-      b.textContent?.includes('Delete') ||
-      b.textContent?.includes('Remove')
+    return buttons.find(
+      (b) => b.textContent?.includes('Delete') || b.textContent?.includes('Remove'),
     );
   });
   if (confirmBtn && confirmBtn.asElement()) {
     await confirmBtn.asElement().click();
     logger.debug('deleteEvent: confirmed deletion');
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 300));
   }
 
   return new GCalActionResponse(
     {
       deleted: true,
-      recurringNote
+      recurringNote,
     },
     recurringNote || 'Event deleted successfully.',
-    ['Use list_events to see the updated calendar']
+    ['Use list_events to see the updated calendar'],
   );
 }
+
+export const deleteEventAction = new PluginAction({
+  name: 'delete_event',
+  description: 'Remove an event from Google Calendar',
+  params: [
+    {
+      name: 'index',
+      type: 'number',
+      description: '0-based position in current event list',
+      required: false,
+    },
+    { name: 'id', type: 'string', description: 'Google Calendar event ID', required: false },
+  ],
+  response: GCalActionResponse,
+  handler: deleteEvent,
+});

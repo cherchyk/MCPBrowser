@@ -4,6 +4,7 @@
  */
 
 import { MCPResponse } from '../core/responses.js';
+import { CoreAction } from '../core/actions.js';
 import { acceptEula, isEulaAccepted, EULA_URL } from '../core/eula.js';
 import logger from '../core/logger.js';
 
@@ -20,17 +21,13 @@ import logger from '../core/logger.js';
  * @param {string} toolName - The name of the tool being called
  * @returns {Object|null} MCP-formatted response if EULA not accepted, null if OK to proceed
  */
-export function requireEulaAcceptance(toolName) {
+function requireEulaAcceptance(toolName) {
   if (isEulaAccepted()) {
     return null;
   }
-  
+
   logger.info(`Tool ${toolName} requested - EULA acceptance required`);
-  return new EulaPendingResponse(
-    EULA_URL,
-    [],
-    toolName
-  ).toMcpFormat();
+  return new EulaPendingResponse(EULA_URL, [], toolName).toMcpFormat();
 }
 
 // ============================================================================
@@ -40,7 +37,7 @@ export function requireEulaAcceptance(toolName) {
 /**
  * Response when EULA needs to be accepted (shown before acceptance)
  */
-export class EulaPendingResponse extends MCPResponse {
+class EulaPendingResponse extends MCPResponse {
   /**
    * @param {string} eulaUrl - URL to the EULA
    * @param {string[]} nextSteps - Suggested next actions
@@ -48,11 +45,11 @@ export class EulaPendingResponse extends MCPResponse {
    */
   constructor(eulaUrl, nextSteps, attemptedAction = null) {
     super(nextSteps);
-    
+
     if (typeof eulaUrl !== 'string') {
       throw new TypeError('eulaUrl must be a string');
     }
-    
+
     this.eulaUrl = eulaUrl;
     this.accepted = false;
     this.attemptedAction = attemptedAction;
@@ -64,7 +61,7 @@ export class EulaPendingResponse extends MCPResponse {
       accepted: this.accepted,
       eulaUrl: this.eulaUrl,
       requiresUserConfirmation: this.requiresUserConfirmation,
-      ...(this.attemptedAction && { attemptedAction: this.attemptedAction })
+      ...(this.attemptedAction && { attemptedAction: this.attemptedAction }),
     };
   }
 
@@ -83,18 +80,18 @@ When calling accept_eula, you MUST set userExplicitlyConfirmed=true ONLY if user
 /**
  * Response for successful EULA acceptance
  */
-export class EulaAcceptedResponse extends MCPResponse {
+class EulaAcceptedResponse extends MCPResponse {
   /**
    * @param {string} eulaUrl - URL to the EULA that was accepted
    * @param {string[]} nextSteps - Suggested next actions
    */
   constructor(eulaUrl, nextSteps) {
     super(nextSteps);
-    
+
     if (typeof eulaUrl !== 'string') {
       throw new TypeError('eulaUrl must be a string');
     }
-    
+
     this.eulaUrl = eulaUrl;
     this.accepted = true;
   }
@@ -102,7 +99,7 @@ export class EulaAcceptedResponse extends MCPResponse {
   _getAdditionalFields() {
     return {
       accepted: this.accepted,
-      eulaUrl: this.eulaUrl
+      eulaUrl: this.eulaUrl,
     };
   }
 
@@ -118,20 +115,28 @@ export class EulaAcceptedResponse extends MCPResponse {
 /**
  * @type {Tool}
  */
-export const ACCEPT_EULA_TOOL = {
-  name: "accept_eula",
-  description: "CRITICAL: You MUST ask the user 'Do you accept the MCPBrowser EULA?' and wait for their explicit 'Yes' response BEFORE calling this tool. Set userExplicitlyConfirmed=true ONLY if the user explicitly said 'Yes' or 'I accept'. If the user has not responded or said 'No', DO NOT call this tool. Calling this tool without user consent violates the EULA terms.",
+const ACCEPT_EULA_TOOL = {
+  name: 'accept_eula',
+  description:
+    "CRITICAL: You MUST ask the user 'Do you accept the MCPBrowser EULA?' and wait for their explicit 'Yes' response BEFORE calling this tool. Set userExplicitlyConfirmed=true ONLY if the user explicitly said 'Yes' or 'I accept'. If the user has not responded or said 'No', DO NOT call this tool. Calling this tool without user consent violates the EULA terms.",
   inputSchema: {
-    type: "object",
+    type: 'object',
     properties: {
       userExplicitlyConfirmed: {
-        type: "boolean",
-        description: "REQUIRED: Must be true. Set to true ONLY if the user explicitly said 'Yes' or 'I accept' to the EULA prompt. Never set to true without explicit user confirmation."
-      }
+        type: 'boolean',
+        description:
+          "REQUIRED: Must be true. Set to true ONLY if the user explicitly said 'Yes' or 'I accept' to the EULA prompt. Never set to true without explicit user confirmation.",
+      },
     },
-    required: ["userExplicitlyConfirmed"]
-  }
+    required: ['userExplicitlyConfirmed'],
+  },
 };
+
+export const ACCEPT_EULA_ACTION = new CoreAction({
+  tool: ACCEPT_EULA_TOOL,
+  response: MCPResponse,
+  handler: handleAcceptEula,
+});
 
 // ============================================================================
 // TOOL IMPLEMENTATION
@@ -143,46 +148,37 @@ export const ACCEPT_EULA_TOOL = {
  * @param {boolean} args.userExplicitlyConfirmed - Whether user explicitly confirmed acceptance
  * @returns {Promise<MCPResponse>} Response indicating EULA status
  */
-export async function handleAcceptEula(args) {
+async function handleAcceptEula(args) {
   const { userExplicitlyConfirmed } = args;
-  
+
   logger.debug(`accept_eula called with userExplicitlyConfirmed: ${userExplicitlyConfirmed}`);
-  
+
   // If already accepted and calling again, just confirm
   if (isEulaAccepted()) {
     logger.info('EULA already accepted');
-    return new EulaAcceptedResponse(
-      EULA_URL,
-      [
-        'Use browser_fetch_webpage to navigate to a URL',
-        'Use browser_get_current_html to see the current page content'
-      ]
-    );
+    return new EulaAcceptedResponse(EULA_URL, [
+      'Use browser_fetch_webpage to navigate to a URL',
+      'Use browser_get_current_html to see the current page content',
+    ]);
   }
-  
+
   // CRITICAL: Validate user explicitly confirmed
   if (userExplicitlyConfirmed !== true) {
     logger.warn('accept_eula called without userExplicitlyConfirmed=true - rejecting');
-    return new EulaPendingResponse(
-      EULA_URL,
-      [
-        'Ask the user: "Do you accept the MCPBrowser EULA?"',
-        'Wait for explicit "Yes" response',
-        'Then call accept_eula with userExplicitlyConfirmed=true'
-      ]
-    );
+    return new EulaPendingResponse(EULA_URL, [
+      'Ask the user: "Do you accept the MCPBrowser EULA?"',
+      'Wait for explicit "Yes" response',
+      'Then call accept_eula with userExplicitlyConfirmed=true',
+    ]);
   }
-  
+
   // Accept the EULA
   acceptEula(EULA_URL);
   logger.info('EULA accepted with explicit user confirmation');
-  
-  return new EulaAcceptedResponse(
-    EULA_URL,
-    [
-      'Use browser_fetch_webpage to navigate to a URL',
-      'Use browser_click_element to interact with page elements',
-      'Use browser_type_text to enter text into forms'
-    ]
-  );
+
+  return new EulaAcceptedResponse(EULA_URL, [
+    'Use browser_fetch_webpage to navigate to a URL',
+    'Use browser_click_element to interact with page elements',
+    'Use browser_type_text to enter text into forms',
+  ]);
 }

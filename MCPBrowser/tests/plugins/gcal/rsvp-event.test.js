@@ -5,7 +5,11 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { rsvpEvent } from '../../../src/plugins/gcal/actions/rsvp-event.js';
+import { ACTIONS as GCAL_ACTIONS } from '../../../src/plugins/gcal/actions/index.js';
+
+const rsvpEventAction = GCAL_ACTIONS.find((action) => action.id === 'rsvp_event');
+
+const rsvpEvent = rsvpEventAction.handler;
 
 describe('rsvpEvent', () => {
   it('is an async function', () => {
@@ -15,7 +19,7 @@ describe('rsvpEvent', () => {
 
   it('returns error when page is not on Google Calendar', async () => {
     const mockPage = {
-      url: () => 'https://example.com'
+      url: () => 'https://example.com',
     };
     const result = await rsvpEvent({ page: mockPage, params: { index: 0, response: 'accept' } });
     assert.equal(result.constructor.name, 'ErrorResponse');
@@ -25,7 +29,7 @@ describe('rsvpEvent', () => {
 
   it('returns error when response is invalid', async () => {
     const mockPage = {
-      url: () => 'https://calendar.google.com/calendar/u/0/r/week'
+      url: () => 'https://calendar.google.com/calendar/u/0/r/week',
     };
     const result = await rsvpEvent({ page: mockPage, params: { index: 0, response: 'invalid' } });
     assert.equal(result.constructor.name, 'ErrorResponse');
@@ -35,7 +39,7 @@ describe('rsvpEvent', () => {
 
   it('returns error when neither index nor id provided', async () => {
     const mockPage = {
-      url: () => 'https://calendar.google.com/calendar/u/0/r/week'
+      url: () => 'https://calendar.google.com/calendar/u/0/r/week',
     };
     const result = await rsvpEvent({ page: mockPage, params: { response: 'accept' } });
     assert.equal(result.constructor.name, 'ErrorResponse');

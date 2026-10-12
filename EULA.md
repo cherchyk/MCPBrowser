@@ -19,24 +19,31 @@ MCPBrowser is an MCP (Model Context Protocol) server that enables AI assistants 
 ## 2. User Responsibilities
 
 ### 2.1 Website Terms of Service
+
 **You are solely responsible for ensuring that your use of MCPBrowser complies with the terms of service of any websites you access.** MCPBrowser automates browser actions, and using automation may violate certain websites' terms of service. It is your responsibility to verify that automated access is permitted.
 
 ### 2.2 Lawful Use
+
 You agree to use MCPBrowser only for lawful purposes and in compliance with all applicable local, state, national, and international laws and regulations.
 
 ### 2.3 Authorized Access
+
 You must only use MCPBrowser to access websites and services for which you have proper authorization.
 
 ## 3. Data and Privacy
 
 ### 3.1 Credential Handling
+
 MCPBrowser does **not** store, transmit, or log your credentials. When you enter login information using MCPBrowser tools, credentials are typed directly into the browser's input fields—just as if you were typing them yourself. MCPBrowser acts as an intermediary that passes instructions to your browser.
 
 ### 3.2 Content Extraction
+
 Screenshots and extracted HTML content may contain sensitive or private information. This content is provided to your AI assistant (e.g., GitHub Copilot, Claude) and may be sent to the LLM provider (e.g., Anthropic, OpenAI, GitHub) for processing. **Ensure you trust both your AI agent and the LLM provider before accessing pages with sensitive data.**
 
 ### 3.3 Browser Session
+
 MCPBrowser uses your existing browser session and cookies. This means:
+
 - You remain logged into websites as you normally would
 - MCPBrowser has access to the same content you can see in your browser
 - No separate authentication system is maintained by MCPBrowser

@@ -5,14 +5,16 @@
 import { getBrowser, getValidatedPage } from '../core/browser.js';
 import { waitForPageReady } from '../core/page.js';
 import { MCPResponse, InformationalResponse } from '../core/responses.js';
+import { CoreAction } from '../core/actions.js';
 import logger from '../core/logger.js';
+import { getPrimaryText, getStructured } from '../cli/utils.js';
 import { serializeExecutionResult } from '../utils.js';
 import { getPluginNextSteps, getRecommendedPlugins } from '../core/plugin-loader.js';
 
 // Shared execution defaults for script actions
-export const EXECUTION_TIMEOUT_DEFAULT_MS = 30_000;
-export const EXECUTION_TIMEOUT_MAX_MS = 60_000;
-export const EXECUTION_RESULT_MAX_BYTES = 100_000;
+const EXECUTION_TIMEOUT_DEFAULT_MS = 30_000;
+const EXECUTION_TIMEOUT_MAX_MS = 60_000;
+const EXECUTION_RESULT_MAX_BYTES = 100_000;
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -21,8 +23,18 @@ export const EXECUTION_RESULT_MAX_BYTES = 100_000;
 /**
  * Structured response for browser_execute_javascript action
  */
-export class ExecuteJavascriptResponse extends MCPResponse {
-  constructor({ result, type, executionTimeMs, truncated = false, urlChanged = false, currentUrl = '', error = null, nextSteps = [], recommendedPlugins = [] }) {
+class ExecuteJavascriptResponse extends MCPResponse {
+  constructor({
+    result,
+    type,
+    executionTimeMs,
+    truncated = false,
+    urlChanged = false,
+    currentUrl = '',
+    error = null,
+    nextSteps = [],
+    recommendedPlugins = [],
+  }) {
     super(nextSteps);
 
     this.result = result;
@@ -38,9 +50,12 @@ export class ExecuteJavascriptResponse extends MCPResponse {
   _getAdditionalFields() {
     // outputSchema declares result as type: 'string' (serialized).
     // Ensure non-string values (numbers, objects, arrays) are stringified.
-    const serializedResult = this.result == null ? null
-      : typeof this.result === 'string' ? this.result
-      : JSON.stringify(this.result);
+    const serializedResult =
+      this.result == null
+        ? null
+        : typeof this.result === 'string'
+          ? this.result
+          : JSON.stringify(this.result);
     return {
       result: serializedResult,
       type: this.type,
@@ -49,32 +64,38 @@ export class ExecuteJavascriptResponse extends MCPResponse {
       urlChanged: this.urlChanged,
       currentUrl: this.currentUrl,
       error: this.error || undefined,
-      recommendedPlugins: this.recommendedPlugins
+      recommendedPlugins: this.recommendedPlugins,
     };
   }
 
   getTextSummary() {
-    const outcome = this.error ? `Script error: ${this.error.message || 'Unknown error'}` : 'Script executed';
+    const outcome = this.error
+      ? `Script error: ${this.error.message || 'Unknown error'}`
+      : 'Script executed';
     const timing = typeof this.executionTimeMs === 'number' ? ` in ${this.executionTimeMs}ms` : '';
     const nav = this.urlChanged ? ' (navigation detected)' : '';
     return `${outcome}${timing}${nav}`;
   }
 }
 
-export const EXECUTE_JAVASCRIPT_TOOL = {
+const EXECUTE_JAVASCRIPT_TOOL = {
   name: 'browser_execute_javascript',
   title: 'Execute JavaScript',
-  description: 'Run JavaScript on a browser-loaded page and get the result. Use when: you need to extract structured data from a page, manipulate the DOM, read page state, run custom queries on page content, or perform UI actions that CSS selectors cannot reach. Returns the script result as JSON, text, or void. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.',
+  description:
+    'Run JavaScript on a browser-loaded page and get the result. Use when: you need to extract structured data from a page, manipulate the DOM, read page state, run custom queries on page content, or perform UI actions that CSS selectors cannot reach. Returns the script result as JSON, text, or void. PREREQUISITE: Page must be loaded with browser_fetch_webpage first.',
   inputSchema: {
     type: 'object',
     properties: {
-      url: { type: 'string', description: 'The URL of the page (must match a previously fetched page)' },
+      url: {
+        type: 'string',
+        description: 'The URL of the page (must match a previously fetched page)',
+      },
       script: { type: 'string', description: 'JavaScript source code to execute in page context' },
       // timeoutMs: { type: 'number', description: 'Maximum execution time in milliseconds', default: EXECUTION_TIMEOUT_DEFAULT_MS },
       // returnType: { type: 'string', description: "How to interpret the result: 'json' | 'text' | 'void'", enum: ['json', 'text', 'void'], default: 'json' }
     },
     required: ['url', 'script'],
-    additionalProperties: false
+    additionalProperties: false,
   },
   outputSchema: {
     type: 'object',
@@ -90,23 +111,58 @@ export const EXECUTE_JAVASCRIPT_TOOL = {
       recommendedPlugins: {
         type: 'array',
         items: { type: 'object' },
-        description: 'Detected site-specific plugins available for this domain'
-      }
+        description: 'Detected site-specific plugins available for this domain',
+      },
     },
     required: ['type', 'executionTimeMs', 'truncated', 'urlChanged', 'currentUrl', 'nextSteps'],
-    additionalProperties: false
+    additionalProperties: false,
   },
   annotations: {
     title: 'Execute JavaScript',
     readOnlyHint: false,
     destructiveHint: true,
     idempotentHint: false,
-    openWorldHint: true
-  }
+    openWorldHint: true,
+  },
 };
 
+export const EXECUTE_JAVASCRIPT_ACTION = new CoreAction({
+  tool: EXECUTE_JAVASCRIPT_TOOL,
+  response: ExecuteJavascriptResponse,
+  handler: executeJavascript,
+  cli: {
+    order: 50,
+    cmd: 'exec',
+    requiresFetch: true,
+    flagMap: {},
+    buildParams: (url, flags) => ({
+      url,
+      script: flags.script,
+      timeoutMs: flags.timeoutMs ? Number(flags.timeoutMs) : 30000,
+      returnType: flags.returnType || 'json',
+    }),
+    validate: (flags) => {
+      if (!flags.script) return '--script is required for exec';
+    },
+    formatOutput: (mcp) => {
+      const result = getStructured(mcp).result;
+      if (result !== undefined && result !== null) {
+        return { stdout: typeof result === 'string' ? result : JSON.stringify(result, null, 2) };
+      }
+      return { stdout: getPrimaryText(mcp) };
+    },
+    examples: [
+      'mcpbrowser exec https://example.com --script "document.title"',
+      'mcpbrowser exec https://mail.google.com --script "[...document.querySelectorAll(\'.zA\')].map(r=>r.textContent)"',
+    ],
+  },
+});
+
 function clampTimeout(timeoutMs) {
-  const numeric = typeof timeoutMs === 'number' && Number.isFinite(timeoutMs) ? timeoutMs : EXECUTION_TIMEOUT_DEFAULT_MS;
+  const numeric =
+    typeof timeoutMs === 'number' && Number.isFinite(timeoutMs)
+      ? timeoutMs
+      : EXECUTION_TIMEOUT_DEFAULT_MS;
   return Math.min(Math.max(numeric, 1), EXECUTION_TIMEOUT_MAX_MS);
 }
 
@@ -116,12 +172,19 @@ function buildErrorResponse(message, reason, nextSteps) {
 
 const VALID_RETURN_TYPES = new Set(['json', 'text', 'void']);
 
-export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIMEOUT_DEFAULT_MS, returnType = 'json' }) {
+async function executeJavascript({
+  url,
+  script,
+  timeoutMs = EXECUTION_TIMEOUT_DEFAULT_MS,
+  returnType = 'json',
+}) {
   logger.info(`browser_execute_javascript called: ${url}`);
 
   if (!url) throw new Error('url parameter is required');
-  if (!script || typeof script !== 'string' || !script.trim()) throw new Error('script parameter is required');
-  if (!VALID_RETURN_TYPES.has(returnType)) throw new Error(`Invalid returnType: '${returnType}'. Must be one of: json, text, void`);
+  if (!script || typeof script !== 'string' || !script.trim())
+    throw new Error('script parameter is required');
+  if (!VALID_RETURN_TYPES.has(returnType))
+    throw new Error(`Invalid returnType: '${returnType}'. Must be one of: json, text, void`);
 
   let hostname;
   try {
@@ -140,8 +203,8 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
       [
         'Ensure the browser is installed and running',
         'Check that remote debugging is enabled (--remote-debugging-port)',
-        'Try restarting the MCP server'
-      ]
+        'Try restarting the MCP server',
+      ],
     );
   }
 
@@ -150,14 +213,16 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
     const isConnectionLost = pageError && pageError.includes('connection');
     logger.debug(`browser_execute_javascript: ${pageError || 'No page found for ' + hostname}`);
     return buildErrorResponse(
-      isConnectionLost ? `Page connection lost for ${hostname}` : `No open page found for ${hostname}`,
+      isConnectionLost
+        ? `Page connection lost for ${hostname}`
+        : `No open page found for ${hostname}`,
       isConnectionLost
         ? 'The browser tab was closed or the connection was lost. The page needs to be reloaded.'
         : 'The page must be loaded before you can run scripts on it.',
       [
         "Use MCPBrowser's browser_fetch_webpage tool to load the page first",
-        "Then retry MCPBrowser's browser_execute_javascript with the same URL"
-      ]
+        "Then retry MCPBrowser's browser_execute_javascript with the same URL",
+      ],
     );
   }
 
@@ -173,30 +238,39 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
 
   const start = Date.now();
 
-  const evalPromise = page.evaluate(async ({ userScript, mode }) => {
-    const wrap = async () => {
-      const fn = new Function(`return (async () => { ${userScript} })();`);
-      return await fn();
-    };
+  const evalPromise = page.evaluate(
+    async ({ userScript, mode }) => {
+      const wrap = async () => {
+        const fn = new Function(`return (async () => { ${userScript} })();`);
+        return await fn();
+      };
 
-    try {
-      const value = await wrap();
-      const isDom = typeof Element !== 'undefined' && value instanceof Element;
-      if (mode === 'void') {
-        return { value: null, type: 'void' };
+      try {
+        const value = await wrap();
+        const isDom = typeof Element !== 'undefined' && value instanceof Element;
+        if (mode === 'void') {
+          return { value: null, type: 'void' };
+        }
+        if (mode === 'text') {
+          return { value: String(value), type: 'string' };
+        }
+        if (isDom) {
+          return { value: value.outerHTML, type: 'dom-html' };
+        }
+        const valueType = Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value;
+        return { value, type: valueType };
+      } catch (error) {
+        return {
+          error: {
+            name: error?.name || 'Error',
+            message: error?.message || 'Script error',
+            stack: error?.stack || '',
+          },
+        };
       }
-      if (mode === 'text') {
-        return { value: String(value), type: 'string' };
-      }
-      if (isDom) {
-        return { value: value.outerHTML, type: 'dom-html' };
-      }
-      const valueType = Array.isArray(value) ? 'array' : (value === null ? 'null' : typeof value);
-      return { value, type: valueType };
-    } catch (error) {
-      return { error: { name: error?.name || 'Error', message: error?.message || 'Script error', stack: error?.stack || '' } };
-    }
-  }, { userScript: script, mode: returnType });
+    },
+    { userScript: script, mode: returnType },
+  );
 
   let evalResult;
   let timeoutTimer;
@@ -204,8 +278,11 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
     evalResult = await Promise.race([
       evalPromise,
       new Promise((_, reject) => {
-        timeoutTimer = setTimeout(() => reject(new Error(`Execution timed out after ${effectiveTimeout}ms`)), effectiveTimeout);
-      })
+        timeoutTimer = setTimeout(
+          () => reject(new Error(`Execution timed out after ${effectiveTimeout}ms`)),
+          effectiveTimeout,
+        );
+      }),
     ]);
   } catch (err) {
     const executionTimeMs = Date.now() - start;
@@ -222,7 +299,7 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
       truncated: false,
       urlChanged: currentUrl !== beforeUrl,
       currentUrl,
-      error: { name: 'TimeoutError', message: err.message }
+      error: { name: 'TimeoutError', message: err.message },
     });
   } finally {
     clearTimeout(timeoutTimer);
@@ -250,8 +327,9 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
       currentUrl,
       error: {
         name: 'EvaluationEmpty',
-        message: 'Script evaluation returned no result. Possible causes: page Content Security Policy (CSP) blocked evaluation, the script has no return value, or the page context is sandboxed. Try browser_take_screenshot to verify the page is loaded, or use a simpler expression like "document.title" to test page accessibility.'
-      }
+        message:
+          'Script evaluation returned no result. Possible causes: page Content Security Policy (CSP) blocked evaluation, the script has no return value, or the page context is sandboxed. Try browser_take_screenshot to verify the page is loaded, or use a simpler expression like "document.title" to test page accessibility.',
+      },
     });
   }
 
@@ -263,11 +341,13 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
       truncated: false,
       urlChanged,
       currentUrl,
-      error: evalResult.error
+      error: evalResult.error,
     });
   }
 
-  const serialization = serializeExecutionResult(evalResult?.value, { maxBytes: EXECUTION_RESULT_MAX_BYTES });
+  const serialization = serializeExecutionResult(evalResult?.value, {
+    maxBytes: EXECUTION_RESULT_MAX_BYTES,
+  });
 
   return new ExecuteJavascriptResponse({
     result: serialization.result,
@@ -280,13 +360,15 @@ export async function executeJavascript({ url, script, timeoutMs = EXECUTION_TIM
       ...getPluginNextSteps(currentUrl, ''),
       'Use browser_click_element or browser_type_text for follow-up actions',
       'Inspect urlChanged to decide if navigation occurred',
-      serialization.truncated ? 'Narrow your selector or reduce returned fields to avoid truncation' : 'Proceed with the returned data'
+      serialization.truncated
+        ? 'Narrow your selector or reduce returned fields to avoid truncation'
+        : 'Proceed with the returned data',
     ],
-    recommendedPlugins: getRecommendedPlugins(currentUrl, '')
+    recommendedPlugins: getRecommendedPlugins(currentUrl, ''),
   });
 }
 
-export async function executeJavascriptWithReady(params) {
+async function executeJavascriptWithReady(params) {
   const response = await executeJavascript(params);
   try {
     if (!response.error) {

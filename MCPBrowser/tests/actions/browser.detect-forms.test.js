@@ -4,10 +4,19 @@
  */
 
 import assert from 'assert';
-import { detectForms, fetchPage, executeJavascript, closeTab } from '../../src/mcp-browser.js';
+import { CLOSE_TAB_ACTION } from '../../src/actions/close-tab.js';
+import { DETECT_FORMS_ACTION } from '../../src/actions/detect-forms.js';
+import { EXECUTE_JAVASCRIPT_ACTION } from '../../src/actions/execute-javascript.js';
+import { FETCH_WEBPAGE_ACTION } from '../../src/actions/fetch-page.js';
 import { ErrorResponse, InformationalResponse } from '../../src/core/responses.js';
-import { DetectFormsResponse } from '../../src/actions/detect-forms.js';
+
 import { runWithBrowsers } from '../browsers/browser-runner.js';
+
+const detectForms = DETECT_FORMS_ACTION.execute;
+const fetchPage = FETCH_WEBPAGE_ACTION.execute;
+const executeJavascript = EXECUTE_JAVASCRIPT_ACTION.execute;
+const closeTab = CLOSE_TAB_ACTION.execute;
+const DetectFormsResponse = DETECT_FORMS_ACTION.response;
 
 const browserParam = process.argv[2] || '';
 
@@ -57,7 +66,11 @@ await runWithBrowsers(async (browserType) => {
 
   await test(`[${browserType}] Should return informational response if page not loaded`, async () => {
     const result = await detectForms({ url: 'https://unloaded-domain-test-forms.com' });
-    assert.strictEqual(result instanceof InformationalResponse, true, 'Should return InformationalResponse');
+    assert.strictEqual(
+      result instanceof InformationalResponse,
+      true,
+      'Should return InformationalResponse',
+    );
     assert.match(result.message, /No open page found/);
   });
 
@@ -83,11 +96,15 @@ await runWithBrowsers(async (browserType) => {
             <button type="submit">Log In</button>
           </form>
         \`;
-      `
+      `,
     });
 
     const result = await detectForms({ url: testUrl });
-    assert.strictEqual(result instanceof DetectFormsResponse, true, 'Should return DetectFormsResponse');
+    assert.strictEqual(
+      result instanceof DetectFormsResponse,
+      true,
+      'Should return DetectFormsResponse',
+    );
     assert.strictEqual(result.forms.length, 1, 'Should find 1 form');
 
     const form = result.forms[0];
@@ -113,7 +130,7 @@ await runWithBrowsers(async (browserType) => {
             <button type="submit">Search</button>
           </form>
         \`;
-      `
+      `,
     });
 
     const result = await detectForms({ url: testUrl });
@@ -136,12 +153,15 @@ await runWithBrowsers(async (browserType) => {
             <select id="spa-select"><option>A</option><option>B</option></select>
           </div>
         \`;
-      `
+      `,
     });
 
     const result = await detectForms({ url: testUrl });
     assert.strictEqual(result.forms.length, 0, 'No <form> elements');
-    assert.ok(result.orphanedFields.length >= 2, `Should find orphaned fields, got ${result.orphanedFields.length}`);
+    assert.ok(
+      result.orphanedFields.length >= 2,
+      `Should find orphaned fields, got ${result.orphanedFields.length}`,
+    );
     assert.strictEqual(result.totalFieldCount, result.orphanedFields.length);
   });
 
@@ -160,7 +180,7 @@ await runWithBrowsers(async (browserType) => {
             <button type="submit">Go</button>
           </form>
         \`;
-      `
+      `,
     });
 
     const result = await detectForms({ url: testUrl, includeHidden: false });
@@ -172,7 +192,7 @@ await runWithBrowsers(async (browserType) => {
     // Same HTML as above still loaded
     const result = await detectForms({ url: testUrl, includeHidden: true });
     assert.strictEqual(result.forms[0].fields.length, 2, 'Should include hidden field');
-    const hiddenField = result.forms[0].fields.find(f => f.name === 'csrf');
+    const hiddenField = result.forms[0].fields.find((f) => f.name === 'csrf');
     assert.ok(hiddenField, 'Should find csrf hidden field');
     assert.strictEqual(hiddenField.type, 'hidden');
   });
@@ -202,25 +222,25 @@ await runWithBrowsers(async (browserType) => {
             <button type="submit">Submit</button>
           </form>
         \`;
-      `
+      `,
     });
 
     const result = await detectForms({ url: testUrl });
     const fields = result.forms[0].fields;
 
-    const explicit = fields.find(f => f.name === 'explicit');
+    const explicit = fields.find((f) => f.name === 'explicit');
     assert.strictEqual(explicit.label, 'Explicit Label', 'Should resolve <label for>');
 
-    const wrap = fields.find(f => f.name === 'wrap');
+    const wrap = fields.find((f) => f.name === 'wrap');
     assert.strictEqual(wrap.label, 'Wrapping Label', 'Should resolve parent <label>');
 
-    const aria = fields.find(f => f.name === 'aria');
+    const aria = fields.find((f) => f.name === 'aria');
     assert.strictEqual(aria.label, 'Aria Label', 'Should resolve aria-label');
 
-    const labelledby = fields.find(f => f.name === 'labelledby');
+    const labelledby = fields.find((f) => f.name === 'labelledby');
     assert.strictEqual(labelledby.label, 'Referenced Label', 'Should resolve aria-labelledby');
 
-    const placeholder = fields.find(f => f.name === 'placeholder');
+    const placeholder = fields.find((f) => f.name === 'placeholder');
     assert.strictEqual(placeholder.label, 'Placeholder Label', 'Should resolve placeholder');
   });
 
@@ -243,7 +263,7 @@ await runWithBrowsers(async (browserType) => {
             <button type="submit">Go</button>
           </form>
         \`;
-      `
+      `,
     });
 
     const result = await detectForms({ url: testUrl });
@@ -260,7 +280,10 @@ await runWithBrowsers(async (browserType) => {
   await test(`[${browserType}] Should produce a meaningful summary`, async () => {
     // Still has the 2-form HTML from above
     const result = await detectForms({ url: testUrl });
-    assert.ok(result.summary.includes('Found 2 form'), `Summary should mention form count, got: ${result.summary}`);
+    assert.ok(
+      result.summary.includes('Found 2 form'),
+      `Summary should mention form count, got: ${result.summary}`,
+    );
     assert.ok(result.summary.includes('login'), 'Summary should mention login');
     assert.ok(result.summary.includes('search'), 'Summary should mention search');
   });
@@ -280,7 +303,7 @@ await runWithBrowsers(async (browserType) => {
             <button type="submit">Submit</button>
           </form>
         \`;
-      `
+      `,
     });
 
     const result = await detectForms({ url: testUrl });
@@ -299,7 +322,7 @@ await runWithBrowsers(async (browserType) => {
   await test(`[${browserType}] Should handle page with no forms`, async () => {
     await executeJavascript({
       url: testUrl,
-      script: `document.body.innerHTML = '<h1>No forms here</h1>';`
+      script: `document.body.innerHTML = '<h1>No forms here</h1>';`,
     });
 
     const result = await detectForms({ url: testUrl });
@@ -319,22 +342,28 @@ await runWithBrowsers(async (browserType) => {
   await test(`[${browserType}] Should detect forms on w3schools forms page`, async () => {
     await fetchPage({ url: realUrl, browser: browserType, removeUnnecessaryHTML: false });
     const result = await detectForms({ url: realUrl });
-    assert.strictEqual(result instanceof DetectFormsResponse, true, 'Should return DetectFormsResponse');
+    assert.strictEqual(
+      result instanceof DetectFormsResponse,
+      true,
+      'Should return DetectFormsResponse',
+    );
     assert.ok(result.forms.length >= 1, `Should find at least 1 form, got ${result.forms.length}`);
     assert.ok(result.totalFieldCount >= 1, `Should find fields, got ${result.totalFieldCount}`);
-    console.log(`      → Found ${result.forms.length} forms, ${result.totalFieldCount} total fields, ${result.orphanedFields.length} orphaned`);
+    console.log(
+      `      → Found ${result.forms.length} forms, ${result.totalFieldCount} total fields, ${result.orphanedFields.length} orphaned`,
+    );
     console.log(`      → Summary: ${result.summary}`);
 
     // Verify every form has a valid formType
     for (const form of result.forms) {
       assert.ok(
         ['login', 'search', 'registration', 'contact', 'checkout', 'other'].includes(form.formType),
-        `Form type should be valid, got "${form.formType}"`
+        `Form type should be valid, got "${form.formType}"`,
       );
     }
 
     // Verify fields have selectors (usable for type_text/click_element)
-    const allFields = result.forms.flatMap(f => f.fields).concat(result.orphanedFields);
+    const allFields = result.forms.flatMap((f) => f.fields).concat(result.orphanedFields);
     for (const field of allFields) {
       assert.ok(field.selector, `Field "${field.name || field.id}" should have a selector`);
       assert.ok(field.tag, `Field "${field.name || field.id}" should have a tag`);
@@ -358,12 +387,11 @@ await runWithBrowsers(async (browserType) => {
     // With hidden should have >= fields than without
     assert.ok(
       withHidden.totalFieldCount >= withoutHidden.totalFieldCount,
-      `includeHidden should return >= fields (${withHidden.totalFieldCount} vs ${withoutHidden.totalFieldCount})`
+      `includeHidden should return >= fields (${withHidden.totalFieldCount} vs ${withoutHidden.totalFieldCount})`,
     );
 
     await closeTab({ url: realUrl });
   });
-
 }, browserParam);
 
 console.log('\n==================================================');

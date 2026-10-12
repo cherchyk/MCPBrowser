@@ -6,11 +6,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  getAccountIndex,
-  folderToHash,
-  VIEW
-} from '../../../src/plugins/gmail/helpers.js';
+import { getAccountIndex, folderToHash, VIEW } from '../../../src/plugins/gmail/helpers.js';
 
 // ============================================================================
 // getAccountIndex
@@ -100,7 +96,9 @@ describe('detectView — URL parsing (unit, no page object)', () => {
   });
 
   it('VIEW enum is frozen', () => {
-    assert.throws(() => { VIEW.NEW_STATE = 'test'; }, TypeError);
+    assert.throws(() => {
+      VIEW.NEW_STATE = 'test';
+    }, TypeError);
   });
 });
 
@@ -124,7 +122,7 @@ function mockPage(url, evalResults = {}) {
       if (fnStr.includes('role="dialog"')) return evalResults.hasComposeDialog ?? false;
       if (fnStr.includes('role="main"')) return evalResults.hasMain ?? true;
       return false;
-    }
+    },
   };
 }
 

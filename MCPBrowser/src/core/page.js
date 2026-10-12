@@ -1,6 +1,6 @@
 /**
  * Page management for MCPBrowser
- * 
+ *
  * Simple sequential queue - no locks, no deadlock risk.
  * Processes one URL at a time, reuses tabs per domain.
  */
@@ -38,17 +38,17 @@ export function queueRequest(processor) {
  * No locks, no deadlock risk - simple loop.
  */
 async function processQueue() {
-  if (isProcessing) return;  // Already processing
+  if (isProcessing) return; // Already processing
   isProcessing = true;
-  
+
   while (requestQueue.length > 0) {
     const request = requestQueue.shift();
     const queueLength = requestQueue.length;
-    
+
     if (queueLength > 0) {
       logger.debug(`Queue: ${queueLength} requests waiting`);
     }
-    
+
     try {
       const result = await request.processor();
       request.resolve(result);
@@ -56,7 +56,7 @@ async function processQueue() {
       request.reject(error);
     }
   }
-  
+
   isProcessing = false;
 }
 
@@ -120,20 +120,26 @@ export async function isItSPA(page) {
   try {
     const result = await page.evaluate(() => {
       const indicators = [];
-      let strongIndicatorCount = 0;  // Count definite SPA signals
-      let weakIndicatorCount = 0;    // Count possible SPA signals
+      let strongIndicatorCount = 0; // Count definite SPA signals
+      let weakIndicatorCount = 0; // Count possible SPA signals
       const body = document.body;
-      
+
       // Check for React (strong indicator - require multiple signals or definitive marker)
-      const hasReactRoot = document.querySelector('[data-reactroot]') || document.querySelector('[data-react-root]');
+      const hasReactRoot =
+        document.querySelector('[data-reactroot]') || document.querySelector('[data-react-root]');
       const hasNextJs = document.getElementById('__next');
       const hasReactFiber = document.querySelector('[data-reactid]');
       // Only count generic #root if combined with React-specific markers
       const hasGenericRoot = document.getElementById('root');
-      const hasReactInternals = typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined' && 
-                                 window.__REACT_DEVTOOLS_GLOBAL_HOOK__?.renderers?.size > 0;
-      const hasRootSpinner = hasGenericRoot && !!document.querySelector('.request-status-spinner, .ms-Spinner, [role="progressbar"], .spinner, .loading');
-      
+      const hasReactInternals =
+        typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined' &&
+        window.__REACT_DEVTOOLS_GLOBAL_HOOK__?.renderers?.size > 0;
+      const hasRootSpinner =
+        hasGenericRoot &&
+        !!document.querySelector(
+          '.request-status-spinner, .ms-Spinner, [role="progressbar"], .spinner, .loading',
+        );
+
       if (hasReactRoot || hasNextJs || hasReactFiber || hasReactInternals) {
         indicators.push('React');
         strongIndicatorCount++;
@@ -147,28 +153,31 @@ export async function isItSPA(page) {
           weakIndicatorCount++;
         }
       }
-      
+
       // Check for Vue / Nuxt (strong indicator - check for Vue-specific markers)
       const hasNuxt = document.getElementById('__nuxt');
-      const hasVueDevtools = typeof window.__VUE__ !== 'undefined' || typeof window.__VUE_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined';
+      const hasVueDevtools =
+        typeof window.__VUE__ !== 'undefined' ||
+        typeof window.__VUE_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined';
       // Vue scoped styles add data-v-xxxx attributes; querySelector('[data-v-]') only
       // matches a literal "data-v-" attribute, so scan a sample of elements instead
       const hasVueScoped = Array.from(document.body?.querySelectorAll('*') || [])
         .slice(0, 50)
-        .some(el => Array.from(el.attributes).some(attr => /^data-v-./.test(attr.name)));
+        .some((el) => Array.from(el.attributes).some((attr) => /^data-v-./.test(attr.name)));
       const hasVue3App = document.querySelector('[data-v-app]') !== null;
-      
+
       if (hasNuxt || hasVueDevtools || hasVueScoped || hasVue3App) {
         indicators.push('Vue');
         strongIndicatorCount++;
       }
-      
+
       // Check for Angular (strong indicator)
-      const hasAngularMarker = document.querySelector('[ng-version]') || 
-                               document.querySelector('app-root') || 
-                               typeof window.ng !== 'undefined';
-      const hasAngularJS = document.querySelector('[ng-app]');  // AngularJS (legacy)
-      
+      const hasAngularMarker =
+        document.querySelector('[ng-version]') ||
+        document.querySelector('app-root') ||
+        typeof window.ng !== 'undefined';
+      const hasAngularJS = document.querySelector('[ng-app]'); // AngularJS (legacy)
+
       if (hasAngularMarker) {
         indicators.push('Angular');
         strongIndicatorCount++;
@@ -176,25 +185,26 @@ export async function isItSPA(page) {
         indicators.push('AngularJS');
         weakIndicatorCount++;
       }
-      
+
       // Check for Svelte
       const hasSvelte = document.querySelector('[class*="svelte-"]') !== null;
       if (hasSvelte) {
         indicators.push('Svelte');
         strongIndicatorCount++;
       }
-      
+
       // Check for Ember
-      const hasEmber = document.querySelector('[id^="ember"]') !== null || typeof window.Ember !== 'undefined';
+      const hasEmber =
+        document.querySelector('[id^="ember"]') !== null || typeof window.Ember !== 'undefined';
       if (hasEmber) {
         indicators.push('Ember');
         strongIndicatorCount++;
       }
-      
+
       // Check if body has very little text content (weak indicator)
       const bodyText = body?.innerText?.trim() || '';
       const textLength = bodyText.length;
-      const hasMinimalContent = textLength < 200;  // Stricter threshold
+      const hasMinimalContent = textLength < 200; // Stricter threshold
       const hasShellOnlyContent = hasGenericRoot && textLength < 800; // shell + spinner, main not rendered yet
       if (hasMinimalContent) {
         indicators.push(`minimal content (${textLength} chars)`);
@@ -203,49 +213,49 @@ export async function isItSPA(page) {
         indicators.push(`root shell with limited content (${textLength} chars)`);
         weakIndicatorCount++;
       }
-      
+
       // Check for lots of script tags (weak indicator on its own)
       const scripts = document.querySelectorAll('script[src]');
-      const hasManyScripts = scripts.length > 8;  // Raised threshold
+      const hasManyScripts = scripts.length > 8; // Raised threshold
       if (hasManyScripts) {
         indicators.push(`${scripts.length} external scripts`);
         weakIndicatorCount++;
       }
-      
+
       // Check for SPA framework bundles in script srcs (use specific patterns only)
-      const scriptSrcs = Array.from(scripts).map(s => s.src.toLowerCase());
+      const scriptSrcs = Array.from(scripts).map((s) => s.src.toLowerCase());
       // More specific patterns - avoid generic terms
       const spaPatterns = [
-        /react[.-]dom/,      // react-dom.js, react.dom.min.js
-        /vue[.-]?router/,    // vue-router
-        /@vue\//,            // @vue/ scoped packages
-        /angular[.-]core/,   // angular-core
-        /svelte/,            // svelte runtime
-        /next[.-]?static/,   // Next.js static files
-        /nuxt/,              // Nuxt.js
-        /gatsby/,            // Gatsby
-        /remix/,             // Remix
-        /webpack.*runtime/,  // webpack runtime (not just 'webpack')
+        /react[.-]dom/, // react-dom.js, react.dom.min.js
+        /vue[.-]?router/, // vue-router
+        /@vue\//, // @vue/ scoped packages
+        /angular[.-]core/, // angular-core
+        /svelte/, // svelte runtime
+        /next[.-]?static/, // Next.js static files
+        /nuxt/, // Nuxt.js
+        /gatsby/, // Gatsby
+        /remix/, // Remix
+        /webpack.*runtime/, // webpack runtime (not just 'webpack')
       ];
-      
-      const foundPatterns = spaPatterns.filter(pattern => 
-        scriptSrcs.some(src => pattern.test(src))
+
+      const foundPatterns = spaPatterns.filter((pattern) =>
+        scriptSrcs.some((src) => pattern.test(src)),
       );
-      
+
       if (foundPatterns.length > 0) {
         indicators.push(`framework scripts detected`);
         strongIndicatorCount++;
       }
-      
+
       // Decision logic:
       // - Any strong indicator = definitely SPA
-      // - Multiple weak indicators (3+) = probably SPA  
+      // - Multiple weak indicators (3+) = probably SPA
       // - Minimal content alone is NOT enough (could be simple landing page)
       const isSPA = strongIndicatorCount > 0 || weakIndicatorCount >= 3;
-      
+
       return { isSPA, indicators };
     });
-    
+
     return result;
   } catch (error) {
     // If evaluation fails, assume not SPA
@@ -263,18 +273,18 @@ export async function isItSPA(page) {
  */
 export async function navigateToUrl(page, url, waitUntil, timeout) {
   logger.info(`Navigating to: ${url}`);
-  
+
   const startTime = Date.now();
-  
+
   try {
     const response = await page.goto(url, { waitUntil, timeout });
-    
+
     const loadTime = Date.now() - startTime;
     const statusCode = response?.status() || null;
     const statusText = response?.statusText() || '';
-    
+
     logger.info(`Navigation complete: ${page.url()} (${loadTime}ms, HTTP ${statusCode})`);
-    
+
     return { statusCode, statusText };
   } catch (error) {
     const elapsed = Date.now() - startTime;
@@ -287,7 +297,7 @@ export async function navigateToUrl(page, url, waitUntil, timeout) {
  * Wait for page to be ready after navigation or user interaction.
  * Handles SPAs by polling DOM content until it renders and stabilizes.
  * Unified wait function — replaces separate "stability" and "ready" calls.
- * 
+ *
  * @param {Page} page - The Puppeteer page instance
  * @param {Object} [options] - Wait options
  * @param {boolean} [options.afterInteraction=false] - Add initial delay for JS to
@@ -298,7 +308,7 @@ export async function waitForPageReady(page, { afterInteraction = false } = {}) 
   // After interactions (click, type, auth redirect), give JS time to react
   if (afterInteraction) {
     logger.debug('Post-interaction settle (2s)...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
   // Ensure any JS-driven redirect chain has settled before evaluating content.
@@ -326,7 +336,8 @@ export async function waitForPageReady(page, { afterInteraction = false } = {}) 
 
   const reasons = [];
   if (spaCheck.isSPA) reasons.push(`SPA detected (${spaCheck.indicators.join(', ')})`);
-  if (initialContentLength < MIN_BODY_TEXT_LENGTH) reasons.push(`minimal body text (${initialContentLength} chars)`);
+  if (initialContentLength < MIN_BODY_TEXT_LENGTH)
+    reasons.push(`minimal body text (${initialContentLength} chars)`);
   logger.debug(`Waiting for JS-rendered content: ${reasons.join('; ')}`);
 
   // For non-SPA minimal pages (e.g., example.com), use a short settle to avoid long waits.
@@ -345,15 +356,15 @@ export async function waitForPageReady(page, { afterInteraction = false } = {}) 
  */
 async function waitForContentToRender(page, initialContentLength, { maxWait = 10_000 } = {}) {
   // maxWait is overridable to allow short-settle paths for non-SPA minimal pages.
-  const pollInterval = 500;    // Check every 500ms
-  const stableTime = 1000;     // Content must be stable for 1 second
+  const pollInterval = 500; // Check every 500ms
+  const stableTime = 1000; // Content must be stable for 1 second
 
   const startTime = Date.now();
   let lastLength = initialContentLength;
   let lastChangeTime = startTime;
 
   while (Date.now() - startTime < maxWait) {
-    await new Promise(resolve => setTimeout(resolve, pollInterval));
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
 
     const currentLength = await getPageContentLength(page);
 
@@ -363,7 +374,7 @@ async function waitForContentToRender(page, initialContentLength, { maxWait = 10
     }
 
     const contentIsSubstantial = currentLength >= MIN_BODY_TEXT_LENGTH;
-    const isStable = (Date.now() - lastChangeTime) >= stableTime;
+    const isStable = Date.now() - lastChangeTime >= stableTime;
 
     // Content is substantial and stable
     if (contentIsSubstantial && isStable) {
@@ -410,11 +421,13 @@ async function getPageContentLength(page) {
  */
 function isNavigationError(err) {
   const msg = err?.message || '';
-  return msg.includes('Execution context was destroyed') ||
-         msg.includes('Cannot find context') ||
-         msg.includes('frame was detached') ||
-         msg.includes('Target closed') ||
-         msg.includes('Session closed');
+  return (
+    msg.includes('Execution context was destroyed') ||
+    msg.includes('Cannot find context') ||
+    msg.includes('frame was detached') ||
+    msg.includes('Target closed') ||
+    msg.includes('Session closed')
+  );
 }
 
 /**
@@ -444,7 +457,7 @@ async function waitForNavigationToSettle(page) {
   let stableSince = startTime;
 
   while (Date.now() - startTime < 10_000) {
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 300));
 
     try {
       const currentUrl = page.url();
@@ -548,7 +561,7 @@ export async function extractAndProcessHtml(page, removeUnnecessaryHTML, selecto
     }
     html = `<!-- selector "${selector}" matched no elements; returning full page -->\n` + html;
   }
-  
+
   let processedHtml;
   if (removeUnnecessaryHTML) {
     const cleaned = cleanHtml(html);
@@ -556,14 +569,16 @@ export async function extractAndProcessHtml(page, removeUnnecessaryHTML, selecto
   } else {
     processedHtml = enrichHtml(html, page.url());
   }
-  
+
   // Warn when response is very large — the agent should use the selector parameter
   // to scope extraction to a DOM subtree instead of fetching the entire page.
   const htmlByteLength = new TextEncoder().encode(processedHtml).length;
   if (htmlByteLength > 500_000) {
-    logger.warn(`Large HTML response (${(htmlByteLength / 1024).toFixed(0)}KB). Consider using the "selector" parameter to extract a specific DOM subtree instead of the full page.`);
+    logger.warn(
+      `Large HTML response (${(htmlByteLength / 1024).toFixed(0)}KB). Consider using the "selector" parameter to extract a specific DOM subtree instead of the full page.`,
+    );
   }
-  
+
   return processedHtml;
 }
 
@@ -586,7 +601,7 @@ export function getLargeHtmlHints(html, selector) {
   if (byteLength > LARGE_HTML_THRESHOLD) {
     const sizeKB = (byteLength / 1024).toFixed(0);
     return [
-      `⚠ Large HTML response (${sizeKB}KB). Use the "selector" parameter (e.g., selector: 'main', 'article', '[role="main"]', '.content') to extract only the relevant DOM subtree and reduce response size.`
+      `⚠ Large HTML response (${sizeKB}KB). Use the "selector" parameter (e.g., selector: 'main', 'article', '[role="main"]', '.content') to extract only the relevant DOM subtree and reduce response size.`,
     ];
   }
   return [];
@@ -626,7 +641,9 @@ export async function detectMainContent(page) {
       const linkDensity = (el) => {
         const total = textOf(el) || 1;
         let linkLen = 0;
-        el.querySelectorAll('a').forEach((a) => { linkLen += norm(a.textContent).length; });
+        el.querySelectorAll('a').forEach((a) => {
+          linkLen += norm(a.textContent).length;
+        });
         return Math.min(1, linkLen / total);
       };
 
@@ -635,7 +652,11 @@ export async function detectMainContent(page) {
         if (!el || el === document.body) return null;
         const tag = el.tagName.toLowerCase();
         const isUnique = (sel) => {
-          try { return document.querySelectorAll(sel).length === 1; } catch { return false; }
+          try {
+            return document.querySelectorAll(sel).length === 1;
+          } catch {
+            return false;
+          }
         };
         if ((tag === 'main' || tag === 'article') && isUnique(tag)) return tag;
         if (el.getAttribute('role') === 'main' && isUnique('[role="main"]')) return '[role="main"]';
@@ -678,8 +699,10 @@ export async function detectMainContent(page) {
       const candidates = document.querySelectorAll('article, main, section, div');
       if (candidates.length > 8000) return null;
 
-      const NEGATIVE = /(nav|menu|header|footer|sidebar|breadcrumb|comment|share|social|advert|promo|banner|cookie|subscribe|newsletter|related|recommend|pagination|masthead|widget|toolbar)/i;
-      const POSITIVE = /(content|article|main|post|entry|story|body|blog|markdown|prose|readme|doc)/i;
+      const NEGATIVE =
+        /(nav|menu|header|footer|sidebar|breadcrumb|comment|share|social|advert|promo|banner|cookie|subscribe|newsletter|related|recommend|pagination|masthead|widget|toolbar)/i;
+      const POSITIVE =
+        /(content|article|main|post|entry|story|body|blog|markdown|prose|readme|doc)/i;
 
       let best = null;
       let bestScore = 0;
@@ -694,7 +717,10 @@ export async function detectMainContent(page) {
         if (POSITIVE.test(idClass)) score *= 1.5;
         if (NEGATIVE.test(idClass)) score *= 0.3;
         if (len / bodyLen > 0.95) score *= 0.8; // avoid whole-body wrappers
-        if (score > bestScore) { bestScore = score; best = el; }
+        if (score > bestScore) {
+          bestScore = score;
+          best = el;
+        }
       });
 
       return best ? build(best, 'heuristic') : null;
@@ -712,8 +738,9 @@ export async function detectMainContent(page) {
 export function buildMainContentHint(recommendation) {
   if (!recommendation || !recommendation.selector) return [];
   const { selector, textLength } = recommendation;
-  const approxKB = textLength > 0 ? ` (~${Math.max(1, Math.round(textLength / 1024))}KB of text)` : '';
+  const approxKB =
+    textLength > 0 ? ` (~${Math.max(1, Math.round(textLength / 1024))}KB of text)` : '';
   return [
-    `Main content appears to be in '${selector}'${approxKB}. The page is already loaded — use MCPBrowser's browser_get_current_html with selector: '${selector}' to extract just that region (no reload needed), skipping navigation, headers, and footers.`
+    `Main content appears to be in '${selector}'${approxKB}. The page is already loaded — use MCPBrowser's browser_get_current_html with selector: '${selector}' to extract just that region (no reload needed), skipping navigation, headers, and footers.`,
   ];
 }

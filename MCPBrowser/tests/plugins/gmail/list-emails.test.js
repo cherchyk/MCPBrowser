@@ -5,7 +5,11 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { listEmails } from '../../../src/plugins/gmail/actions/list-emails.js';
+import { ACTIONS as GMAIL_ACTIONS } from '../../../src/plugins/gmail/actions/index.js';
+
+const listEmailsAction = GMAIL_ACTIONS.find((action) => action.id === 'list_emails');
+
+const listEmails = listEmailsAction.handler;
 
 describe('listEmails', () => {
   it('is an async function', () => {
@@ -15,7 +19,7 @@ describe('listEmails', () => {
 
   it('returns error when page is not on Gmail', async () => {
     const mockPage = {
-      url: () => 'https://example.com'
+      url: () => 'https://example.com',
     };
     const result = await listEmails({ page: mockPage, params: {} });
     assert.equal(result.constructor.name, 'ErrorResponse');

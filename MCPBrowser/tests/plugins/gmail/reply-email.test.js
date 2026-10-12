@@ -4,8 +4,13 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { replyEmail } from '../../../src/plugins/gmail/actions/reply-email.js';
+
 import { ErrorResponse } from '../../../src/core/responses.js';
+import { ACTIONS as GMAIL_ACTIONS } from '../../../src/plugins/gmail/actions/index.js';
+
+const replyEmailAction = GMAIL_ACTIONS.find((action) => action.id === 'reply_email');
+
+const replyEmail = replyEmailAction.handler;
 
 function mockPage(url) {
   return {
@@ -13,10 +18,15 @@ function mockPage(url) {
     evaluate: async () => false,
     $: async () => null,
     $$: async () => [],
-    keyboard: { press: async () => {}, down: async () => {}, up: async () => {}, type: async () => {} },
+    keyboard: {
+      press: async () => {},
+      down: async () => {},
+      up: async () => {},
+      type: async () => {},
+    },
     type: async () => {},
     click: async () => {},
-    waitForSelector: async () => null
+    waitForSelector: async () => null,
   };
 }
 

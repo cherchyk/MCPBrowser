@@ -48,7 +48,7 @@ When a user requests a click on a found element and the native click attempt tim
 - Callers supply well-formed scripts and selectors that align with the current page structure; action does not validate business logic beyond execution safety limits.
 - Standard readiness/wait logic (e.g., page load or network idle) is available for post-click validation.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -61,13 +61,13 @@ When a user requests a click on a found element and the native click attempt tim
 - **FR-007**: The click action MUST flag when the JS fallback path was used and still perform the normal readiness/wait logic after the fallback click.
 - **FR-008**: If both native and fallback clicks fail, the system MUST return a consolidated failure response that lists both attempts and their errors.
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 - **Action Request**: Captures the target tab/url, script content, timeout, and desired return handling for a single execution.
 - **Action Response**: Contains the serialized result, metadata (duration, truncation flag, URL change flag), and structured errors when applicable.
 - **Click Attempt**: Tracks the native click outcome, fallback click outcome, and whether post-click readiness checks ran.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

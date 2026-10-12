@@ -5,6 +5,7 @@ MCPBrowser now supports **human-like interaction** with web pages! This guide ex
 ## Overview
 
 The new interactive features allow you to:
+
 - ✅ Click on any element (buttons, links, divs with onclick handlers, etc.)
 - ✅ Type text into input fields with human-like delays
 - ✅ Discover all interactive elements on a page
@@ -16,7 +17,7 @@ The new interactive features allow you to:
 Before interacting with a page, you **must first load it** using `browser_fetch_webpage`:
 
 ```javascript
-browser_fetch_webpage({ url: "https://example.com" })
+browser_fetch_webpage({ url: 'https://example.com' });
 ```
 
 All interactive operations work on already-loaded pages and reuse the same browser tab.
@@ -28,6 +29,7 @@ All interactive operations work on already-loaded pages and reuse the same brows
 Click on any clickable element using either a CSS selector or text content.
 
 **Parameters:**
+
 - `url` (required): URL of the page (must match a previously loaded page)
 - `selector` (optional): CSS selector for the element (e.g., `#submit-btn`, `.login-button`)
 - `text` (optional): Text content to search for if selector not provided
@@ -38,25 +40,26 @@ Click on any clickable element using either a CSS selector or text content.
 ```javascript
 // Click by CSS selector
 browser_click_element({
-  url: "https://example.com",
-  selector: "#login-button"
-})
+  url: 'https://example.com',
+  selector: '#login-button',
+});
 
 // Click by text content
 browser_click_element({
-  url: "https://example.com",
-  text: "Sign In"
-})
+  url: 'https://example.com',
+  text: 'Sign In',
+});
 
 // Click with custom timeout
 browser_click_element({
-  url: "https://example.com",
-  text: "Submit",
-  timeout: 5000
-})
+  url: 'https://example.com',
+  text: 'Submit',
+  timeout: 5000,
+});
 ```
 
 **Key Features:**
+
 - Works with ANY clickable element (not just `<a>` tags)
 - Automatically scrolls element into view before clicking
 - Smart text matching - finds the most specific match
@@ -69,6 +72,7 @@ browser_click_element({
 Type text into input fields, textareas, or any editable element with human-like typing simulation.
 
 **Parameters:**
+
 - `url` (required): URL of the page
 - `selector` (required): CSS selector for the input element
 - `text` (required): Text to type
@@ -81,29 +85,30 @@ Type text into input fields, textareas, or any editable element with human-like 
 ```javascript
 // Type username
 browser_type_text({
-  url: "https://example.com",
-  selector: "#username",
-  text: "myuser@example.com"
-})
+  url: 'https://example.com',
+  selector: '#username',
+  text: 'myuser@example.com',
+});
 
 // Type password without clearing
 browser_type_text({
-  url: "https://example.com",
-  selector: "#password",
-  text: "mypassword123",
-  clear: false
-})
+  url: 'https://example.com',
+  selector: '#password',
+  text: 'mypassword123',
+  clear: false,
+});
 
 // Fast typing (no delay)
 browser_type_text({
-  url: "https://example.com",
-  selector: "#search",
-  text: "search query",
-  delay: 0
-})
+  url: 'https://example.com',
+  selector: '#search',
+  text: 'search query',
+  delay: 0,
+});
 ```
 
 **Key Features:**
+
 - Human-like typing with customizable delays
 - Option to clear existing text or append
 - Works with input, textarea, and contenteditable elements
@@ -115,10 +120,12 @@ browser_type_text({
 Discover all interactive elements on the page including links, buttons, inputs, and elements with onclick handlers.
 
 **Parameters:**
+
 - `url` (required): URL of the page
 - `limit` (optional): Maximum number of elements to return (default: 50)
 
 **Returns:** Array of elements with details:
+
 - `tag`: HTML tag name
 - `text`: Visible text content (first 100 chars)
 - `selector`: Suggested CSS selector
@@ -133,12 +140,13 @@ Discover all interactive elements on the page including links, buttons, inputs, 
 
 ```javascript
 get_interactive_elements({
-  url: "https://example.com",
-  limit: 20
-})
+  url: 'https://example.com',
+  limit: 20,
+});
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -171,6 +179,7 @@ get_interactive_elements({
 ```
 
 **Use Cases:**
+
 - Discover what's clickable on a page
 - Find the right selector for clicking
 - Understand page structure before interacting
@@ -182,6 +191,7 @@ get_interactive_elements({
 Wait for an element to appear on the page. Useful after clicking something that triggers dynamic content loading.
 
 **Parameters:**
+
 - `url` (required): URL of the page
 - `selector` (optional): CSS selector to wait for
 - `text` (optional): Text content to wait for if selector not provided
@@ -192,25 +202,26 @@ Wait for an element to appear on the page. Useful after clicking something that 
 ```javascript
 // Wait for success message by selector
 wait_for_element({
-  url: "https://example.com",
-  selector: ".success-message"
-})
+  url: 'https://example.com',
+  selector: '.success-message',
+});
 
 // Wait for text to appear
 wait_for_element({
-  url: "https://example.com",
-  text: "Welcome back!"
-})
+  url: 'https://example.com',
+  text: 'Welcome back!',
+});
 
 // Custom timeout
 wait_for_element({
-  url: "https://example.com",
-  selector: "#result",
-  timeout: 10000
-})
+  url: 'https://example.com',
+  selector: '#result',
+  timeout: 10000,
+});
 ```
 
 **Use Cases:**
+
 - Wait for loading indicators to disappear
 - Wait for success/error messages
 - Wait for dynamic content to load after clicking
@@ -222,6 +233,7 @@ wait_for_element({
 Take a screenshot of the current page state. **Useful when HTML parsing is insufficient** — for example, pages with charts, images, complex layouts, popups, or visual content that's hard to understand from HTML alone.
 
 **Parameters:**
+
 - `url` (required): URL of the page (must match a previously loaded page)
 - `fullPage` (optional): Capture full scrollable page instead of viewport (default: false)
 
@@ -230,17 +242,18 @@ Take a screenshot of the current page state. **Useful when HTML parsing is insuf
 ```javascript
 // Capture viewport screenshot (default)
 browser_take_screenshot({
-  url: "https://example.com"
-})
+  url: 'https://example.com',
+});
 
 // Capture full scrollable page
 browser_take_screenshot({
-  url: "https://dashboard.example.com",
-  fullPage: true
-})
+  url: 'https://dashboard.example.com',
+  fullPage: true,
+});
 ```
 
 **Use Cases:**
+
 - Visualize page layout when HTML is hard to parse
 - Capture charts, graphs, or data visualizations
 - Debug popups, modals, or overlays that may block interactions
@@ -255,108 +268,108 @@ browser_take_screenshot({
 
 ```javascript
 // Step 1: Load the login page
-browser_fetch_webpage({ url: "https://example.com/login" })
+browser_fetch_webpage({ url: 'https://example.com/login' });
 
 // Step 2: Fill in credentials
-browser_type_text({ 
-  url: "https://example.com/login", 
-  selector: "#username", 
-  text: "user@example.com" 
-})
+browser_type_text({
+  url: 'https://example.com/login',
+  selector: '#username',
+  text: 'user@example.com',
+});
 
-browser_type_text({ 
-  url: "https://example.com/login", 
-  selector: "#password", 
-  text: "mypassword" 
-})
+browser_type_text({
+  url: 'https://example.com/login',
+  selector: '#password',
+  text: 'mypassword',
+});
 
 // Step 3: Click login button
-browser_click_element({ 
-  url: "https://example.com/login", 
-  text: "Sign In" 
-})
+browser_click_element({
+  url: 'https://example.com/login',
+  text: 'Sign In',
+});
 
 // Step 4: Wait for dashboard to load
-wait_for_element({ 
-  url: "https://example.com/login", 
-  selector: ".dashboard" 
-})
+wait_for_element({
+  url: 'https://example.com/login',
+  selector: '.dashboard',
+});
 ```
 
 ### Example 2: Search and filter
 
 ```javascript
 // Step 1: Load the page
-browser_fetch_webpage({ url: "https://shop.example.com" })
+browser_fetch_webpage({ url: 'https://shop.example.com' });
 
 // Step 2: Discover search elements
-get_interactive_elements({ 
-  url: "https://shop.example.com", 
-  limit: 20 
-})
+get_interactive_elements({
+  url: 'https://shop.example.com',
+  limit: 20,
+});
 
 // Step 3: Type in search box
-browser_type_text({ 
-  url: "https://shop.example.com", 
-  selector: "#search-input", 
-  text: "laptop" 
-})
+browser_type_text({
+  url: 'https://shop.example.com',
+  selector: '#search-input',
+  text: 'laptop',
+});
 
 // Step 4: Click search button
-browser_click_element({ 
-  url: "https://shop.example.com", 
-  selector: "#search-button" 
-})
+browser_click_element({
+  url: 'https://shop.example.com',
+  selector: '#search-button',
+});
 
 // Step 5: Wait for results
-wait_for_element({ 
-  url: "https://shop.example.com", 
-  selector: ".search-results" 
-})
+wait_for_element({
+  url: 'https://shop.example.com',
+  selector: '.search-results',
+});
 
 // Step 6: Click on a filter
-browser_click_element({ 
-  url: "https://shop.example.com", 
-  text: "Price: Low to High" 
-})
+browser_click_element({
+  url: 'https://shop.example.com',
+  text: 'Price: Low to High',
+});
 ```
 
 ### Example 3: Fill out a form
 
 ```javascript
 // Step 1: Load the form
-browser_fetch_webpage({ url: "https://example.com/contact" })
+browser_fetch_webpage({ url: 'https://example.com/contact' });
 
 // Step 2: Fill all fields
-browser_type_text({ 
-  url: "https://example.com/contact", 
-  selector: "#name", 
-  text: "John Doe" 
-})
+browser_type_text({
+  url: 'https://example.com/contact',
+  selector: '#name',
+  text: 'John Doe',
+});
 
-browser_type_text({ 
-  url: "https://example.com/contact", 
-  selector: "#email", 
-  text: "john@example.com" 
-})
+browser_type_text({
+  url: 'https://example.com/contact',
+  selector: '#email',
+  text: 'john@example.com',
+});
 
-browser_type_text({ 
-  url: "https://example.com/contact", 
-  selector: "#message", 
-  text: "Hello, I have a question..." 
-})
+browser_type_text({
+  url: 'https://example.com/contact',
+  selector: '#message',
+  text: 'Hello, I have a question...',
+});
 
 // Step 3: Submit
-browser_click_element({ 
-  url: "https://example.com/contact", 
-  selector: "button[type='submit']" 
-})
+browser_click_element({
+  url: 'https://example.com/contact',
+  selector: "button[type='submit']",
+});
 
 // Step 4: Wait for confirmation
-wait_for_element({ 
-  url: "https://example.com/contact", 
-  text: "Thank you for contacting us" 
-})
+wait_for_element({
+  url: 'https://example.com/contact',
+  text: 'Thank you for contacting us',
+});
 ```
 
 ---
@@ -364,45 +377,50 @@ wait_for_element({
 ## Tips and Best Practices
 
 ### 1. Always load the page first
+
 ```javascript
 // ❌ Wrong - will fail
-browser_click_element({ url: "https://example.com", selector: "#btn" })
+browser_click_element({ url: 'https://example.com', selector: '#btn' });
 
 // ✅ Correct
-browser_fetch_webpage({ url: "https://example.com" })
-browser_click_element({ url: "https://example.com", selector: "#btn" })
+browser_fetch_webpage({ url: 'https://example.com' });
+browser_click_element({ url: 'https://example.com', selector: '#btn' });
 ```
 
 ### 2. Use text-based selection when selector is unknown
+
 ```javascript
 // When you don't know the exact selector
-browser_click_element({ url: "https://example.com", text: "Continue" })
+browser_click_element({ url: 'https://example.com', text: 'Continue' });
 ```
 
 ### 3. Discover elements before interacting
+
 ```javascript
 // Find out what's on the page first
-get_interactive_elements({ url: "https://example.com" })
+get_interactive_elements({ url: 'https://example.com' });
 // Then use the selector from the results
-browser_click_element({ url: "https://example.com", selector: "#found-selector" })
+browser_click_element({ url: 'https://example.com', selector: '#found-selector' });
 ```
 
 ### 4. Wait for dynamic content
+
 ```javascript
 // After clicking, wait for results to appear
-browser_click_element({ url: "https://example.com", text: "Load More" })
-wait_for_element({ url: "https://example.com", selector: ".new-content" })
+browser_click_element({ url: 'https://example.com', text: 'Load More' });
+wait_for_element({ url: 'https://example.com', selector: '.new-content' });
 ```
 
 ### 5. Use human-like typing for anti-bot detection
+
 ```javascript
 // Slower typing appears more human-like
-browser_type_text({ 
-  url: "https://example.com", 
-  selector: "#input", 
-  text: "text",
-  delay: 100  // 100ms between keystrokes
-})
+browser_type_text({
+  url: 'https://example.com',
+  selector: '#input',
+  text: 'text',
+  delay: 100, // 100ms between keystrokes
+});
 ```
 
 ---
@@ -412,6 +430,7 @@ browser_type_text({
 All tools return a result object with `success` field:
 
 **Success:**
+
 ```json
 {
   "success": true,
@@ -421,6 +440,7 @@ All tools return a result object with `success` field:
 ```
 
 **Error:**
+
 ```json
 {
   "success": false,
@@ -429,6 +449,7 @@ All tools return a result object with `success` field:
 ```
 
 **Common Errors:**
+
 - `"url parameter is required"` - You forgot to specify the URL
 - `"No open page found for {hostname}"` - You need to fetch the page first
 - `"Element not found"` - The selector or text doesn't match any element
@@ -442,17 +463,18 @@ All interactions happen in the **same browser tab** for the same domain:
 
 ```javascript
 // Opens gmail.com in a new tab
-browser_fetch_webpage({ url: "https://gmail.com/mail" })
+browser_fetch_webpage({ url: 'https://gmail.com/mail' });
 
 // Reuses the same tab
-browser_click_element({ url: "https://gmail.com/mail", text: "Compose" })
-browser_type_text({ url: "https://gmail.com/mail", selector: "#to", text: "test@example.com" })
+browser_click_element({ url: 'https://gmail.com/mail', text: 'Compose' });
+browser_type_text({ url: 'https://gmail.com/mail', selector: '#to', text: 'test@example.com' });
 
 // Opens example.com in a NEW tab (different domain)
-browser_fetch_webpage({ url: "https://example.com" })
+browser_fetch_webpage({ url: 'https://example.com' });
 ```
 
 This preserves:
+
 - ✅ Authentication sessions
 - ✅ Cookies
 - ✅ Page state
@@ -480,6 +502,7 @@ npm test -- interactive.test.js
 ```
 
 The tests verify:
+
 - ✅ Parameter validation
 - ✅ Error handling
 - ✅ Page state checks
@@ -490,6 +513,7 @@ The tests verify:
 ## Support
 
 For issues or questions:
+
 - GitHub Issues: https://github.com/cherchyk/MCPBrowser/issues
 - Documentation: https://github.com/cherchyk/MCPBrowser
 

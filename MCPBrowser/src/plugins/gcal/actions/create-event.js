@@ -14,9 +14,10 @@ import {
   checkPrecondition,
   checkKeyboardShortcuts,
   waitForCalendar,
-  GCalActionResponse
+  GCalActionResponse,
 } from '../helpers.js';
 import { SAVE_BUTTON } from '../selectors.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /**
  * Create a new calendar event, optionally saving it immediately.
@@ -34,20 +35,20 @@ import { SAVE_BUTTON } from '../selectors.js';
  * @param {boolean} [opts.params.save=false] - If true, save the event (FR-015)
  * @returns {Promise<GCalActionResponse|ErrorResponse>}
  */
-export async function createEvent({ page, params }) {
+async function createEvent({ page, params }) {
   // Validate required param
   if (!params.title) {
-    return new ErrorResponse(
-      'The "title" parameter is required to create an event.',
-      ['Provide a title: create_event({ title: "Team Meeting", date: "2026-04-10", startTime: "10:00" })']
-    );
+    return new ErrorResponse('The "title" parameter is required to create an event.', [
+      'Provide a title: create_event({ title: "Team Meeting", date: "2026-04-10", startTime: "10:00" })',
+    ]);
   }
 
   // Precondition: must be on Google Calendar
   const pre = await checkPrecondition(page, 'on_calendar');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to open Google Calendar first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to open Google Calendar first.",
     ]);
   }
 
@@ -55,7 +56,7 @@ export async function createEvent({ page, params }) {
   const kb = await checkKeyboardShortcuts(page);
   if (!kb.enabled) {
     return new ErrorResponse(kb.error, [
-      'Enable keyboard shortcuts in Google Calendar Settings → Keyboard shortcuts → Enable keyboard shortcuts, then reload Calendar.'
+      'Enable keyboard shortcuts in Google Calendar Settings → Keyboard shortcuts → Enable keyboard shortcuts, then reload Calendar.',
     ]);
   }
 
@@ -64,7 +65,7 @@ export async function createEvent({ page, params }) {
   if (existingDialog) {
     logger.debug('createEvent: closing existing dialog');
     await page.keyboard.press('Escape');
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 300));
   }
 
   // Ensure nothing is focused that would swallow the keystroke
@@ -85,15 +86,16 @@ export async function createEvent({ page, params }) {
       'Event creation form did not appear. Keyboard shortcut "c" may not have worked.',
       [
         'Ensure keyboard shortcuts are enabled in Calendar Settings',
-        'Try clicking the "+" button on the calendar manually'
-      ]
+        'Try clicking the "+" button on the calendar manually',
+      ],
     );
   }
 
   // T3: Fill in the title field — target the title input inside the dialog
-  const titleInput = await page.$('input[aria-label="Add title"]') ||
-                     await page.$('input[data-initial-value]') ||
-                     await page.$('div[role="dialog"] input[type="text"]');
+  const titleInput =
+    (await page.$('input[aria-label="Add title"]')) ||
+    (await page.$('input[data-initial-value]')) ||
+    (await page.$('div[role="dialog"] input[type="text"]'));
   if (titleInput) {
     await titleInput.click({ clickCount: 3 }); // select all existing text
     await titleInput.type(params.title);
@@ -101,24 +103,30 @@ export async function createEvent({ page, params }) {
   }
 
   // Check if we need to expand to the full form for additional fields
-  const hasExtraFields = params.date || params.startTime || params.endTime ||
-    params.location || params.description || params.attendees || params.allDay;
+  const hasExtraFields =
+    params.date ||
+    params.startTime ||
+    params.endTime ||
+    params.location ||
+    params.description ||
+    params.attendees ||
+    params.allDay;
 
   if (hasExtraFields) {
     // Click "More options" to open full form if in quick-add mode
-    const moreOptions = await page.$('button[aria-label="More options"]') ||
-                        await page.$('[data-moreactions]');
+    const moreOptions =
+      (await page.$('button[aria-label="More options"]')) || (await page.$('[data-moreactions]'));
     if (moreOptions) {
       await moreOptions.click();
       logger.debug('createEvent: expanded to full form');
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 500));
     }
   }
 
   // T3: Fill date field if provided
   if (params.date) {
-    const dateInput = await page.$('input[aria-label*="date" i]') ||
-                      await page.$('input[data-date]');
+    const dateInput =
+      (await page.$('input[aria-label*="date" i]')) || (await page.$('input[data-date]'));
     if (dateInput) {
       await dateInput.click({ clickCount: 3 });
       await dateInput.type(params.date);
@@ -129,8 +137,9 @@ export async function createEvent({ page, params }) {
 
   // T3: Toggle all-day if requested
   if (params.allDay) {
-    const allDayCheckbox = await page.$('input[aria-label*="all day" i]') ||
-                           await page.$('[data-allday] input[type="checkbox"]');
+    const allDayCheckbox =
+      (await page.$('input[aria-label*="all day" i]')) ||
+      (await page.$('[data-allday] input[type="checkbox"]'));
     if (allDayCheckbox) {
       await allDayCheckbox.click();
       logger.debug('createEvent: toggled all-day');
@@ -139,8 +148,9 @@ export async function createEvent({ page, params }) {
 
   // T3: Fill start time if provided (and not all-day)
   if (params.startTime && !params.allDay) {
-    const startInput = await page.$('input[aria-label*="start time" i]') ||
-                       await page.$('input[aria-label*="Start time" i]');
+    const startInput =
+      (await page.$('input[aria-label*="start time" i]')) ||
+      (await page.$('input[aria-label*="Start time" i]'));
     if (startInput) {
       await startInput.click({ clickCount: 3 });
       await startInput.type(params.startTime);
@@ -151,8 +161,9 @@ export async function createEvent({ page, params }) {
 
   // T3: Fill end time if provided (and not all-day)
   if (params.endTime && !params.allDay) {
-    const endInput = await page.$('input[aria-label*="end time" i]') ||
-                     await page.$('input[aria-label*="End time" i]');
+    const endInput =
+      (await page.$('input[aria-label*="end time" i]')) ||
+      (await page.$('input[aria-label*="End time" i]'));
     if (endInput) {
       await endInput.click({ clickCount: 3 });
       await endInput.type(params.endTime);
@@ -163,8 +174,9 @@ export async function createEvent({ page, params }) {
 
   // T3: Fill location if provided
   if (params.location) {
-    const locationInput = await page.$('input[aria-label*="location" i]') ||
-                          await page.$('[data-locationactionpanel] input');
+    const locationInput =
+      (await page.$('input[aria-label*="location" i]')) ||
+      (await page.$('[data-locationactionpanel] input'));
     if (locationInput) {
       await locationInput.click();
       await locationInput.type(params.location);
@@ -175,9 +187,10 @@ export async function createEvent({ page, params }) {
 
   // T3: Fill description if provided
   if (params.description) {
-    const descInput = await page.$('div[aria-label*="description" i][contenteditable]') ||
-                      await page.$('textarea[aria-label*="description" i]') ||
-                      await page.$('[data-description] [contenteditable]');
+    const descInput =
+      (await page.$('div[aria-label*="description" i][contenteditable]')) ||
+      (await page.$('textarea[aria-label*="description" i]')) ||
+      (await page.$('[data-description] [contenteditable]'));
     if (descInput) {
       await descInput.click();
       await descInput.type(params.description);
@@ -187,14 +200,15 @@ export async function createEvent({ page, params }) {
 
   // T3: Add attendees if provided
   if (params.attendees && params.attendees.length > 0) {
-    const guestInput = await page.$('input[aria-label*="guest" i]') ||
-                       await page.$('input[aria-label*="Add guests" i]');
+    const guestInput =
+      (await page.$('input[aria-label*="guest" i]')) ||
+      (await page.$('input[aria-label*="Add guests" i]'));
     if (guestInput) {
       for (const email of params.attendees) {
         await guestInput.click();
         await guestInput.type(email);
         await page.keyboard.press('Enter');
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise((r) => setTimeout(r, 200));
       }
       logger.debug(`createEvent: added ${params.attendees.length} attendee(s)`);
     }
@@ -203,13 +217,14 @@ export async function createEvent({ page, params }) {
   // FR-015: Conditionally save — default is false (leave for review)
   const save = params.save === true;
   if (save) {
-    const saveBtn = await page.$(SAVE_BUTTON) ||
-                    await page.$('button[aria-label="Save"]') ||
-                    await page.$('div[role="dialog"] button:has-text("Save")');
+    const saveBtn =
+      (await page.$(SAVE_BUTTON)) ||
+      (await page.$('button[aria-label="Save"]')) ||
+      (await page.$('div[role="dialog"] button:has-text("Save")'));
     if (saveBtn) {
       await saveBtn.click();
       logger.debug('createEvent: clicked Save');
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 500));
     }
   }
 
@@ -228,11 +243,69 @@ export async function createEvent({ page, params }) {
       allDay: params.allDay || false,
       location: params.location || null,
       attendees: params.attendees || [],
-      save
+      save,
     },
     summary,
     save
       ? ['Use list_events to see the updated calendar']
-      : ['Review the event form in Calendar and click Save manually', 'Use list_events to return to calendar view']
+      : [
+          'Review the event form in Calendar and click Save manually',
+          'Use list_events to return to calendar view',
+        ],
   );
 }
+
+export const createEventAction = new PluginAction({
+  name: 'create_event',
+  description: 'Create a new calendar event with title, time, location, description, and attendees',
+  params: [
+    { name: 'title', type: 'string', description: 'Event title', required: true },
+    {
+      name: 'date',
+      type: 'string',
+      description: "Event date (ISO format, e.g., '2026-04-07'). Default: today",
+      required: false,
+    },
+    {
+      name: 'startTime',
+      type: 'string',
+      description: 'Start time in HH:MM format. Ignored if allDay:true',
+      required: false,
+    },
+    {
+      name: 'endTime',
+      type: 'string',
+      description: 'End time in HH:MM format. Ignored if allDay:true',
+      required: false,
+    },
+    {
+      name: 'allDay',
+      type: 'boolean',
+      description: 'Create an all-day event',
+      required: false,
+      default: false,
+    },
+    { name: 'location', type: 'string', description: 'Event location', required: false },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Event description/notes',
+      required: false,
+    },
+    {
+      name: 'attendees',
+      type: 'array',
+      description: 'Array of attendee email addresses',
+      required: false,
+    },
+    {
+      name: 'save',
+      type: 'boolean',
+      description: 'If true, save the event. Default: false (leave for review)',
+      required: false,
+      default: false,
+    },
+  ],
+  response: GCalActionResponse,
+  handler: createEvent,
+});

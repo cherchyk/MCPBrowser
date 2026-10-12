@@ -22,21 +22,17 @@ const browserInstances = new Map();
  */
 async function detectDefaultBrowser() {
   const platform = os.platform();
-  
+
   // Priority order: Chrome > Edge > Brave
-  const browsers = [
-    new ChromeBrowser(),
-    new EdgeBrowser(),
-    new BraveBrowser()
-  ];
-  
+  const browsers = [new ChromeBrowser(), new EdgeBrowser(), new BraveBrowser()];
+
   for (const browser of browsers) {
     if (await browser.isAvailable()) {
       logger.info(`Auto-detected ${browser.getType()} as default browser`);
       return browser.getType();
     }
   }
-  
+
   // Fallback to Chrome
   logger.info('No browser detected, defaulting to Chrome');
   return 'chrome';
@@ -52,14 +48,14 @@ export async function GetBrowser(type = '') {
   if (!type || type === '') {
     type = await detectDefaultBrowser();
   }
-  
+
   type = type.toLowerCase();
-  
+
   // Return cached instance if exists
   if (browserInstances.has(type)) {
     return browserInstances.get(type);
   }
-  
+
   // Create new browser instance
   let browser;
   switch (type) {
@@ -75,11 +71,11 @@ export async function GetBrowser(type = '') {
     default:
       throw new Error(
         `Unsupported browser type: ${type}. ` +
-        `Supported: chrome, edge, brave. ` +
-        `Leave empty for auto-detection.`
+          `Supported: chrome, edge, brave. ` +
+          `Leave empty for auto-detection.`,
       );
   }
-  
+
   browserInstances.set(type, browser);
   return browser;
 }
@@ -93,12 +89,12 @@ export async function isPageUsable(page) {
   if (!page) {
     return { valid: false, error: 'Page is null' };
   }
-  
+
   try {
     if (page.isClosed()) {
       return { valid: false, error: 'Page has been closed' };
     }
-    
+
     // Try to get the URL - this will fail if the page connection is broken
     await page.url();
     return { valid: true };
@@ -115,20 +111,20 @@ export async function isPageUsable(page) {
  */
 export async function getValidatedPage(hostname) {
   const page = domainPages.get(hostname);
-  
+
   if (!page) {
     return { page: null, error: `No page loaded for ${hostname}` };
   }
-  
+
   const validation = await isPageUsable(page);
-  
+
   if (!validation.valid) {
     // Clean up the stale mapping
     domainPages.delete(hostname);
     logger.info(`Removed stale page mapping for ${hostname}: ${validation.error}`);
     return { page: null, error: validation.error };
   }
-  
+
   return { page };
 }
 
@@ -143,19 +139,21 @@ export async function rebuildDomainPagesMap(browser) {
   try {
     const pages = await browser.pages();
     logger.info(`Reconnected to browser with ${pages.length} existing tabs`);
-    
+
     for (const page of pages) {
       try {
         const pageUrl = page.url();
         // Skip chrome:// pages, about:blank, and other internal pages
-        if (!pageUrl || 
-            pageUrl === 'about:blank' || 
-            pageUrl.startsWith('chrome://') || 
-            pageUrl.startsWith('chrome-extension://') ||
-            pageUrl.startsWith('devtools://')) {
+        if (
+          !pageUrl ||
+          pageUrl === 'about:blank' ||
+          pageUrl.startsWith('chrome://') ||
+          pageUrl.startsWith('chrome-extension://') ||
+          pageUrl.startsWith('devtools://')
+        ) {
           continue;
         }
-        
+
         const hostname = new URL(pageUrl).hostname;
         if (hostname && !domainPages.has(hostname)) {
           domainPages.set(hostname, page);
@@ -166,7 +164,7 @@ export async function rebuildDomainPagesMap(browser) {
         continue;
       }
     }
-    
+
     if (domainPages.size > 0) {
       logger.info(`Restored ${domainPages.size} domain-to-tab mappings`);
     }
@@ -187,7 +185,7 @@ export async function getBrowser(browserType = '') {
   if (!browserType) {
     browserType = process.env.BROWSER_TYPE || '';
   }
-  
+
   // Check if we have a valid cached browser
   if (cachedBrowser) {
     try {
@@ -199,21 +197,21 @@ export async function getBrowser(browserType = '') {
       cachedBrowser = null;
     }
   }
-  
+
   // Get browser instance and connect
   const browserInstance = await GetBrowser(browserType);
   const result = await browserInstance.connect();
-  
+
   cachedBrowser = result.browser;
-  
-  cachedBrowser.on("disconnected", () => {
+
+  cachedBrowser.on('disconnected', () => {
     cachedBrowser = null;
     domainPages.clear(); // Clear all domain page mappings
   });
-  
+
   // Rebuild domainPages map from existing tabs to enable reuse across reconnections
   await rebuildDomainPagesMap(cachedBrowser);
-  
+
   return cachedBrowser;
 }
 

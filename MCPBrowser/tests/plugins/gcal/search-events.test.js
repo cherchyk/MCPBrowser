@@ -5,7 +5,11 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { searchEvents } from '../../../src/plugins/gcal/actions/search-events.js';
+import { ACTIONS as GCAL_ACTIONS } from '../../../src/plugins/gcal/actions/index.js';
+
+const searchEventsAction = GCAL_ACTIONS.find((action) => action.id === 'search_events');
+
+const searchEvents = searchEventsAction.handler;
 
 describe('searchEvents', () => {
   it('is an async function', () => {
@@ -15,7 +19,7 @@ describe('searchEvents', () => {
 
   it('returns error when page is not on Google Calendar', async () => {
     const mockPage = {
-      url: () => 'https://example.com'
+      url: () => 'https://example.com',
     };
     const result = await searchEvents({ page: mockPage, params: { query: 'test' } });
     assert.equal(result.constructor.name, 'ErrorResponse');
@@ -25,7 +29,7 @@ describe('searchEvents', () => {
 
   it('returns error when query is missing', async () => {
     const mockPage = {
-      url: () => 'https://calendar.google.com/calendar/u/0/r/week'
+      url: () => 'https://calendar.google.com/calendar/u/0/r/week',
     };
     const result = await searchEvents({ page: mockPage, params: {} });
     assert.equal(result.constructor.name, 'ErrorResponse');

@@ -14,10 +14,30 @@
 // Common HTML named entities. Numeric entities (&#NN; / &#xNN;) are handled
 // separately, so only truly named ones need to be listed here.
 const NAMED_ENTITIES = {
-  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
-  mdash: '—', ndash: '–', hellip: '…', copy: '©', reg: '®', trade: '™',
-  lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”', bull: '•', middot: '·',
-  laquo: '«', raquo: '»', deg: '°', plusmn: '±', times: '×', divide: '÷',
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+  mdash: '—',
+  ndash: '–',
+  hellip: '…',
+  copy: '©',
+  reg: '®',
+  trade: '™',
+  lsquo: '‘',
+  rsquo: '’',
+  ldquo: '“',
+  rdquo: '”',
+  bull: '•',
+  middot: '·',
+  laquo: '«',
+  raquo: '»',
+  deg: '°',
+  plusmn: '±',
+  times: '×',
+  divide: '÷',
 };
 
 function fromCodePoint(cp) {
@@ -41,7 +61,9 @@ export function decodeEntities(str) {
     .replace(/&#(\d+);/g, (_, dec) => fromCodePoint(parseInt(dec, 10)))
     .replace(/&([a-zA-Z][a-zA-Z0-9]*);/g, (match, name) => {
       const key = name.toLowerCase();
-      return Object.prototype.hasOwnProperty.call(NAMED_ENTITIES, key) ? NAMED_ENTITIES[key] : match;
+      return Object.prototype.hasOwnProperty.call(NAMED_ENTITIES, key)
+        ? NAMED_ENTITIES[key]
+        : match;
     });
 }
 
@@ -53,9 +75,9 @@ function stripTags(fragment) {
 /** Final whitespace normalization shared by text and markdown output. */
 function normalizeBlockText(str) {
   return str
-    .replace(/[ \t\f\v]+/g, ' ')   // collapse runs of horizontal whitespace
-    .replace(/ *\n */g, '\n')       // trim spaces around newlines
-    .replace(/\n{3,}/g, '\n\n')    // at most one blank line
+    .replace(/[ \t\f\v]+/g, ' ') // collapse runs of horizontal whitespace
+    .replace(/ *\n */g, '\n') // trim spaces around newlines
+    .replace(/\n{3,}/g, '\n\n') // at most one blank line
     .trim();
 }
 
@@ -77,7 +99,7 @@ export function htmlToText(html) {
   s = s.replace(/<hr\s*\/?>/gi, '\n');
   s = s.replace(
     /<\/(p|div|section|article|header|footer|nav|aside|main|h[1-6]|li|tr|ul|ol|table|thead|tbody|blockquote|pre|figure|figcaption)>/gi,
-    '\n'
+    '\n',
   );
 
   s = stripTags(s);
@@ -156,7 +178,14 @@ export function htmlToMarkdown(html) {
   s = s.replace(/<blockquote\b[^>]*>([\s\S]*?)<\/blockquote>/gi, (_, inner) => {
     const text = decodeEntities(stripTags(inner)).trim();
     if (!text) return '';
-    return '\n\n' + text.split('\n').map((line) => `> ${line}`.trimEnd()).join('\n') + '\n\n';
+    return (
+      '\n\n' +
+      text
+        .split('\n')
+        .map((line) => `> ${line}`.trimEnd())
+        .join('\n') +
+      '\n\n'
+    );
   });
 
   // Table rows → pipe-delimited lines.
@@ -179,7 +208,7 @@ export function htmlToMarkdown(html) {
   // Remaining block boundaries → paragraph breaks.
   s = s.replace(
     /<\/(p|div|section|article|header|footer|nav|aside|main|figure|figcaption)>/gi,
-    '\n\n'
+    '\n\n',
   );
 
   // Strip any remaining tags and decode entities.

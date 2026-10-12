@@ -13,9 +13,10 @@ import {
   checkPrecondition,
   waitForCalendar,
   extractVisibleEvents,
-  GCalActionResponse
+  GCalActionResponse,
 } from '../helpers.js';
 import { EVENT_CHIP } from '../selectors.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /**
  * Search events by query string using Calendar's search UI.
@@ -26,23 +27,21 @@ import { EVENT_CHIP } from '../selectors.js';
  * @param {number} [opts.params.limit=25] - Maximum results to return
  * @returns {Promise<GCalActionResponse|ErrorResponse>}
  */
-export async function searchEvents({ page, params }) {
+async function searchEvents({ page, params }) {
   // Validate query
   if (!params.query || !params.query.trim()) {
-    return new ErrorResponse(
-      'Search query is required.',
-      [
-        'Provide a query: search_events({ query: "team meeting" })',
-        'Use list_events to browse the calendar without searching'
-      ]
-    );
+    return new ErrorResponse('Search query is required.', [
+      'Provide a query: search_events({ query: "team meeting" })',
+      'Use list_events to browse the calendar without searching',
+    ]);
   }
 
   // Precondition: must be on Google Calendar
   const pre = await checkPrecondition(page, 'on_calendar');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to open Google Calendar first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to open Google Calendar first.",
     ]);
   }
 
@@ -58,12 +57,13 @@ export async function searchEvents({ page, params }) {
 
   // T2: Press '/' to focus the search box
   await page.keyboard.press('/');
-  await new Promise(r => setTimeout(r, 300));
+  await new Promise((r) => setTimeout(r, 300));
 
   // T3: Type query into the search input
-  const searchInput = await page.$('input[aria-label="Search"]') ||
-                      await page.$('input[aria-label*="search" i]') ||
-                      await page.$('input[type="text"][role="searchbox"]');
+  const searchInput =
+    (await page.$('input[aria-label="Search"]')) ||
+    (await page.$('input[aria-label*="search" i]')) ||
+    (await page.$('input[type="text"][role="searchbox"]'));
   if (searchInput) {
     await searchInput.click({ clickCount: 3 }); // clear existing text
     await searchInput.type(query);
@@ -99,10 +99,7 @@ export async function searchEvents({ page, params }) {
     return new GCalActionResponse(
       { events: [], query, resultCount: 0 },
       `No events found for "${query}".`,
-      [
-        'Try a different or broader search query',
-        'Use list_events to browse the calendar instead'
-      ]
+      ['Try a different or broader search query', 'Use list_events to browse the calendar instead'],
     );
   }
 
@@ -115,7 +112,24 @@ export async function searchEvents({ page, params }) {
     [
       'Use read_event({ index: N }) to open a specific result',
       'Use list_events to return to the calendar view',
-      'Refine your search with more specific keywords'
-    ]
+      'Refine your search with more specific keywords',
+    ],
   );
 }
+
+export const searchEventsAction = new PluginAction({
+  name: 'search_events',
+  description: 'Search Google Calendar for events matching a keyword query',
+  params: [
+    { name: 'query', type: 'string', description: 'Search keywords', required: true },
+    {
+      name: 'limit',
+      type: 'number',
+      description: 'Maximum results to return (default: 25)',
+      required: false,
+      default: 25,
+    },
+  ],
+  response: GCalActionResponse,
+  handler: searchEvents,
+});

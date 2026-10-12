@@ -8,23 +8,15 @@
 
 import { ErrorResponse } from '../../../core/responses.js';
 import logger from '../../../core/logger.js';
-import {
-  checkPrecondition,
-  selectEvent,
-  waitForCalendar,
-  GCalActionResponse
-} from '../helpers.js';
-import {
-  RSVP_YES_BUTTON,
-  RSVP_NO_BUTTON,
-  RSVP_MAYBE_BUTTON
-} from '../selectors.js';
+import { checkPrecondition, selectEvent, waitForCalendar, GCalActionResponse } from '../helpers.js';
+import { RSVP_YES_BUTTON, RSVP_NO_BUTTON, RSVP_MAYBE_BUTTON } from '../selectors.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /** Map response names to selector keys. */
 const RSVP_MAP = {
   accept: RSVP_YES_BUTTON,
   decline: RSVP_NO_BUTTON,
-  tentative: RSVP_MAYBE_BUTTON
+  tentative: RSVP_MAYBE_BUTTON,
 };
 
 /**
@@ -37,16 +29,13 @@ const RSVP_MAP = {
  * @param {string} opts.params.response - "accept", "decline", or "tentative" (required)
  * @returns {Promise<GCalActionResponse|ErrorResponse>}
  */
-export async function rsvpEvent({ page, params }) {
+async function rsvpEvent({ page, params }) {
   // Validate: at least one identifier required
   if (params.index == null && params.id == null) {
-    return new ErrorResponse(
-      'Either index or id is required to RSVP to an event.',
-      [
-        'Use list_events to see available events and their indices',
-        'Use search_events to find a specific event by keyword'
-      ]
-    );
+    return new ErrorResponse('Either index or id is required to RSVP to an event.', [
+      'Use list_events to see available events and their indices',
+      'Use search_events to find a specific event by keyword',
+    ]);
   }
 
   // Validate response value
@@ -54,7 +43,7 @@ export async function rsvpEvent({ page, params }) {
   if (!RSVP_MAP[response]) {
     return new ErrorResponse(
       `Invalid RSVP response "${params.response}". Must be one of: accept, decline, tentative.`,
-      ['Use rsvp_event({ index: 0, response: "accept" })']
+      ['Use rsvp_event({ index: 0, response: "accept" })'],
     );
   }
 
@@ -62,27 +51,26 @@ export async function rsvpEvent({ page, params }) {
   const pre = await checkPrecondition(page, 'on_calendar');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to open Google Calendar first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://calendar.google.com' }) to open Google Calendar first.",
     ]);
   }
 
   // T3: Select (click) the target event to open detail popup
   const sel = await selectEvent(page, { index: params.index, id: params.id });
   if (!sel.selected) {
-    return new ErrorResponse(
-      sel.error || 'Could not select the event to RSVP.',
-      ['Use list_events to refresh the event list and check indices']
-    );
+    return new ErrorResponse(sel.error || 'Could not select the event to RSVP.', [
+      'Use list_events to refresh the event list and check indices',
+    ]);
   }
 
   // Wait for detail popup
   try {
     await waitForCalendar(page, 'div[role="dialog"]');
   } catch {
-    return new ErrorResponse(
-      'Event detail popup did not appear after clicking the event.',
-      ['Try list_events to refresh, then rsvp_event with a valid index']
-    );
+    return new ErrorResponse('Event detail popup did not appear after clicking the event.', [
+      'Try list_events to refresh, then rsvp_event with a valid index',
+    ]);
   }
 
   // Detect if the user is the organizer (organizers cannot RSVP to their own events)
@@ -98,10 +86,7 @@ export async function rsvpEvent({ page, params }) {
   if (isOrganizer) {
     return new ErrorResponse(
       'You are the organizer of this event. Organizers cannot RSVP to their own events.',
-      [
-        'Use edit_event to modify the event instead',
-        'Use delete_event to cancel the event'
-      ]
+      ['Use edit_event to modify the event instead', 'Use delete_event to cancel the event'],
     );
   }
 
@@ -113,7 +98,7 @@ export async function rsvpEvent({ page, params }) {
     const fallbackBtn = await page.evaluateHandle((resp) => {
       const buttons = Array.from(document.querySelectorAll('button, div[role="button"]'));
       const labels = { accept: 'Yes', decline: 'No', tentative: 'Maybe' };
-      return buttons.find(b => b.textContent?.trim() === labels[resp]);
+      return buttons.find((b) => b.textContent?.trim() === labels[resp]);
     }, response);
 
     if (fallbackBtn && fallbackBtn.asElement()) {
@@ -124,8 +109,8 @@ export async function rsvpEvent({ page, params }) {
         `Could not find the RSVP "${response}" button. This event may not have RSVP options.`,
         [
           'This event may not be an invitation — you can only RSVP to events you were invited to',
-          'Use read_event to inspect the event details'
-        ]
+          'Use read_event to inspect the event details',
+        ],
       );
     }
   } else {
@@ -133,17 +118,36 @@ export async function rsvpEvent({ page, params }) {
     logger.debug(`rsvpEvent: clicked RSVP "${response}" via selector`);
   }
 
-  await new Promise(r => setTimeout(r, 300));
+  await new Promise((r) => setTimeout(r, 300));
 
   return new GCalActionResponse(
     {
       response,
-      rsvpSent: true
+      rsvpSent: true,
     },
     `RSVP "${response}" sent successfully.`,
-    [
-      'Use list_events to return to the calendar view',
-      'Use read_event to verify the RSVP status'
-    ]
+    ['Use list_events to return to the calendar view', 'Use read_event to verify the RSVP status'],
   );
 }
+
+export const rsvpEventAction = new PluginAction({
+  name: 'rsvp_event',
+  description: 'Respond to a calendar invitation (accept, decline, or tentative)',
+  params: [
+    {
+      name: 'index',
+      type: 'number',
+      description: '0-based position in current event list',
+      required: false,
+    },
+    { name: 'id', type: 'string', description: 'Google Calendar event ID', required: false },
+    {
+      name: 'response',
+      type: 'string',
+      description: 'RSVP response: accept, decline, or tentative',
+      required: true,
+    },
+  ],
+  response: GCalActionResponse,
+  handler: rsvpEvent,
+});

@@ -1,5 +1,5 @@
 ---
-description: "Use when: fetching GitHub project work items, getting issue details from GitHub project board, finding project backlog items, looking up project item by ID or title. Handles cherchyk/MCPBrowser project board queries."
+description: 'Use when: fetching GitHub project work items, getting issue details from GitHub project board, finding project backlog items, looking up project item by ID or title. Handles cherchyk/MCPBrowser project board queries.'
 tools: [execute, read, web]
 ---
 
@@ -26,6 +26,7 @@ gh project item-list 2 --owner cherchyk --format json --limit 50
 ```
 
 This returns a JSON array of items, each with:
+
 - `content.title` — work item title
 - `content.body` — full description/spec (Markdown)
 - `content.type` — always `DraftIssue` for this project
@@ -37,6 +38,7 @@ This returns a JSON array of items, each with:
 ### Find a specific item
 
 By title keyword:
+
 ```bash
 gh project item-list 2 --owner cherchyk --format json --limit 50 | jq '.items[] | select(.title | test("browser_navigate_history"; "i"))'
 ```
@@ -53,6 +55,7 @@ Example: branch `feature/9-browser_navigate_history` → search for items with t
 ## Work Item Structure
 
 Each draft issue body contains a structured spec with:
+
 - **Priority / Status / Effort** — metadata
 - **Description** — what the feature does
 - **Architecture** — files to create/modify, response classes, patterns
@@ -63,6 +66,7 @@ Each draft issue body contains a structured spec with:
 ## Output Format
 
 When asked about a work item, return:
+
 1. **Title** and **Status**
 2. **Summary** — 2-3 sentence overview
 3. **Key details** — architecture decisions, files involved, input schema

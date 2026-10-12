@@ -36,7 +36,7 @@
 - Email content extraction focuses on the visible/rendered content. Attachments are reported as metadata (name, size, type) but binary download is out of scope for v1.
 - The plugin operates on whatever Gmail account is currently signed in. Multi-account switching is out of scope.
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - List Emails in a Folder (Priority: P1)
 
@@ -162,7 +162,7 @@ The agent asks the plugin to toggle the read/unread status of an email from the 
 - What happens when Gmail rolls out a UI update that changes CSS class names? Because the plugin primarily uses keyboard shortcuts, URL navigation, and ARIA/structural selectors, most actions are unaffected by CSS class changes. For the remaining Tier 4 CSS selectors used in data extraction, the plugin should fail gracefully with descriptive errors identifying which selector failed and its tier level, making it easy to diagnose and update the centralized selectors module.
 - What happens when the compose window is already open and `compose_email` is called? The plugin should detect an existing compose window and either reuse it or close it before opening a new one, warning the user if unsaved draft content would be lost.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -204,7 +204,7 @@ The agent asks the plugin to toggle the read/unread status of an email from the 
 - **Attachment Metadata**: Information about an email attachment — file name, size, and MIME type. Binary content is not extracted.
 - **Gmail Label**: A Gmail organizational label — name and optionally color. Used by `label_email`.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

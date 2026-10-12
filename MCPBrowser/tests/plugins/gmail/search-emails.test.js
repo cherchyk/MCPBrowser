@@ -5,7 +5,11 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { searchEmails } from '../../../src/plugins/gmail/actions/search-emails.js';
+import { ACTIONS as GMAIL_ACTIONS } from '../../../src/plugins/gmail/actions/index.js';
+
+const searchEmailsAction = GMAIL_ACTIONS.find((action) => action.id === 'search_emails');
+
+const searchEmails = searchEmailsAction.handler;
 
 describe('searchEmails', () => {
   it('is an async function', () => {
@@ -15,7 +19,7 @@ describe('searchEmails', () => {
 
   it('returns error when query is empty', async () => {
     const mockPage = {
-      url: () => 'https://mail.google.com/mail/u/0/#inbox'
+      url: () => 'https://mail.google.com/mail/u/0/#inbox',
     };
     const result = await searchEmails({ page: mockPage, params: { query: '' } });
     assert.equal(result.constructor.name, 'ErrorResponse');
@@ -25,7 +29,7 @@ describe('searchEmails', () => {
 
   it('returns error when query is missing', async () => {
     const mockPage = {
-      url: () => 'https://mail.google.com/mail/u/0/#inbox'
+      url: () => 'https://mail.google.com/mail/u/0/#inbox',
     };
     const result = await searchEmails({ page: mockPage, params: {} });
     assert.equal(result.constructor.name, 'ErrorResponse');
@@ -33,7 +37,7 @@ describe('searchEmails', () => {
 
   it('returns error when page is not on Gmail', async () => {
     const mockPage = {
-      url: () => 'https://example.com'
+      url: () => 'https://example.com',
     };
     const result = await searchEmails({ page: mockPage, params: { query: 'test' } });
     assert.equal(result.constructor.name, 'ErrorResponse');

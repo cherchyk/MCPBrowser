@@ -35,14 +35,18 @@ function test(description, fn) {
 function runCli(args, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     const proc = spawn('node', [serverPath, ...args], {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
 
     let stdout = '';
     let stderr = '';
 
-    proc.stdout.on('data', (d) => { stdout += d.toString(); });
-    proc.stderr.on('data', (d) => { stderr += d.toString(); });
+    proc.stdout.on('data', (d) => {
+      stdout += d.toString();
+    });
+    proc.stderr.on('data', (d) => {
+      stderr += d.toString();
+    });
 
     const timeout = setTimeout(() => {
       proc.kill();
@@ -135,7 +139,7 @@ console.log('\n📋 Testing MCP server mode is still working\n');
 
 await test('No args should start MCP server (responds to initialize)', async () => {
   const proc = spawn('node', [serverPath], {
-    stdio: ['pipe', 'pipe', 'pipe']
+    stdio: ['pipe', 'pipe', 'pipe'],
   });
 
   try {
@@ -146,8 +150,8 @@ await test('No args should start MCP server (responds to initialize)', async () 
       params: {
         protocolVersion: '2024-11-05',
         capabilities: {},
-        clientInfo: { name: 'test', version: '1.0' }
-      }
+        clientInfo: { name: 'test', version: '1.0' },
+      },
     };
 
     const response = await new Promise((resolve, reject) => {
@@ -167,12 +171,17 @@ await test('No args should start MCP server (responds to initialize)', async () 
                 resolve(parsed);
                 return;
               }
-            } catch { /* not JSON */ }
+            } catch {
+              /* not JSON */
+            }
           }
         }
       });
 
-      proc.on('error', (err) => { clearTimeout(timeout); reject(err); });
+      proc.on('error', (err) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
       proc.stdin.write(JSON.stringify(initRequest) + '\n');
     });
 

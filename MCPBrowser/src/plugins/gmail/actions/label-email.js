@@ -16,9 +16,10 @@ import {
   selectEmailRow,
   waitForGmail,
   VIEW,
-  GmailActionResponse
+  GmailActionResponse,
 } from '../helpers.js';
 import { LABEL_ITEM } from '../selectors.js';
+import { PluginAction } from '../../../core/actions.js';
 
 /**
  * Apply a label to an email.
@@ -30,20 +31,20 @@ import { LABEL_ITEM } from '../selectors.js';
  * @param {string} [opts.params.id] - Email ID in list view
  * @returns {Promise<GmailActionResponse|ErrorResponse>}
  */
-export async function labelEmail({ page, params }) {
+async function labelEmail({ page, params }) {
   // Validate required param
   if (!params.label) {
-    return new ErrorResponse(
-      'The "label" parameter is required.',
-      ['Provide a label name: label_email({ label: "Important" })']
-    );
+    return new ErrorResponse('The "label" parameter is required.', [
+      'Provide a label name: label_email({ label: "Important" })',
+    ]);
   }
 
   // Precondition: must be on Gmail
   const pre = await checkPrecondition(page, 'on_gmail');
   if (!pre.met) {
     return new ErrorResponse(pre.error, [
-      pre.suggestion || "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first."
+      pre.suggestion ||
+        "Use browser_fetch_webpage({ url: 'https://mail.google.com' }) to open Gmail first.",
     ]);
   }
 
@@ -54,7 +55,7 @@ export async function labelEmail({ page, params }) {
     const sel = await selectEmailRow(page, { index: params.index, id: params.id });
     if (!sel.selected) {
       return new ErrorResponse(sel.error || 'Could not select email to label.', [
-        'Provide an index or id parameter to target a specific email.'
+        'Provide an index or id parameter to target a specific email.',
       ]);
     }
   }
@@ -63,7 +64,7 @@ export async function labelEmail({ page, params }) {
   const kb = await checkKeyboardShortcuts(page);
   if (!kb.enabled) {
     return new ErrorResponse(kb.error, [
-      'Enable keyboard shortcuts in Gmail Settings → General → Keyboard shortcuts → ON, then reload Gmail.'
+      'Enable keyboard shortcuts in Gmail Settings → General → Keyboard shortcuts → ON, then reload Gmail.',
     ]);
   }
 
@@ -75,33 +76,46 @@ export async function labelEmail({ page, params }) {
   await waitForGmail(page, LABEL_ITEM);
 
   // Find matching label in the picker
-  const result = await page.evaluate((selector, targetLabel) => {
-    const items = document.querySelectorAll(selector);
-    const labels = [];
-    for (const item of items) {
-      const text = item.textContent?.trim() || '';
-      labels.push(text);
-      if (text.toLowerCase() === targetLabel.toLowerCase()) {
-        item.click();
-        return { found: true, label: text };
+  const result = await page.evaluate(
+    (selector, targetLabel) => {
+      const items = document.querySelectorAll(selector);
+      const labels = [];
+      for (const item of items) {
+        const text = item.textContent?.trim() || '';
+        labels.push(text);
+        if (text.toLowerCase() === targetLabel.toLowerCase()) {
+          item.click();
+          return { found: true, label: text };
+        }
       }
-    }
-    return { found: false, visibleLabels: labels };
-  }, LABEL_ITEM, params.label);
+      return { found: false, visibleLabels: labels };
+    },
+    LABEL_ITEM,
+    params.label,
+  );
 
   if (!result.found) {
-    return new ErrorResponse(
-      `Label "${params.label}" not found in the label picker.`,
-      [
-        `Available labels: ${(result.visibleLabels || []).join(', ') || '(none visible)'}`,
-        'Check the exact label name and try again.'
-      ]
-    );
+    return new ErrorResponse(`Label "${params.label}" not found in the label picker.`, [
+      `Available labels: ${(result.visibleLabels || []).join(', ') || '(none visible)'}`,
+      'Check the exact label name and try again.',
+    ]);
   }
 
   return new GmailActionResponse(
     { labeled: true, label: result.label },
     `Label "${result.label}" applied to email.`,
-    ['Use list_emails to return to inbox']
+    ['Use list_emails to return to inbox'],
   );
 }
+
+export const labelEmailAction = new PluginAction({
+  name: 'label_email',
+  description: 'Apply a Gmail label to an email via keyboard shortcut',
+  params: [
+    { name: 'index', type: 'number', description: '0-based index in email list', required: false },
+    { name: 'id', type: 'string', description: 'Gmail message/thread ID', required: false },
+    { name: 'label', type: 'string', description: 'Label name to apply', required: true },
+  ],
+  response: GmailActionResponse,
+  handler: labelEmail,
+});

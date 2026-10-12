@@ -11,6 +11,7 @@ VSCodeExtension/node_modules/
 dist/
 build/
 coverage/
+*.tgz
 *.vsix
 VSCodeExtension/*.vsix
 

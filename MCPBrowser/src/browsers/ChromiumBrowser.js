@@ -6,10 +6,10 @@
 
 import { BaseBrowser } from './BaseBrowser.js';
 import puppeteer from 'puppeteer-core';
-import { existsSync } from "fs";
-import os from "os";
-import path from "path";
-import { spawn, execSync } from "child_process";
+import { existsSync } from 'fs';
+import os from 'os';
+import path from 'path';
+import { spawn, execSync } from 'child_process';
 import logger from '../core/logger.js';
 import { isWSL, wslToWindowsPath, windowsPathToWSL } from '../utils.js';
 
@@ -49,7 +49,7 @@ export class ChromiumBrowser extends BaseBrowser {
   getDefaultUserDataDir() {
     const platform = os.platform();
     const home = os.homedir();
-    
+
     // In WSL the browser is a Windows process, so the user-data-dir
     // must reside on a Windows-accessible filesystem (e.g. /mnt/c/…).
     if (isWSL()) {
@@ -61,11 +61,14 @@ export class ChromiumBrowser extends BaseBrowser {
       // Fallback: predictable location on C: drive
       return `/mnt/c/MCPBrowserData/${this.config.userDataDirName}`;
     }
-    
-    if (platform === "win32") {
+
+    if (platform === 'win32') {
       return path.join(home, `AppData/Local/MCPBrowser/${this.config.userDataDirName}`);
-    } else if (platform === "darwin") {
-      return path.join(home, `Library/Application Support/MCPBrowser/${this.config.userDataDirName}`);
+    } else if (platform === 'darwin') {
+      return path.join(
+        home,
+        `Library/Application Support/MCPBrowser/${this.config.userDataDirName}`,
+      );
     } else {
       return path.join(home, `.config/MCPBrowser/${this.config.userDataDirName}`);
     }
@@ -78,7 +81,7 @@ export class ChromiumBrowser extends BaseBrowser {
   async devtoolsAvailable() {
     try {
       const url = `http://${this.config.host}:${this.config.port}/json/version`;
-      const res = await fetch(url, { method: "GET" });
+      const res = await fetch(url, { method: 'GET' });
       if (!res.ok) return false;
       const data = await res.json();
       return Boolean(data.webSocketDebuggerUrl);
@@ -139,17 +142,19 @@ export class ChromiumBrowser extends BaseBrowser {
    */
   async launchIfNeeded() {
     if (this.config.wsEndpoint) return; // Explicit endpoint provided
-    
+
     if (await this.devtoolsAvailable()) return; // Already running
-    
+
     if (this.launchPromise) {
       return await this.launchPromise;
     }
-    
+
     this.launchPromise = (async () => {
       const execPath = this.findExecutablePath();
       if (!execPath) {
-        throw new Error(`${this.config.name} executable not found. Searched paths: ${this.config.defaultPaths.join(', ')}`);
+        throw new Error(
+          `${this.config.name} executable not found. Searched paths: ${this.config.defaultPaths.join(', ')}`,
+        );
       }
 
       const userDataDir = this.getDefaultUserDataDir();
@@ -163,36 +168,38 @@ export class ChromiumBrowser extends BaseBrowser {
         `--remote-debugging-port=${this.config.port}`,
         `--user-data-dir=${userDataDirArg}`,
         '--no-first-run',
-        '--no-default-browser-check'
+        '--no-default-browser-check',
       ];
 
-      logger.info(`Launching ${this.config.name} with remote debugging on port ${this.config.port}...`);
+      logger.info(
+        `Launching ${this.config.name} with remote debugging on port ${this.config.port}...`,
+      );
       if (isWSL()) {
         logger.info(`WSL detected – launching Windows browser at ${execPath}`);
         logger.info(`  user-data-dir (Windows): ${userDataDirArg}`);
       }
-      
+
       const child = spawn(execPath, args, {
         detached: true,
         stdio: 'ignore',
-        windowsHide: false
+        windowsHide: false,
       });
       child.unref();
 
       const maxWaitTime = 20000;
       const startTime = Date.now();
-      
+
       while (Date.now() - startTime < maxWaitTime) {
         if (await this.devtoolsAvailable()) {
           logger.info(`Connected to ${this.config.name} on port ${this.config.port}`);
           return;
         }
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
-      
+
       throw new Error(`${this.config.name} did not become available within ${maxWaitTime}ms`);
     })();
-    
+
     return await this.launchPromise;
   }
 
@@ -202,7 +209,7 @@ export class ChromiumBrowser extends BaseBrowser {
    */
   async resolveWSEndpoint() {
     if (this.config.wsEndpoint) return this.config.wsEndpoint;
-    
+
     const url = `http://${this.config.host}:${this.config.port}/json/version`;
     const res = await fetch(url);
     if (!res.ok) {
@@ -210,7 +217,7 @@ export class ChromiumBrowser extends BaseBrowser {
     }
     const data = await res.json();
     if (!data.webSocketDebuggerUrl) {
-      throw new Error("No webSocketDebuggerUrl in /json/version response");
+      throw new Error('No webSocketDebuggerUrl in /json/version response');
     }
     return data.webSocketDebuggerUrl;
   }
@@ -218,13 +225,13 @@ export class ChromiumBrowser extends BaseBrowser {
   async connect() {
     await this.launchIfNeeded();
     const wsEndpoint = await this.resolveWSEndpoint();
-    const browser = await puppeteer.connect({ 
+    const browser = await puppeteer.connect({
       browserWSEndpoint: wsEndpoint,
-      defaultViewport: null // Use full browser window, don't resize
+      defaultViewport: null, // Use full browser window, don't resize
     });
-    
+
     this.browser = browser;
-    
+
     return { browser };
   }
 

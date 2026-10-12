@@ -68,7 +68,7 @@ export function windowsPathToWSL(windowsPath) {
  * @returns {string} The original or truncated string
  */
 export function truncate(str, max) {
-  if (!str) return "";
+  if (!str) return '';
   return str.length > max ? `${str.slice(0, max)}... [truncated]` : str;
 }
 
@@ -98,7 +98,7 @@ function safeStringify(value) {
  * @returns {{ result: any, type: string, truncated: boolean }}
  */
 export function serializeExecutionResult(value, { maxBytes = 100_000 } = {}) {
-  let type = Array.isArray(value) ? 'array' : (value === null ? 'null' : typeof value);
+  let type = Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value;
   let jsonString;
 
   if (type === 'string') {

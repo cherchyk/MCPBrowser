@@ -28,7 +28,7 @@
 - All-day events and timed events are both in scope. Multi-day events spanning more than one day are read-only (listing and reading) in v1.
 - The plugin shares the same Google ecosystem URL patterns as the Gmail plugin, including the `/u/N/` account-index scheme which MUST be preserved during navigation.
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - List Events for a Date or Range (Priority: P1)
 
@@ -176,7 +176,7 @@ The agent asks the plugin to check whether a time slot is free or busy on the us
 - What happens when events from multiple calendars (personal, work, shared) are visible? The plugin should extract and return the calendar name for each event, allowing the agent to filter or distinguish between calendars.
 - What happens when the agent requests a date range that spans across months/years? The plugin should navigate correctly using the URL path scheme regardless of date boundaries.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -218,7 +218,7 @@ The agent asks the plugin to check whether a time slot is free or busy on the us
 - **Availability Slot**: A representation of a time window's status — start time, end time, status (free/busy), and conflicting events (if busy). Used by `check_availability`.
 - **Calendar**: A named calendar the event belongs to — name and color. Events from multiple visible calendars are all returned by `list_events`.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

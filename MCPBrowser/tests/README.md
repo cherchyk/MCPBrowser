@@ -35,6 +35,7 @@ node tests/actions/browser.fetch-page.test.js brave     # Brave only
 The test suite is split into two runners for optimal execution:
 
 ### Unit Tests - `run-unit.js` (8 suites)
+
 **Fast parallel execution, NO browser required** - Perfect for CI/CD
 
 - `core/browser.test.js` - Browser lifecycle and tab pooling (uses mocks)
@@ -49,6 +50,7 @@ The test suite is split into two runners for optimal execution:
 **Run:** `node tests/run-unit.js` (~35 seconds, parallel execution)
 
 ### Browser Tests - `run-browser.js` (10 suites)
+
 **Sequential execution, BROWSER required** - Real browser integration
 
 - `actions/browser.click-element.test.js` - Click action with JS fallback testing
@@ -63,11 +65,14 @@ The test suite is split into two runners for optimal execution:
 - `verify-nextsteps.test.js` - NextSteps field validation
 
 **Run:** `node tests/run-browser.js [browser]`
+
 - Without browser param: Runs on all available browsers
 - With browser param: Runs only on specified browser (chrome, edge, brave)
 
 ### Complete Test Suite - `run-all.js`
+
 Orchestrates both runners sequentially:
+
 1. Runs `run-unit.js` (all unit tests in parallel)
 2. Runs `run-browser.js` (all browser tests sequentially)
 3. Reports overall summary
@@ -93,6 +98,7 @@ node tests/actions/browser.type-text.test.js brave      # Brave only
 ```
 
 **Supported Browsers:**
+
 - **Chrome** (CDP) - Port 9222, reuses existing browser session
 - **Edge** (CDP) - Port 9223, reuses existing browser session
 - **Brave** (CDP) - Port 9224, reuses existing browser session
@@ -102,6 +108,7 @@ Tests gracefully skip unavailable browsers with warnings.
 ## Test Infrastructure
 
 **Browser Runner** ([browsers/browser-runner.js](browsers/browser-runner.js))
+
 ```javascript
 import { runWithBrowsers } from '../browsers/browser-runner.js';
 
@@ -112,6 +119,7 @@ await runWithBrowsers(async (browserType) => {
 ```
 
 **Browser Helper** ([browsers/browser-test-helper.js](browsers/browser-test-helper.js))
+
 - `getAvailableBrowsers()` - Returns browsers with availability status
 - `getAllBrowsers()` - All browsers regardless of availability
 - `isBrowserAvailable(type)` - Check specific browser

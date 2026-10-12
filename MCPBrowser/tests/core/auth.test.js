@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { pollUntilAuthDone, waitForAuth } from '../../src/mcp-browser.js';
+import { pollUntilAuthDone, waitForAuth } from '../../src/core/auth.js';
 
 console.log('🧪 Testing authentication flow functions\n');
 console.log('📝 Note: Auth functions detect completion when page leaves auth URL\n');
@@ -41,10 +41,7 @@ class MockPage {
   url() {
     this.callCount++;
     const changeEvery = this.timing?.changeAfterCalls || 2;
-    const targetIndex = Math.min(
-      Math.floor(this.callCount / changeEvery),
-      this.urls.length - 1
-    );
+    const targetIndex = Math.min(Math.floor(this.callCount / changeEvery), this.urls.length - 1);
     return this.urls[targetIndex];
   }
 
@@ -55,7 +52,7 @@ class MockPage {
   withLoginPage(isLoginPage = true) {
     this._evaluateResult = {
       isLoginPage,
-      indicators: isLoginPage ? ['password field', 'login button'] : []
+      indicators: isLoginPage ? ['password field', 'login button'] : [],
     };
     return this;
   }
@@ -71,7 +68,7 @@ await test('Should detect success when leaving auth page', async () => {
   const mockPage = new MockPage([
     'https://login.example.com/auth',
     'https://login.example.com/auth',
-    'https://app.example.com/dashboard'
+    'https://app.example.com/dashboard',
   ]);
 
   const result = await pollUntilAuthDone(mockPage, 2000, 100);
@@ -82,7 +79,7 @@ await test('Should detect success when leaving auth page', async () => {
 await test('Should detect auth to any non-auth domain', async () => {
   const mockPage = new MockPage([
     'https://login.example.com/auth',
-    'https://completely-different.com/page'
+    'https://completely-different.com/page',
   ]);
 
   const result = await pollUntilAuthDone(mockPage, 2000, 100);
@@ -91,9 +88,7 @@ await test('Should detect auth to any non-auth domain', async () => {
 });
 
 await test('Should timeout if staying on auth page', async () => {
-  const mockPage = new MockPage([
-    'https://login.example.com/auth'
-  ]);
+  const mockPage = new MockPage(['https://login.example.com/auth']);
 
   const result = await pollUntilAuthDone(mockPage, 500, 100);
   assert.strictEqual(result.success, false);
@@ -101,10 +96,7 @@ await test('Should timeout if staying on auth page', async () => {
 });
 
 await test('Should NOT accept navigation to another auth URL', async () => {
-  const mockPage = new MockPage([
-    'https://auth.site.com/login',
-    'https://site.com/login'
-  ]);
+  const mockPage = new MockPage(['https://auth.site.com/login', 'https://site.com/login']);
 
   const result = await pollUntilAuthDone(mockPage, 500, 100);
   assert.strictEqual(result.success, false);
@@ -114,7 +106,7 @@ await test('Should handle gmail -> google -> mail.google flow', async () => {
   const mockPage = new MockPage([
     'https://accounts.google.com/signin',
     'https://accounts.google.com/signin',
-    'https://mail.google.com/mail'
+    'https://mail.google.com/mail',
   ]);
 
   const result = await pollUntilAuthDone(mockPage, 2000, 100);
@@ -124,7 +116,9 @@ await test('Should handle gmail -> google -> mail.google flow', async () => {
 
 await test('Should handle page navigation errors gracefully', async () => {
   const mockPage = {
-    url: () => { throw new Error('Page not accessible'); }
+    url: () => {
+      throw new Error('Page not accessible');
+    },
   };
 
   const result = await pollUntilAuthDone(mockPage, 500, 100);
@@ -132,9 +126,7 @@ await test('Should handle page navigation errors gracefully', async () => {
 });
 
 await test('Should include current URL in timeout hint', async () => {
-  const mockPage = new MockPage([
-    'https://login.stuck-site.com/auth'
-  ]);
+  const mockPage = new MockPage(['https://login.stuck-site.com/auth']);
 
   const result = await pollUntilAuthDone(mockPage, 500, 100);
   assert.strictEqual(result.success, false);
@@ -142,9 +134,7 @@ await test('Should include current URL in timeout hint', async () => {
 });
 
 await test('Should return error with timeout duration', async () => {
-  const mockPage = new MockPage([
-    'https://login.example.com/auth'
-  ]);
+  const mockPage = new MockPage(['https://login.example.com/auth']);
 
   // Keep the timeout tiny so the test suite stays fast while still exercising
   // the timeout branch of pollUntilAuthDone.
@@ -162,7 +152,7 @@ console.log('\n📋 Testing waitForAuth()');
 await test('Should succeed quickly on auto-auth (phase 1)', async () => {
   const mockPage = new MockPage([
     'https://login.example.com/auth',
-    'https://app.example.com/dashboard'
+    'https://app.example.com/dashboard',
   ]);
 
   const result = await waitForAuth(mockPage);
@@ -177,9 +167,9 @@ await test('Should succeed on manual auth after phase 1 fails', async () => {
       'https://login.microsoftonline.com/oauth',
       'https://login.microsoftonline.com/oauth',
       'https://login.microsoftonline.com/oauth',
-      'https://app.example.com/dashboard'
+      'https://app.example.com/dashboard',
     ],
-    timing: { changeAfterCalls: 8 }
+    timing: { changeAfterCalls: 8 },
   });
 
   const result = await waitForAuth(mockPage);
@@ -195,7 +185,9 @@ await test('Should handle page errors in waitForAuth', async () => {
       if (callCount < 3) throw new Error('Navigation in progress');
       return 'https://app.example.com/home';
     },
-    async evaluate() { return { isLoginPage: false, indicators: [] }; }
+    async evaluate() {
+      return { isLoginPage: false, indicators: [] };
+    },
   };
 
   const result = await waitForAuth(mockPage);

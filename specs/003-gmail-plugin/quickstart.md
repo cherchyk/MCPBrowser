@@ -20,6 +20,7 @@ Edit `MCPBrowser/src/plugins.json`:
 ```
 
 Restart MCPBrowser. The plugin loader will load `plugins/gmail/index.js` and log:
+
 ```
 [plugins] Loaded plugin: gmail v1.0.0
 ```
@@ -107,12 +108,12 @@ MCPBrowser/src/plugins/gmail/
 
 ## Interaction Tier Summary
 
-| Tier | What it covers | Fragility |
-|------|---------------|-----------|
-| **T1 — URL hash** | Navigation to folders, search, thread open | Very stable (public URL contract) |
-| **T2 — Keyboard shortcuts** | Compose, reply, forward, archive, delete, label, mark | Stable (documented by Google) |
-| **T3 — ARIA/data-*/name attrs** | Row checkboxes, form fields, compose body, sender data | Moderately stable (accessibility standards) |
-| **T4 — CSS class selectors** | Email row internals (subject, snippet, date, unread status) | Fragile (Closure Compiler output) |
+| Tier                             | What it covers                                              | Fragility                                   |
+| -------------------------------- | ----------------------------------------------------------- | ------------------------------------------- |
+| **T1 — URL hash**                | Navigation to folders, search, thread open                  | Very stable (public URL contract)           |
+| **T2 — Keyboard shortcuts**      | Compose, reply, forward, archive, delete, label, mark       | Stable (documented by Google)               |
+| **T3 — ARIA/data-\*/name attrs** | Row checkboxes, form fields, compose body, sender data      | Moderately stable (accessibility standards) |
+| **T4 — CSS class selectors**     | Email row internals (subject, snippet, date, unread status) | Fragile (Closure Compiler output)           |
 
 **~73% of interactions use T1/T2** — navigation + action triggers are CSS-free.
 

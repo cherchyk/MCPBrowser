@@ -1,5 +1,10 @@
 import assert from 'assert';
-import { htmlToText, htmlToMarkdown, formatContent, decodeEntities } from '../../src/core/markdown.js';
+import {
+  htmlToText,
+  htmlToMarkdown,
+  formatContent,
+  decodeEntities,
+} from '../../src/core/markdown.js';
 
 console.log('🧪 Testing content conversion (markdown.js)\n');
 
@@ -143,7 +148,8 @@ test('Should decode entities in markdown output', () => {
 });
 
 test('Should produce clean multi-element document', () => {
-  const html = '<article><h1>Guide</h1><p>Intro <a href="https://x.com">link</a>.</p><ul><li>a</li><li>b</li></ul></article>';
+  const html =
+    '<article><h1>Guide</h1><p>Intro <a href="https://x.com">link</a>.</p><ul><li>a</li><li>b</li></ul></article>';
   const result = htmlToMarkdown(html);
   assert.ok(result.includes('# Guide'), 'heading');
   assert.ok(result.includes('[link](https://x.com)'), 'link');

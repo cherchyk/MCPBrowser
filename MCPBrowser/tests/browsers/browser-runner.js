@@ -4,7 +4,7 @@
  */
 
 import { getAvailableBrowsers } from './browser-test-helper.js';
-import { getBrowser, closeBrowser } from '../../src/mcp-browser.js';
+import { getBrowser, closeBrowser } from '../../src/core/browser.js';
 
 /**
  * Run test function across browsers
@@ -13,15 +13,13 @@ import { getBrowser, closeBrowser } from '../../src/mcp-browser.js';
  * @returns {Promise<void>}
  */
 export async function runWithBrowsers(testFn, browser = '') {
-  const browsers = browser 
-    ? [{ type: browser, available: true }] 
-    : await getAvailableBrowsers();
+  const browsers = browser ? [{ type: browser, available: true }] : await getAvailableBrowsers();
 
   for (const { type: browserType } of browsers) {
     console.log(`\n${'='.repeat(50)}`);
     console.log(`Testing with ${browserType.toUpperCase()}`);
     console.log(`${'='.repeat(50)}`);
-    
+
     // Try to connect to browser, skip if connection fails
     try {
       await getBrowser(browserType);
@@ -30,7 +28,7 @@ export async function runWithBrowsers(testFn, browser = '') {
       console.error(`⚠️  [WARNING] Skipping ${browserType} tests`);
       continue;
     }
-    
+
     // Run the test function with browserType
     try {
       await testFn(browserType);

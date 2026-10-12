@@ -4,9 +4,13 @@
  */
 
 import assert from 'assert';
-import { getCurrentHtml, fetchPage } from '../../src/mcp-browser.js';
+import { FETCH_WEBPAGE_ACTION } from '../../src/actions/fetch-page.js';
+import { GET_CURRENT_HTML_ACTION } from '../../src/actions/get-current-html.js';
 import { ErrorResponse, InformationalResponse } from '../../src/core/responses.js';
 import { runWithBrowsers } from '../browsers/browser-runner.js';
+
+const getCurrentHtml = GET_CURRENT_HTML_ACTION.execute;
+const fetchPage = FETCH_WEBPAGE_ACTION.execute;
 const browserParam = process.argv[2] || '';
 console.log('🧪 Testing getCurrentHtml action\n');
 
@@ -38,7 +42,7 @@ const testUrl = 'https://example.com';
 
 await runWithBrowsers(async (browserType) => {
   console.log('\n📋 Testing getCurrentHtml()');
-  
+
   await test(`[${browserType}] Should require url parameter`, async () => {
     try {
       await getCurrentHtml({});
@@ -47,18 +51,26 @@ await runWithBrowsers(async (browserType) => {
       assert.match(err.message, /url parameter is required/);
     }
   });
-  
+
   await test(`[${browserType}] Should return informational response if page not loaded`, async () => {
     const result = await getCurrentHtml({ url: 'https://never-loaded-domain-12345.com' });
-    assert.strictEqual(result instanceof InformationalResponse, true, 'Should return InformationalResponse (not red error)');
+    assert.strictEqual(
+      result instanceof InformationalResponse,
+      true,
+      'Should return InformationalResponse (not red error)',
+    );
     assert.match(result.message, /No open page found/);
   });
-  
+
   await test(`[${browserType}] Should get current HTML from loaded page`, async () => {
     // First fetch a page
     const fetchResult = await fetchPage({ url: testUrl, browser: browserType });
-    assert.strictEqual(!(fetchResult instanceof ErrorResponse), true, 'Should fetch page successfully');
-    
+    assert.strictEqual(
+      !(fetchResult instanceof ErrorResponse),
+      true,
+      'Should fetch page successfully',
+    );
+
     // Get current HTML
     const result = await getCurrentHtml({ url: testUrl });
     assert.strictEqual(!(result instanceof ErrorResponse), true, 'Should get HTML successfully');
@@ -66,30 +78,32 @@ await runWithBrowsers(async (browserType) => {
     assert.ok(result.currentUrl, 'Should return current URL');
     assert.ok(result.html.length > 0, 'HTML should not be empty');
   });
-  
+
   await test(`[${browserType}] Should respect removeUnnecessaryHTML parameter`, async () => {
     // Ensure page is loaded
     await fetchPage({ url: testUrl, browser: browserType });
-    
+
     // Get cleaned HTML (default)
-    const cleanedResult = await getCurrentHtml({ 
+    const cleanedResult = await getCurrentHtml({
       url: testUrl,
-      removeUnnecessaryHTML: true 
+      removeUnnecessaryHTML: true,
     });
     assert.strictEqual(!(cleanedResult instanceof ErrorResponse), true);
     const cleanedLength = cleanedResult.html.length;
-    
+
     // Get raw HTML
-    const rawResult = await getCurrentHtml({ 
+    const rawResult = await getCurrentHtml({
       url: testUrl,
-      removeUnnecessaryHTML: false 
+      removeUnnecessaryHTML: false,
     });
     assert.strictEqual(!(rawResult instanceof ErrorResponse), true);
     const rawLength = rawResult.html.length;
-    
+
     // Raw should be longer than cleaned
-    assert.ok(rawLength > cleanedLength, 
-      `Raw HTML (${rawLength}) should be longer than cleaned (${cleanedLength})`);
+    assert.ok(
+      rawLength > cleanedLength,
+      `Raw HTML (${rawLength}) should be longer than cleaned (${cleanedLength})`,
+    );
   });
 }, browserParam);
 

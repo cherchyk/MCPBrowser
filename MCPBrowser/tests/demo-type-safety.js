@@ -3,8 +3,12 @@
  * Shows how response classes catch errors that would otherwise fail at runtime
  */
 
-import { FetchPageSuccessResponse } from '../src/actions/fetch-page.js';
 import { ErrorResponse } from '../src/core/responses.js';
+import { ACTIONS as CORE_ACTIONS } from '../src/actions/index.js';
+
+const FETCH_WEBPAGE_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_fetch_webpage');
+
+const FetchPageSuccessResponse = FETCH_WEBPAGE_ACTION.response;
 
 console.log('🎯 Demonstrating Type Safety Benefits\n');
 
@@ -27,9 +31,9 @@ console.log('```\n');
 console.log('✅ After (response classes - errors caught immediately):');
 try {
   const response = new FetchPageSuccessResponse(
-    123,              // TypeError: currentUrl must be a string
-    null,             // TypeError: html must be a string  
-    'not an array'    // TypeError: nextSteps must be an array
+    123, // TypeError: currentUrl must be a string
+    null, // TypeError: html must be a string
+    'not an array', // TypeError: nextSteps must be an array
   );
   console.log('❌ Should have thrown an error!');
 } catch (error) {
@@ -92,10 +96,7 @@ console.log('```\n');
 
 console.log('✅ After (response classes - validates array contents):');
 try {
-  const response = new ErrorResponse(
-    'Something failed',
-    ['Step 1', 123, null, { text: 'x' }]
-  );
+  const response = new ErrorResponse('Something failed', ['Step 1', 123, null, { text: 'x' }]);
   console.log('❌ Should have thrown an error!');
 } catch (error) {
   console.log('```javascript');
@@ -120,8 +121,8 @@ const validResponse = new FetchPageSuccessResponse(
   [
     'Use browser_click_element to interact',
     'Use browser_type_text to fill forms',
-    'Use browser_close_tab when finished'
-  ]
+    'Use browser_close_tab when finished',
+  ],
 );
 
 console.log('✅ Creating a valid response:');

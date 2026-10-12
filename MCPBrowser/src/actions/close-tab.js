@@ -4,7 +4,9 @@
 
 import { domainPages } from '../core/browser.js';
 import { MCPResponse, ErrorResponse } from '../core/responses.js';
+import { CoreAction } from '../core/actions.js';
 import logger from '../core/logger.js';
+import { getPrimaryText } from '../cli/utils.js';
 
 /**
  * @typedef {import('@modelcontextprotocol/sdk/types.js').Tool} Tool
@@ -17,7 +19,7 @@ import logger from '../core/logger.js';
 /**
  * Response for successful browser_close_tab operations
  */
-export class CloseTabSuccessResponse extends MCPResponse {
+class CloseTabSuccessResponse extends MCPResponse {
   /**
    * @param {string} message - Success message
    * @param {string} hostname - Hostname that was closed
@@ -25,14 +27,14 @@ export class CloseTabSuccessResponse extends MCPResponse {
    */
   constructor(message, hostname, nextSteps) {
     super(nextSteps);
-    
+
     if (typeof message !== 'string') {
       throw new TypeError('message must be a string');
     }
     if (typeof hostname !== 'string') {
       throw new TypeError('hostname must be a string');
     }
-    
+
     this.message = message;
     this.hostname = hostname;
   }
@@ -40,7 +42,7 @@ export class CloseTabSuccessResponse extends MCPResponse {
   _getAdditionalFields() {
     return {
       message: this.message,
-      hostname: this.hostname
+      hostname: this.hostname,
     };
   }
 
@@ -56,40 +58,56 @@ export class CloseTabSuccessResponse extends MCPResponse {
 /**
  * @type {Tool}
  */
-export const CLOSE_TAB_TOOL = {
-  name: "browser_close_tab",
-  title: "Close Tab",
-  description: "Close a browser tab to free resources. Use when: you are done with a page and want to release memory, or need to reset session state for a hostname. Uses exact hostname match.",
+const CLOSE_TAB_TOOL = {
+  name: 'browser_close_tab',
+  title: 'Close Tab',
+  description:
+    'Close a browser tab to free resources. Use when: you are done with a page and want to release memory, or need to reset session state for a hostname. Uses exact hostname match.',
   inputSchema: {
-    type: "object",
+    type: 'object',
     properties: {
-      url: { type: "string", description: "The URL whose hostname tab should be closed" }
+      url: { type: 'string', description: 'The URL whose hostname tab should be closed' },
     },
-    required: ["url"],
-    additionalProperties: false
+    required: ['url'],
+    additionalProperties: false,
   },
   outputSchema: {
-    type: "object",
+    type: 'object',
     properties: {
-      message: { type: "string", description: "Success message" },
-      hostname: { type: "string", description: "Hostname that was closed" },
-      nextSteps: { 
-        type: "array", 
-        items: { type: "string" },
-        description: "Suggested next actions"
-      }
+      message: { type: 'string', description: 'Success message' },
+      hostname: { type: 'string', description: 'Hostname that was closed' },
+      nextSteps: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Suggested next actions',
+      },
     },
-    required: ["message", "hostname", "nextSteps"],
-    additionalProperties: false
+    required: ['message', 'hostname', 'nextSteps'],
+    additionalProperties: false,
   },
   annotations: {
-    title: "Close Tab",
+    title: 'Close Tab',
     readOnlyHint: false,
     destructiveHint: true,
     idempotentHint: true,
-    openWorldHint: false
-  }
+    openWorldHint: false,
+  },
 };
+
+export const CLOSE_TAB_ACTION = new CoreAction({
+  tool: CLOSE_TAB_TOOL,
+  response: CloseTabSuccessResponse,
+  handler: closeTab,
+  cli: {
+    order: 90,
+    cmd: 'close',
+    requiresFetch: false,
+    flagMap: {},
+    buildParams: (url) => ({ url }),
+    formatOutput: (mcp) => ({ stdout: getPrimaryText(mcp) }),
+    examples: ['mcpbrowser close https://example.com'],
+  },
+});
 
 // ============================================================================
 // ACTION FUNCTION
@@ -102,19 +120,16 @@ export const CLOSE_TAB_TOOL = {
  * @param {string} params.url - The URL whose hostname tab should be closed
  * @returns {Promise<object>} Result indicating success or failure
  */
-export async function closeTab({ url }) {
+async function closeTab({ url }) {
   const startTime = Date.now();
   logger.info(`browser_close_tab called: url=${url}`);
-  
+
   try {
     // Validate URL
     if (!url || typeof url !== 'string') {
-      return new ErrorResponse(
-        'Invalid or missing URL parameter',
-        [
-          "Provide a valid URL parameter"
-        ]
-      );
+      return new ErrorResponse('Invalid or missing URL parameter', [
+        'Provide a valid URL parameter',
+      ]);
     }
 
     // Extract hostname from URL
@@ -122,14 +137,11 @@ export async function closeTab({ url }) {
     try {
       hostname = new URL(url).hostname;
     } catch {
-      return new ErrorResponse(
-        'Invalid URL format',
-        [
-          "Provide a valid URL with protocol (e.g., https://example.com)"
-        ]
-      );
+      return new ErrorResponse('Invalid URL format', [
+        'Provide a valid URL with protocol (e.g., https://example.com)',
+      ]);
     }
-    
+
     // Check if we have a tab for this hostname
     if (!domainPages.has(hostname)) {
       // Hostname not found - try to find by actual page URL
@@ -146,60 +158,44 @@ export async function closeTab({ url }) {
           // Skip pages we can't access
         }
       }
-      
+
       if (!foundHostname) {
-        return new CloseTabSuccessResponse(
-          'No open tab found for this hostname',
-          hostname,
-          [
-            "Use MCPBrowser's browser_fetch_webpage to open a new page if needed"
-          ]
-        );
+        return new CloseTabSuccessResponse('No open tab found for this hostname', hostname, [
+          "Use MCPBrowser's browser_fetch_webpage to open a new page if needed",
+        ]);
       }
-      
+
       // Found the page by URL - use that hostname
       hostname = foundHostname;
     }
 
     // Get and close the page
     const page = domainPages.get(hostname);
-    
+
     // Check if page is already closed
     if (page.isClosed()) {
       domainPages.delete(hostname);
-      return new CloseTabSuccessResponse(
-        'Tab was already closed',
-        hostname,
-        [
-          "Use MCPBrowser's browser_fetch_webpage to open a new page if needed"
-        ]
-      );
+      return new CloseTabSuccessResponse('Tab was already closed', hostname, [
+        "Use MCPBrowser's browser_fetch_webpage to open a new page if needed",
+      ]);
     }
 
     // Close the page
     await page.close();
-    
+
     // Remove from domain pool
     domainPages.delete(hostname);
-    
+
     logger.info(`browser_close_tab completed: closed tab for ${hostname}`);
-    
-    return new CloseTabSuccessResponse(
-      `Successfully closed tab for ${hostname}`,
-      hostname,
-      [
-        "Use MCPBrowser's browser_fetch_webpage to open a new page if needed"
-      ]
-    );
-    
+
+    return new CloseTabSuccessResponse(`Successfully closed tab for ${hostname}`, hostname, [
+      "Use MCPBrowser's browser_fetch_webpage to open a new page if needed",
+    ]);
   } catch (error) {
     logger.error(`browser_close_tab failed: ${error.message}`);
-    return new ErrorResponse(
-      error.message,
-      [
-        "Check if the URL is correct",
-        "Verify a page exists for this hostname"
-      ]
-    );
+    return new ErrorResponse(error.message, [
+      'Check if the URL is correct',
+      'Verify a page exists for this hostname',
+    ]);
   }
 }

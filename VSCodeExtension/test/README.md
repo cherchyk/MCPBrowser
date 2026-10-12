@@ -32,17 +32,17 @@ Add to the bottom of `extension.js`:
 
 ```javascript
 module.exports = {
-    activate,
-    deactivate,
-    // Export for testing
-    getMcpConfigPath,
-    checkNodeInstalled,
-    isMcpBrowserConfigured,
-    configureMcpBrowser,
-    removeMcpBrowser,
-    installMcpBrowser,
-    checkMcpBrowserInstalled,
-    showConfigurationPrompt
+  activate,
+  deactivate,
+  // Export for testing
+  getMcpConfigPath,
+  checkNodeInstalled,
+  isMcpBrowserConfigured,
+  configureMcpBrowser,
+  removeMcpBrowser,
+  installMcpBrowser,
+  checkMcpBrowserInstalled,
+  showConfigurationPrompt,
 };
 ```
 

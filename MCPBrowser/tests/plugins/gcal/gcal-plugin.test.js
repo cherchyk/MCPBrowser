@@ -6,14 +6,22 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { manifest, matchesPage, getActions, getInfo } from '../../../src/plugins/gcal/index.js';
+import * as pluginModule from '../../../src/plugins/gcal/index.js';
+
+const { GCAL_PLUGIN } = pluginModule;
+const { manifest, matchesPage, getInfo } = GCAL_PLUGIN;
+const getActions = () => GCAL_PLUGIN.getActions();
 
 describe('GCal Plugin — manifest', () => {
+  it('exports only its CorePlugin descriptor', () => {
+    assert.deepEqual(Object.keys(pluginModule), ['GCAL_PLUGIN']);
+  });
+
   it('has required fields', () => {
     assert.equal(manifest.name, 'gcal');
     assert.equal(typeof manifest.version, 'string');
     assert.equal(typeof manifest.description, 'string');
-    assert.equal(manifest.interfaceVersion, 1);
+    assert.equal(manifest.interfaceVersion, 2);
     assert.ok(Array.isArray(manifest.urlPatterns));
     assert.ok(manifest.urlPatterns.length > 0);
   });
@@ -76,22 +84,32 @@ describe('GCal Plugin — getActions', () => {
   it('all actions have required fields', () => {
     for (const action of actions) {
       assert.equal(typeof action.name, 'string', `action name must be string`);
-      assert.equal(typeof action.description, 'string', `${action.name}: description must be string`);
+      assert.equal(
+        typeof action.description,
+        'string',
+        `${action.name}: description must be string`,
+      );
       assert.ok(Array.isArray(action.params), `${action.name}: params must be array`);
       assert.equal(typeof action.execute, 'function', `${action.name}: execute must be function`);
     }
   });
 
   it('action names are unique', () => {
-    const names = actions.map(a => a.name);
+    const names = actions.map((a) => a.name);
     assert.equal(new Set(names).size, names.length, 'Duplicate action names found');
   });
 
   it('includes all expected action names', () => {
-    const names = actions.map(a => a.name);
+    const names = actions.map((a) => a.name);
     const expected = [
-      'list_events', 'read_event', 'create_event', 'search_events',
-      'edit_event', 'rsvp_event', 'delete_event', 'check_availability'
+      'list_events',
+      'read_event',
+      'create_event',
+      'search_events',
+      'edit_event',
+      'rsvp_event',
+      'delete_event',
+      'check_availability',
     ];
     for (const name of expected) {
       assert.ok(names.includes(name), `Missing action: ${name}`);
@@ -101,10 +119,26 @@ describe('GCal Plugin — getActions', () => {
   it('all param objects have required fields', () => {
     for (const action of actions) {
       for (const param of action.params) {
-        assert.equal(typeof param.name, 'string', `${action.name}.${param.name}: name must be string`);
-        assert.equal(typeof param.type, 'string', `${action.name}.${param.name}: type must be string`);
-        assert.equal(typeof param.description, 'string', `${action.name}.${param.name}: description must be string`);
-        assert.equal(typeof param.required, 'boolean', `${action.name}.${param.name}: required must be boolean`);
+        assert.equal(
+          typeof param.name,
+          'string',
+          `${action.name}.${param.name}: name must be string`,
+        );
+        assert.equal(
+          typeof param.type,
+          'string',
+          `${action.name}.${param.name}: type must be string`,
+        );
+        assert.equal(
+          typeof param.description,
+          'string',
+          `${action.name}.${param.name}: description must be string`,
+        );
+        assert.equal(
+          typeof param.required,
+          'boolean',
+          `${action.name}.${param.name}: required must be boolean`,
+        );
       }
     }
   });

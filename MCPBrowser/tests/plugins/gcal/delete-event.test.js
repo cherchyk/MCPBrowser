@@ -5,7 +5,11 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { deleteEvent } from '../../../src/plugins/gcal/actions/delete-event.js';
+import { ACTIONS as GCAL_ACTIONS } from '../../../src/plugins/gcal/actions/index.js';
+
+const deleteEventAction = GCAL_ACTIONS.find((action) => action.id === 'delete_event');
+
+const deleteEvent = deleteEventAction.handler;
 
 describe('deleteEvent', () => {
   it('is an async function', () => {
@@ -15,7 +19,7 @@ describe('deleteEvent', () => {
 
   it('returns error when page is not on Google Calendar', async () => {
     const mockPage = {
-      url: () => 'https://example.com'
+      url: () => 'https://example.com',
     };
     const result = await deleteEvent({ page: mockPage, params: { index: 0 } });
     assert.equal(result.constructor.name, 'ErrorResponse');
@@ -25,7 +29,7 @@ describe('deleteEvent', () => {
 
   it('returns error when neither index nor id provided', async () => {
     const mockPage = {
-      url: () => 'https://calendar.google.com/calendar/u/0/r/week'
+      url: () => 'https://calendar.google.com/calendar/u/0/r/week',
     };
     const result = await deleteEvent({ page: mockPage, params: {} });
     assert.equal(result.constructor.name, 'ErrorResponse');

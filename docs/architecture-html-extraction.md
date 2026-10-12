@@ -3,6 +3,7 @@
 ## Problem
 
 Previously, `browser_fetch_webpage` performed **two distinct functions**:
+
 1. **Navigate/load** a webpage (or reuse existing page)
 2. **Extract HTML** from the DOM
 
@@ -44,10 +45,12 @@ After interaction: browser_click_element(selector)     → Click
 Gets HTML from an already-loaded page without navigation.
 
 **Parameters:**
+
 - `url` (required): URL of the page (for identifying which tab)
 - `removeUnnecessaryHTML` (default: true): Clean HTML like browser_fetch_webpage
 
 **Returns:**
+
 ```json
 {
   "success": true,
@@ -57,6 +60,7 @@ Gets HTML from an already-loaded page without navigation.
 ```
 
 **Use after:**
+
 - `browser_click_element` - Get HTML after clicking
 - `browser_type_text` - Get HTML after form input
 - `wait_for_element` - Get HTML after dynamic content loads
@@ -64,33 +68,35 @@ Gets HTML from an already-loaded page without navigation.
 ## Example Usage
 
 ### Old inefficient way:
+
 ```javascript
 // Load Gmail
-await browser_fetch_webpage({ url: "https://mail.google.com" })
+await browser_fetch_webpage({ url: 'https://mail.google.com' });
 
 // Click first email
-await browser_click_element({ url: "...", selector: "tr:first-child" })
+await browser_click_element({ url: '...', selector: 'tr:first-child' });
 
 // Wait for content
-await wait_for_element({ url: "...", selector: ".email-body" })
+await wait_for_element({ url: '...', selector: '.email-body' });
 
 // Get updated HTML - PROBLEM: This reloads the page!
-await browser_fetch_webpage({ url: "..." })  // ❌ Wasteful!
+await browser_fetch_webpage({ url: '...' }); // ❌ Wasteful!
 ```
 
 ### New efficient way:
+
 ```javascript
 // Load Gmail
-await browser_fetch_webpage({ url: "https://mail.google.com" })
+await browser_fetch_webpage({ url: 'https://mail.google.com' });
 
 // Click first email
-await browser_click_element({ url: "...", selector: "tr:first-child" })
+await browser_click_element({ url: '...', selector: 'tr:first-child' });
 
 // Wait for content
-await wait_for_element({ url: "...", selector: ".email-body" })
+await wait_for_element({ url: '...', selector: '.email-body' });
 
 // Get updated HTML - Just extracts DOM, no navigation
-await browser_get_current_html({ url: "..." })  // ✅ Efficient!
+await browser_get_current_html({ url: '...' }); // ✅ Efficient!
 ```
 
 ## Implementation Details
@@ -103,11 +109,13 @@ await browser_get_current_html({ url: "..." })  // ✅ Efficient!
 ## When to Use Each Function
 
 ### Use `browser_fetch_webpage` when:
+
 - Loading a page for the first time
 - Navigating to a new URL
 - Need to handle authentication flows
 
 ### Use `browser_get_current_html` when:
+
 - Getting updated content after interactions
 - Page is already loaded and you just need current state
 - Want faster response without navigation overhead
@@ -115,6 +123,7 @@ await browser_get_current_html({ url: "..." })  // ✅ Efficient!
 ## Performance Impact
 
 In typical workflows (initial load + 2-3 interactions), this saves:
+
 - **Time**: 2-5 seconds per interaction (no page reload)
 - **Network**: Unnecessary HTTP requests
 - **Browser resources**: No DOM reconstruction
@@ -122,11 +131,13 @@ In typical workflows (initial load + 2-3 interactions), this saves:
 ## Testing
 
 Run test suite:
+
 ```bash
 node tests/get-current-html.test.js
 ```
 
 Verifies:
+
 - HTML extraction without navigation works
 - Content matches current page state
 - Cleaning option functions correctly

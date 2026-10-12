@@ -12,16 +12,18 @@ Every plugin MUST export the following from its entry point (`plugins/<name>/ind
 
 ```javascript
 export const manifest = {
-  name: "gmail",                    // string, required, matches folder name
-  version: "1.0.0",                 // string, required, semver
-  description: "Gmail automation",  // string, required
-  interfaceVersion: 1,              // integer, required, must match core's CURRENT_INTERFACE_VERSION
-  urlPatterns: [                    // string[], required, at least one entry
-    "mail.google.com"
+  name: 'gmail', // string, required, matches folder name
+  version: '1.0.0', // string, required, semver
+  description: 'Gmail automation', // string, required
+  interfaceVersion: 1, // integer, required, must match core's CURRENT_INTERFACE_VERSION
+  urlPatterns: [
+    // string[], required, at least one entry
+    'mail.google.com',
   ],
-  domPatterns: [                    // string[], optional, CSS selectors or text markers
-    ".powerbi-grid"                 // Example: for embeddable content plugins
-  ]
+  domPatterns: [
+    // string[], optional, CSS selectors or text markers
+    '.powerbi-grid', // Example: for embeddable content plugins
+  ],
 };
 ```
 
@@ -30,14 +32,17 @@ export const manifest = {
 Called by the detection system after page content is extracted.
 
 **Parameters**:
+
 - `url` (string): Current page URL
 - `html` (string): Extracted page HTML (may be cleaned/trimmed)
 
 **Returns**: `{ matched: boolean, confidence?: number }`
+
 - `matched`: Whether this plugin recognizes the page
 - `confidence`: Optional, 0.0–1.0. Default 1.0 for URL matches. Used for ranking when multiple plugins match.
 
 **Contract**:
+
 - MUST be synchronous or return a resolved value quickly (<10ms)
 - MUST NOT throw — return `{ matched: false }` on any error
 - MUST NOT modify the page or make network requests
@@ -67,6 +72,7 @@ Returns the complete list of actions this plugin provides.
 ```
 
 **Contract**:
+
 - MUST return a non-empty array (at least one action)
 - Action names MUST be unique within the plugin
 - `execute` functions MUST return an object conforming to MCPResponse (has `toMcpFormat()` method) or a plain object with `{ nextSteps: string[] }` at minimum
@@ -101,6 +107,7 @@ Returns high-level plugin context for the AI agent. Called by `browser_plugin_in
 ```
 
 **Contract**:
+
 - MUST NOT include `execute` functions in the `actions` array (serialization safety)
 - MUST NOT expose CSS selectors, XPath, or internal JavaScript code
 - `authFlow` is optional but recommended for sites requiring authentication
@@ -108,6 +115,7 @@ Returns high-level plugin context for the AI agent. Called by `browser_plugin_in
 ## Validation at Load Time
 
 The plugin loader validates:
+
 1. All required exports exist and are correct types
 2. `manifest.interfaceVersion === CURRENT_INTERFACE_VERSION`
 3. `manifest.name` matches the plugin's folder name

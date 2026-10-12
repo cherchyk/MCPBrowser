@@ -1,7 +1,7 @@
 /**
  * Tests for HttpStatusResponse Class
  * Verifies that HTTP 4xx/5xx responses are shown as informational (NOT red errors)
- * 
+ *
  * The MCP server didn't fail - the HTTP request completed successfully,
  * it just returned a non-2xx status code. This should be conveyed clearly
  * without appearing as an MCP error.
@@ -33,27 +33,43 @@ function test(name, fn) {
 // ============================================================================
 
 test('HttpStatusResponse requires string url', () => {
-  assert.throws(() => {
-    new HttpStatusResponse(123, 404, 'Not Found', '<html></html>');
-  }, TypeError, 'Should throw TypeError for non-string url');
+  assert.throws(
+    () => {
+      new HttpStatusResponse(123, 404, 'Not Found', '<html></html>');
+    },
+    TypeError,
+    'Should throw TypeError for non-string url',
+  );
 });
 
 test('HttpStatusResponse requires number statusCode', () => {
-  assert.throws(() => {
-    new HttpStatusResponse('https://example.com', '404', 'Not Found', '<html></html>');
-  }, TypeError, 'Should throw TypeError for non-number statusCode');
+  assert.throws(
+    () => {
+      new HttpStatusResponse('https://example.com', '404', 'Not Found', '<html></html>');
+    },
+    TypeError,
+    'Should throw TypeError for non-number statusCode',
+  );
 });
 
 test('HttpStatusResponse requires string statusText', () => {
-  assert.throws(() => {
-    new HttpStatusResponse('https://example.com', 404, null, '<html></html>');
-  }, TypeError, 'Should throw TypeError for non-string statusText');
+  assert.throws(
+    () => {
+      new HttpStatusResponse('https://example.com', 404, null, '<html></html>');
+    },
+    TypeError,
+    'Should throw TypeError for non-string statusText',
+  );
 });
 
 test('HttpStatusResponse requires string html', () => {
-  assert.throws(() => {
-    new HttpStatusResponse('https://example.com', 404, 'Not Found', null);
-  }, TypeError, 'Should throw TypeError for non-string html');
+  assert.throws(
+    () => {
+      new HttpStatusResponse('https://example.com', 404, 'Not Found', null);
+    },
+    TypeError,
+    'Should throw TypeError for non-string html',
+  );
 });
 
 // ============================================================================
@@ -65,9 +81,9 @@ test('HttpStatusResponse creates correct structure for 404', () => {
     'https://example.com/missing-page',
     404,
     'Not Found',
-    '<html><body>Page not found</body></html>'
+    '<html><body>Page not found</body></html>',
   );
-  
+
   assert.ok(response instanceof MCPResponse, 'Should be instance of MCPResponse');
   assert.ok(response instanceof HttpStatusResponse, 'Should be instance of HttpStatusResponse');
   assert.strictEqual(response.url, 'https://example.com/missing-page');
@@ -82,9 +98,9 @@ test('HttpStatusResponse creates correct structure for 503', () => {
     'https://example.com/api',
     503,
     'Service Unavailable',
-    '<html><body>Service temporarily unavailable</body></html>'
+    '<html><body>Service temporarily unavailable</body></html>',
   );
-  
+
   assert.strictEqual(response.statusCode, 503);
   assert.strictEqual(response.statusCategory, 'server_error');
   assert.ok(response.description.includes('temporarily unavailable'), 'Should have description');
@@ -95,11 +111,11 @@ test('HttpStatusResponse toJSON includes all fields', () => {
     'https://example.com/page',
     500,
     'Internal Server Error',
-    '<html><body>Error</body></html>'
+    '<html><body>Error</body></html>',
   );
-  
+
   const json = response.toJSON();
-  
+
   assert.strictEqual(json.url, 'https://example.com/page');
   assert.strictEqual(json.statusCode, 500);
   assert.strictEqual(json.statusText, 'Internal Server Error');
@@ -118,11 +134,11 @@ test('HttpStatusResponse.toMcpFormat() returns isError: false for 404 (NOT RED)'
     'https://example.com/not-found',
     404,
     'Not Found',
-    '<html></html>'
+    '<html></html>',
   );
-  
+
   const mcpFormat = response.toMcpFormat();
-  
+
   // CRITICAL: Must be false - 404 is a valid HTTP response, not an MCP failure
   assert.strictEqual(mcpFormat.isError, false, 'isError must be false for HTTP 404');
 });
@@ -132,11 +148,11 @@ test('HttpStatusResponse.toMcpFormat() returns isError: false for 500 (NOT RED)'
     'https://example.com/error',
     500,
     'Internal Server Error',
-    '<html></html>'
+    '<html></html>',
   );
-  
+
   const mcpFormat = response.toMcpFormat();
-  
+
   // CRITICAL: Must be false - 500 is a valid HTTP response, not an MCP failure
   assert.strictEqual(mcpFormat.isError, false, 'isError must be false for HTTP 500');
 });
@@ -146,11 +162,11 @@ test('HttpStatusResponse.toMcpFormat() returns isError: false for 503 (NOT RED)'
     'https://example.com/unavailable',
     503,
     'Service Unavailable',
-    '<html></html>'
+    '<html></html>',
   );
-  
+
   const mcpFormat = response.toMcpFormat();
-  
+
   // CRITICAL: Must be false - 503 is a valid HTTP response, not an MCP failure
   assert.strictEqual(mcpFormat.isError, false, 'isError must be false for HTTP 503');
 });
@@ -160,23 +176,34 @@ test('HttpStatusResponse omits structuredContent (like ErrorResponse) to avoid s
     'https://example.com',
     404,
     'Not Found',
-    '<html></html>'
+    '<html></html>',
   );
-  
+
   const errorResponse = new ErrorResponse('Network error', []);
-  
+
   const httpMcp = httpResponse.toMcpFormat();
   const errorMcp = errorResponse.toMcpFormat();
-  
+
   // HTTP status responses omit structuredContent to avoid tool-specific schema violations
-  assert.strictEqual(httpMcp.structuredContent, undefined, 'HttpStatusResponse should NOT have structuredContent');
-  
+  assert.strictEqual(
+    httpMcp.structuredContent,
+    undefined,
+    'HttpStatusResponse should NOT have structuredContent',
+  );
+
   // Error responses also do not have structuredContent per MCP spec
-  assert.strictEqual(errorMcp.structuredContent, undefined, 'ErrorResponse should NOT have structuredContent');
+  assert.strictEqual(
+    errorMcp.structuredContent,
+    undefined,
+    'ErrorResponse should NOT have structuredContent',
+  );
 
   // Both convey info via text content
   assert.ok(httpMcp.content[0].text.includes('404'), 'HTTP text should include status code');
-  assert.ok(errorMcp.content[0].text.includes('Network error'), 'Error text should include message');
+  assert.ok(
+    errorMcp.content[0].text.includes('Network error'),
+    'Error text should include message',
+  );
 });
 
 // ============================================================================
@@ -188,13 +215,15 @@ test('HttpStatusResponse auto-generates helpful next steps for 401', () => {
     'https://example.com/protected',
     401,
     'Unauthorized',
-    '<html></html>'
+    '<html></html>',
   );
-  
+
   assert.ok(response.nextSteps.length > 0, 'Should have auto-generated nextSteps');
   assert.ok(
-    response.nextSteps.some(s => s.toLowerCase().includes('auth') || s.toLowerCase().includes('login')),
-    'Should suggest authentication-related action'
+    response.nextSteps.some(
+      (s) => s.toLowerCase().includes('auth') || s.toLowerCase().includes('login'),
+    ),
+    'Should suggest authentication-related action',
   );
 });
 
@@ -203,13 +232,15 @@ test('HttpStatusResponse auto-generates helpful next steps for 404', () => {
     'https://example.com/missing',
     404,
     'Not Found',
-    '<html></html>'
+    '<html></html>',
   );
-  
+
   assert.ok(response.nextSteps.length > 0, 'Should have auto-generated nextSteps');
   assert.ok(
-    response.nextSteps.some(s => s.toLowerCase().includes('url') || s.toLowerCase().includes('verify')),
-    'Should suggest verifying URL'
+    response.nextSteps.some(
+      (s) => s.toLowerCase().includes('url') || s.toLowerCase().includes('verify'),
+    ),
+    'Should suggest verifying URL',
   );
 });
 
@@ -218,13 +249,15 @@ test('HttpStatusResponse auto-generates helpful next steps for 429', () => {
     'https://api.example.com/data',
     429,
     'Too Many Requests',
-    '<html></html>'
+    '<html></html>',
   );
-  
+
   assert.ok(response.nextSteps.length > 0, 'Should have auto-generated nextSteps');
   assert.ok(
-    response.nextSteps.some(s => s.toLowerCase().includes('wait') || s.toLowerCase().includes('rate')),
-    'Should suggest waiting or mention rate limit'
+    response.nextSteps.some(
+      (s) => s.toLowerCase().includes('wait') || s.toLowerCase().includes('rate'),
+    ),
+    'Should suggest waiting or mention rate limit',
   );
 });
 
@@ -233,13 +266,18 @@ test('HttpStatusResponse auto-generates helpful next steps for 5xx', () => {
     'https://example.com/api',
     503,
     'Service Unavailable',
-    '<html></html>'
+    '<html></html>',
   );
-  
+
   assert.ok(response.nextSteps.length > 0, 'Should have auto-generated nextSteps');
   assert.ok(
-    response.nextSteps.some(s => s.toLowerCase().includes('server') || s.toLowerCase().includes('wait') || s.toLowerCase().includes('try')),
-    'Should suggest server issue or retry'
+    response.nextSteps.some(
+      (s) =>
+        s.toLowerCase().includes('server') ||
+        s.toLowerCase().includes('wait') ||
+        s.toLowerCase().includes('try'),
+    ),
+    'Should suggest server issue or retry',
   );
 });
 
@@ -250,9 +288,9 @@ test('HttpStatusResponse allows custom next steps', () => {
     404,
     'Not Found',
     '<html></html>',
-    customSteps
+    customSteps,
   );
-  
+
   assert.deepStrictEqual(response.nextSteps, customSteps, 'Should use custom nextSteps');
 });
 
@@ -265,11 +303,11 @@ test('HttpStatusResponse getTextSummary includes status info', () => {
     'https://example.com/page',
     404,
     'Not Found',
-    '<html></html>'
+    '<html></html>',
   );
-  
+
   const summary = response.getTextSummary();
-  
+
   assert.ok(summary.includes('404'), 'Should include status code');
   assert.ok(summary.includes('Not Found'), 'Should include status text');
   assert.ok(summary.includes('https://example.com/page'), 'Should include URL');
@@ -283,22 +321,22 @@ test('SEMANTIC: HTTP 404 is NOT an MCP error - it is a valid response', () => {
   // When a webpage returns 404, the MCP server worked correctly!
   // It fetched the page and got back a 404 response - that's the answer.
   // Showing this as "red" would incorrectly suggest the MCP server failed.
-  
+
   const response = new HttpStatusResponse(
     'https://example.com/nonexistent',
     404,
     'Not Found',
-    '<html><body>Page not found</body></html>'
+    '<html><body>Page not found</body></html>',
   );
-  
+
   const mcpFormat = response.toMcpFormat();
-  
+
   // The MCP request succeeded - we got information about the page
   assert.strictEqual(mcpFormat.isError, false, 'HTTP 404 is NOT an MCP error');
-  
+
   // HTTP status responses use text-only format (no structuredContent) to avoid schema violations
   assert.strictEqual(mcpFormat.structuredContent, undefined, 'Should not have structuredContent');
-  
+
   // The text summary includes all relevant info
   assert.ok(mcpFormat.content[0].text.includes('404'), 'Text should include status code');
   assert.ok(mcpFormat.content[0].text.includes('Not Found'), 'Text should include status text');
@@ -306,29 +344,29 @@ test('SEMANTIC: HTTP 404 is NOT an MCP error - it is a valid response', () => {
 
 test('SEMANTIC: HTTP 503 is NOT an MCP error - server responded', () => {
   // The server responded with 503 - the MCP request succeeded in getting a response
-  
+
   const response = new HttpStatusResponse(
     'https://example.com/api',
     503,
     'Service Unavailable',
-    '<html><body>Try again later</body></html>'
+    '<html><body>Try again later</body></html>',
   );
-  
+
   const mcpFormat = response.toMcpFormat();
-  
+
   assert.strictEqual(mcpFormat.isError, false, 'HTTP 503 is NOT an MCP error');
 });
 
 test('CONTRAST: Network failure IS an MCP error', () => {
   // Compare: when the browser itself fails to connect, THAT is an error
-  
-  const errorResponse = new ErrorResponse(
-    'net::ERR_CONNECTION_REFUSED',
-    ['Check if the server is running', 'Verify the URL is correct']
-  );
-  
+
+  const errorResponse = new ErrorResponse('net::ERR_CONNECTION_REFUSED', [
+    'Check if the server is running',
+    'Verify the URL is correct',
+  ]);
+
   const mcpFormat = errorResponse.toMcpFormat();
-  
+
   // This IS an error because we couldn't complete the request
   assert.strictEqual(mcpFormat.isError, true, 'Network failure IS an MCP error');
 });

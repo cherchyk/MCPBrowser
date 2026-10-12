@@ -4,12 +4,12 @@
 
 ```javascript
 // 1. Load the page
-await browser_fetch_webpage({ url: "https://example.com" });
+await browser_fetch_webpage({ url: 'https://example.com' });
 
 // 2. Click a button
-await browser_click_element({ 
-  url: "https://example.com", 
-  text: "More information" 
+await browser_click_element({
+  url: 'https://example.com',
+  text: 'More information',
 });
 ```
 
@@ -17,32 +17,32 @@ await browser_click_element({
 
 ```javascript
 // 1. Load login page
-await browser_fetch_webpage({ url: "https://myapp.com/login" });
+await browser_fetch_webpage({ url: 'https://myapp.com/login' });
 
 // 2. Fill username
-await browser_type_text({ 
-  url: "https://myapp.com/login",
-  selector: "#username",
-  text: "myusername"
+await browser_type_text({
+  url: 'https://myapp.com/login',
+  selector: '#username',
+  text: 'myusername',
 });
 
 // 3. Fill password
-await browser_type_text({ 
-  url: "https://myapp.com/login",
-  selector: "#password",
-  text: "mypassword"
+await browser_type_text({
+  url: 'https://myapp.com/login',
+  selector: '#password',
+  text: 'mypassword',
 });
 
 // 4. Click login
-await browser_click_element({ 
-  url: "https://myapp.com/login",
-  text: "Login"
+await browser_click_element({
+  url: 'https://myapp.com/login',
+  text: 'Login',
 });
 
 // 5. Wait for dashboard
-await wait_for_element({ 
-  url: "https://myapp.com/login",
-  selector: ".dashboard"
+await wait_for_element({
+  url: 'https://myapp.com/login',
+  selector: '.dashboard',
 });
 ```
 
@@ -50,12 +50,12 @@ await wait_for_element({
 
 ```javascript
 // 1. Load the page
-await browser_fetch_webpage({ url: "https://store.com" });
+await browser_fetch_webpage({ url: 'https://store.com' });
 
 // 2. Discover all clickable elements
-const elements = await get_interactive_elements({ 
-  url: "https://store.com",
-  limit: 20
+const elements = await get_interactive_elements({
+  url: 'https://store.com',
+  limit: 20,
 });
 
 // 3. Find a specific button from the list
@@ -67,9 +67,9 @@ console.log(elements.elements);
 // ]
 
 // 4. Click the button you found
-await browser_click_element({ 
-  url: "https://store.com",
-  selector: "#add-cart"
+await browser_click_element({
+  url: 'https://store.com',
+  selector: '#add-cart',
 });
 ```
 
@@ -77,25 +77,25 @@ await browser_click_element({
 
 ```javascript
 // 1. Load the page
-await browser_fetch_webpage({ url: "https://social.com/feed" });
+await browser_fetch_webpage({ url: 'https://social.com/feed' });
 
 // 2. Click "Load More" button
-await browser_click_element({ 
-  url: "https://social.com/feed",
-  text: "Load More"
+await browser_click_element({
+  url: 'https://social.com/feed',
+  text: 'Load More',
 });
 
 // 3. Wait for new content to appear
-await wait_for_element({ 
-  url: "https://social.com/feed",
-  selector: ".new-posts",
-  timeout: 10000
+await wait_for_element({
+  url: 'https://social.com/feed',
+  selector: '.new-posts',
+  timeout: 10000,
 });
 
 // 4. Interact with new content
-await browser_click_element({ 
-  url: "https://social.com/feed",
-  text: "Like"
+await browser_click_element({
+  url: 'https://social.com/feed',
+  text: 'Like',
 });
 ```
 
@@ -105,42 +105,42 @@ await browser_click_element({
 // Complete workflow: Search -> Filter -> Select
 
 // 1. Load e-commerce site
-await browser_fetch_webpage({ url: "https://shop.com" });
+await browser_fetch_webpage({ url: 'https://shop.com' });
 
 // 2. Search for product
-await browser_type_text({ 
-  url: "https://shop.com",
-  selector: "#search-box",
-  text: "wireless headphones"
+await browser_type_text({
+  url: 'https://shop.com',
+  selector: '#search-box',
+  text: 'wireless headphones',
 });
 
-await browser_click_element({ 
-  url: "https://shop.com",
-  selector: "button.search-btn"
+await browser_click_element({
+  url: 'https://shop.com',
+  selector: 'button.search-btn',
 });
 
 // 3. Wait for results
-await wait_for_element({ 
-  url: "https://shop.com",
-  selector: ".search-results"
+await wait_for_element({
+  url: 'https://shop.com',
+  selector: '.search-results',
 });
 
 // 4. Apply filter
-await browser_click_element({ 
-  url: "https://shop.com",
-  text: "Under $100"
+await browser_click_element({
+  url: 'https://shop.com',
+  text: 'Under $100',
 });
 
 // 5. Wait for filtered results
-await wait_for_element({ 
-  url: "https://shop.com",
-  selector: ".filtered-results"
+await wait_for_element({
+  url: 'https://shop.com',
+  selector: '.filtered-results',
 });
 
 // 6. Click on first product
-await browser_click_element({ 
-  url: "https://shop.com",
-  selector: ".product-card:first-child"
+await browser_click_element({
+  url: 'https://shop.com',
+  selector: '.product-card:first-child',
 });
 ```
 
@@ -150,65 +150,68 @@ await browser_click_element({
 // Many modern websites use divs/spans with onclick instead of <a> tags
 
 // 1. Load the page
-await browser_fetch_webpage({ url: "https://webapp.com/dashboard" });
+await browser_fetch_webpage({ url: 'https://webapp.com/dashboard' });
 
 // 2. Discover elements with onclick handlers
-const elements = await get_interactive_elements({ 
-  url: "https://webapp.com/dashboard"
+const elements = await get_interactive_elements({
+  url: 'https://webapp.com/dashboard',
 });
 
 // Look for elements with hasOnClick: true
 // { tag: "div", text: "Settings", hasOnClick: true, ... }
 
 // 3. Click by text (works even if it's not a link!)
-await browser_click_element({ 
-  url: "https://webapp.com/dashboard",
-  text: "Settings"
+await browser_click_element({
+  url: 'https://webapp.com/dashboard',
+  text: 'Settings',
 });
 ```
 
 ## Tips
 
 ### Use text-based clicking when structure changes
+
 ```javascript
 // ✅ Good - resilient to page changes
-await browser_click_element({ url: "https://example.com", text: "Submit" });
+await browser_click_element({ url: 'https://example.com', text: 'Submit' });
 
 // ❌ Fragile - breaks if class names change
-await browser_click_element({ url: "https://example.com", selector: ".btn-primary-lg-submit-v2" });
+await browser_click_element({ url: 'https://example.com', selector: '.btn-primary-lg-submit-v2' });
 ```
 
 ### Chain operations for complex workflows
+
 ```javascript
 async function loginAndNavigate() {
   // Load
-  await browser_fetch_webpage({ url: "https://app.com/login" });
-  
+  await browser_fetch_webpage({ url: 'https://app.com/login' });
+
   // Login
-  await browser_type_text({ url: "https://app.com/login", selector: "#user", text: "me" });
-  await browser_type_text({ url: "https://app.com/login", selector: "#pass", text: "secret" });
-  await browser_click_element({ url: "https://app.com/login", text: "Sign In" });
-  
+  await browser_type_text({ url: 'https://app.com/login', selector: '#user', text: 'me' });
+  await browser_type_text({ url: 'https://app.com/login', selector: '#pass', text: 'secret' });
+  await browser_click_element({ url: 'https://app.com/login', text: 'Sign In' });
+
   // Navigate
-  await wait_for_element({ url: "https://app.com/login", selector: ".dashboard" });
-  await browser_click_element({ url: "https://app.com/login", text: "Reports" });
-  await wait_for_element({ url: "https://app.com/login", selector: ".reports-page" });
+  await wait_for_element({ url: 'https://app.com/login', selector: '.dashboard' });
+  await browser_click_element({ url: 'https://app.com/login', text: 'Reports' });
+  await wait_for_element({ url: 'https://app.com/login', selector: '.reports-page' });
 }
 ```
 
 ### Error handling
+
 ```javascript
-const result = await browser_click_element({ 
-  url: "https://example.com", 
-  text: "Submit" 
+const result = await browser_click_element({
+  url: 'https://example.com',
+  text: 'Submit',
 });
 
 if (!result.success) {
-  console.error("Click failed:", result.error);
+  console.error('Click failed:', result.error);
   // Try alternative approach
-  await browser_click_element({ 
-    url: "https://example.com", 
-    selector: "#submit-btn" 
+  await browser_click_element({
+    url: 'https://example.com',
+    selector: '#submit-btn',
   });
 }
 ```

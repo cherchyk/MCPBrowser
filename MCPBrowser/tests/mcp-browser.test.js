@@ -36,7 +36,7 @@ console.log('\n📋 Testing MCP Server initialization and tool listing\n');
 
 await test('Should start and respond to initialize request', async () => {
   const mcpProcess = spawn('node', [join(__dirname, '..', 'src', 'mcp-browser.js')], {
-    stdio: ['pipe', 'pipe', 'inherit']
+    stdio: ['pipe', 'pipe', 'inherit'],
   });
 
   try {
@@ -47,8 +47,8 @@ await test('Should start and respond to initialize request', async () => {
       params: {
         protocolVersion: '2024-11-05',
         capabilities: {},
-        clientInfo: { name: 'test', version: '1.0' }
-      }
+        clientInfo: { name: 'test', version: '1.0' },
+      },
     };
 
     const response = await new Promise((resolve, reject) => {
@@ -60,7 +60,7 @@ await test('Should start and respond to initialize request', async () => {
       mcpProcess.stdout.on('data', (data) => {
         buffer += data.toString();
         const lines = buffer.split('\n');
-        
+
         for (const line of lines) {
           if (line.trim()) {
             try {
@@ -91,9 +91,17 @@ await test('Should start and respond to initialize request', async () => {
     });
 
     assert.ok(response.result, 'Initialize response should have result');
-    assert.strictEqual(response.result.protocolVersion, '2024-11-05', 'Protocol version should match');
+    assert.strictEqual(
+      response.result.protocolVersion,
+      '2024-11-05',
+      'Protocol version should match',
+    );
     assert.ok(response.result.serverInfo, 'Server info should be present');
-    assert.strictEqual(response.result.serverInfo.name, 'MCPBrowser', 'Server name should be MCPBrowser');
+    assert.strictEqual(
+      response.result.serverInfo.name,
+      'MCPBrowser',
+      'Server name should be MCPBrowser',
+    );
   } finally {
     mcpProcess.kill();
   }
@@ -101,7 +109,7 @@ await test('Should start and respond to initialize request', async () => {
 
 await test('Should respond to tools/list request', async () => {
   const mcpProcess = spawn('node', [join(__dirname, '..', 'src', 'mcp-browser.js')], {
-    stdio: ['pipe', 'pipe', 'inherit']
+    stdio: ['pipe', 'pipe', 'inherit'],
   });
 
   try {
@@ -113,21 +121,21 @@ await test('Should respond to tools/list request', async () => {
       params: {
         protocolVersion: '2024-11-05',
         capabilities: {},
-        clientInfo: { name: 'test', version: '1.0' }
-      }
+        clientInfo: { name: 'test', version: '1.0' },
+      },
     };
 
     mcpProcess.stdin.write(JSON.stringify(initRequest) + '\n');
 
     // Wait a bit for initialization
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Then request tools list
     const toolsRequest = {
       jsonrpc: '2.0',
       id: 2,
       method: 'tools/list',
-      params: {}
+      params: {},
     };
 
     const response = await new Promise((resolve, reject) => {
@@ -139,7 +147,7 @@ await test('Should respond to tools/list request', async () => {
       mcpProcess.stdout.on('data', (data) => {
         buffer += data.toString();
         const lines = buffer.split('\n');
-        
+
         for (const line of lines) {
           if (line.trim()) {
             try {
@@ -168,11 +176,79 @@ await test('Should respond to tools/list request', async () => {
     assert.ok(response.result.tools, 'Result should have tools array');
     assert.ok(Array.isArray(response.result.tools), 'Tools should be an array');
     assert.ok(response.result.tools.length > 0, 'Should have at least one tool');
-    
-    const fetchTool = response.result.tools.find(t => t.name === 'browser_fetch_webpage');
+
+    const fetchTool = response.result.tools.find((t) => t.name === 'browser_fetch_webpage');
     assert.ok(fetchTool, 'Should have browser_fetch_webpage tool');
     assert.ok(fetchTool.description, 'Tool should have description');
     assert.ok(fetchTool.inputSchema, 'Tool should have input schema');
+  } finally {
+    mcpProcess.kill();
+  }
+});
+
+await test('Should return full plugin info without serialized JSON duplication', async () => {
+  const mcpProcess = spawn('node', [join(__dirname, '..', 'src', 'mcp-browser.js')], {
+    stdio: ['pipe', 'pipe', 'inherit'],
+  });
+  const pending = new Map();
+  let buffer = '';
+
+  mcpProcess.stdout.on('data', (data) => {
+    buffer += data.toString();
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const message = JSON.parse(line);
+      const handler = pending.get(message.id);
+      if (handler) {
+        pending.delete(message.id);
+        handler.resolve(message);
+      }
+    }
+  });
+
+  const request = (message) =>
+    new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        pending.delete(message.id);
+        reject(new Error(`Server did not respond to ${message.method} within 5 seconds`));
+      }, 5000);
+      pending.set(message.id, {
+        resolve: (response) => {
+          clearTimeout(timeout);
+          resolve(response);
+        },
+      });
+      mcpProcess.stdin.write(`${JSON.stringify(message)}\n`);
+    });
+
+  try {
+    await request({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-11-25',
+        capabilities: {},
+        clientInfo: { name: 'test', version: '1.0' },
+      },
+    });
+    const response = await request({
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'tools/call',
+      params: {
+        name: 'browser_plugin_info',
+        arguments: { plugin: 'word' },
+      },
+    });
+
+    assert.ok(response.result, 'Plugin info response should have a result');
+    assert.strictEqual(response.result.content.length, 1, 'JSON must not be repeated as text');
+    assert.ok(response.result.structuredContent, 'Plugin info must remain structured');
+    const payloadBytes = Buffer.byteLength(JSON.stringify(response.result), 'utf8');
+    assert.ok(payloadBytes < 16 * 1024, `Plugin info MCP result is ${payloadBytes} bytes`);
   } finally {
     mcpProcess.kill();
   }
