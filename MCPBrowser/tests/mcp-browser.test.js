@@ -248,7 +248,7 @@ await test('Should return compact plugin info without serialized JSON duplicatio
     assert.strictEqual(response.result.content.length, 1, 'JSON must not be repeated as text');
     assert.ok(response.result.structuredContent, 'Plugin info must remain structured');
     const payloadBytes = Buffer.byteLength(JSON.stringify(response.result), 'utf8');
-    assert.ok(payloadBytes < 16 * 1024, `Plugin info MCP result is ${payloadBytes} bytes`);
+    assert.ok(payloadBytes < 8 * 1024, `Plugin info MCP result is ${payloadBytes} bytes`);
   } finally {
     mcpProcess.kill();
   }
