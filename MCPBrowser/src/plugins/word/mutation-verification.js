@@ -33,6 +33,7 @@ export async function verifyDocumentText(readText, before, expected, timeoutMs =
   const normalizedExpected = normalizeDocumentText(expected);
   let observedChange = false;
   let observedReadableText = false;
+  let lastObservedText = '';
   let attempts = 0;
   let lastReadReason = null;
   do {
@@ -41,6 +42,7 @@ export async function verifyDocumentText(readText, before, expected, timeoutMs =
     if (current.accepted && typeof current.text === 'string') {
       observedReadableText = true;
       const normalized = normalizeDocumentText(current.text);
+      lastObservedText = normalized;
       observedChange ||= normalized !== normalizedBefore;
       const whitespaceOnlyChange = before !== expected && normalizedBefore === normalizedExpected;
       if (
@@ -65,6 +67,10 @@ export async function verifyDocumentText(readText, before, expected, timeoutMs =
     reason: observedReadableText ? 'content_not_verified' : 'verification_unavailable',
     observedChange,
     attempts,
+    expectedLength: normalizedExpected.length,
+    observedLength: lastObservedText.length,
+    observedPrefix: lastObservedText.slice(0, 120),
+    observedSuffix: lastObservedText.slice(-120),
     ...(observedReadableText ? {} : { lastReadReason }),
   };
 }

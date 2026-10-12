@@ -104,12 +104,7 @@ await test('[US2] pluginAction: missing page explains URL cannot create the firs
 });
 
 await test('[US2] pluginAction: missing page without URL identifies accepted sites', () => {
-  const result = createMissingPluginPageResponse(
-    'gmail',
-    'list_emails',
-    'mail.google.com',
-    {},
-  );
+  const result = createMissingPluginPageResponse('gmail', 'list_emails', 'mail.google.com', {});
   const text = result.toMcpFormat().content[0].text;
 
   assert.ok(text.includes('First call browser_fetch_webpage with a URL matching: mail.google.com'));

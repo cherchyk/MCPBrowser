@@ -36,11 +36,19 @@ async function importMarkdown({ page, params }) {
         allowImages: true,
         maxHtmlBytes: MAX_MARKDOWN_CHUNK_HTML_BYTES,
       });
-    } catch {
-      logger.warn(`Word Markdown import stopped at chunk ${index + 1}; inspect before retrying`);
+    } catch (error) {
+      logger.warn(
+        `Word Markdown import stopped at chunk ${index + 1}: ${error.message}; inspect before retrying`,
+      );
       result = { accepted: false, changed: null, reason: 'mutation_outcome_unknown' };
     }
     if (!result.accepted) {
+      logger.warn(
+        `Word Markdown verification details: expectedLength=${result.expectedLength ?? 'unknown'}, ` +
+          `observedLength=${result.observedLength ?? 'unknown'}, ` +
+          `observedPrefix=${JSON.stringify(result.observedPrefix ?? '')}, ` +
+          `observedSuffix=${JSON.stringify(result.observedSuffix ?? '')}`,
+      );
       return new ErrorResponse(
         `Markdown import stopped at chunk ${index + 1} of ${chunks.length} (${result.reason}${
           result.lastReadReason ? `: ${result.lastReadReason}` : ''

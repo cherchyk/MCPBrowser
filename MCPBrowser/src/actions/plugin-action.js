@@ -156,12 +156,7 @@ async function pluginAction({ plugin: pluginName, action: actionName, params = {
 
     if (!matchedPage) {
       const targetPatterns = pluginInstance.manifest.urlPatterns.join(', ');
-      return createMissingPluginPageResponse(
-        pluginName,
-        actionName,
-        targetPatterns,
-        params,
-      );
+      return createMissingPluginPageResponse(pluginName, actionName, targetPatterns, params);
     }
 
     page = matchedPage;

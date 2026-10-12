@@ -7,6 +7,7 @@ import { decodeEntities, htmlToMarkdown, htmlToText } from '../../core/markdown.
 
 export const MAX_MARKDOWN_FILE_BYTES = 25 * 1024 * 1024;
 export const MAX_MARKDOWN_CHUNK_HTML_BYTES = 12 * 1024 * 1024;
+export const MAX_MARKDOWN_CHUNK_TEXT_CHARACTERS = 25_000;
 export const MAX_MARKDOWN_IMAGE_BYTES = 10 * 1024 * 1024;
 export const MAX_MARKDOWN_IMAGE_TOTAL_BYTES = 50 * 1024 * 1024;
 
@@ -119,7 +120,10 @@ export async function loadMarkdownForWord(sourcePath) {
   const imageState = { cache: new Map(), references: 0, totalBytes: 0 };
   const blocks = [];
   for (const token of tokens) {
-    const rendered = renderTokens([token], tokens.links).replaceAll('<table>', '<table border="1">');
+    const rendered = renderTokens([token], tokens.links).replaceAll(
+      '<table>',
+      '<table border="1">',
+    );
     if (!rendered.trim()) continue;
     blocks.push(await embedImages(rendered, path.dirname(resolvedPath), imageState));
   }
@@ -132,7 +136,7 @@ export async function loadMarkdownForWord(sourcePath) {
     const candidateText = htmlToText(candidateHtml);
     const exceedsLimit =
       Buffer.byteLength(candidateHtml, 'utf8') > MAX_MARKDOWN_CHUNK_HTML_BYTES ||
-      candidateText.length > 100_000;
+      candidateText.length > MAX_MARKDOWN_CHUNK_TEXT_CHARACTERS;
     if (exceedsLimit && html) {
       chunks.push({ html, plainText });
       html = block;
@@ -143,7 +147,7 @@ export async function loadMarkdownForWord(sourcePath) {
     }
     if (
       Buffer.byteLength(html, 'utf8') > MAX_MARKDOWN_CHUNK_HTML_BYTES ||
-      plainText.length > 100_000
+      plainText.length > MAX_MARKDOWN_CHUNK_TEXT_CHARACTERS
     ) {
       throw new Error('One Markdown block is too large to insert into Word safely');
     }

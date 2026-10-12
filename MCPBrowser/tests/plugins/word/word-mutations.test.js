@@ -40,6 +40,11 @@ function wordFixture({
   copyAvailable = true,
   clipboardSurface = false,
   clipboardSurfaceChild = false,
+  unexpectedFocusAfterSelect = false,
+  nativeClipboardSurface = false,
+  nativeClipboardText = false,
+  throwSyntheticPaste = false,
+  nativeClipboardWrite = false,
   clipboardSurfaceDelayMs = 100,
   pasteLimit = Infinity,
   wordCountLabel = '',
@@ -53,10 +58,12 @@ function wordFixture({
     occurrence: 1,
     pending: null,
     copies: 0,
+    copyEvents: 0,
     keys: [],
     insertions: [],
     clicks: [],
     materializationTimeouts: [],
+    nativeClipboardValue: '',
   };
   class DataTransfer {
     constructor() {
@@ -119,10 +126,13 @@ function wordFixture({
           state.text = state.pending;
           state.pending = null;
         }
-        if (copyAvailable) event.clipboardData.setData('text/plain', state.text);
+        const available =
+          typeof copyAvailable === 'function' ? copyAvailable(++state.copyEvents) : copyAvailable;
+        if (available) event.clipboardData.setData('text/plain', state.text);
         event.preventDefault();
       }
       if (event.type === 'paste') {
+        if (throwSyntheticPaste) throw new Error('synthetic paste rejected');
         if (++state.pastes <= pasteLimit) {
           insert(
             event.clipboardData.getData('text/plain'),
@@ -148,6 +158,7 @@ function wordFixture({
     closest: (selector) => (selector === '#WACViewPanel_ClipboardElement' ? clipboard : null),
     dispatchEvent: editor.dispatchEvent,
   };
+  const unrelated = { id: 'WordInternalFocusTarget', closest: () => null };
   const panel = {
     get innerText() {
       const count = matches().length;
@@ -161,11 +172,15 @@ function wordFixture({
     querySelector: (selector) =>
       selector === '#ShowWordCountDialog'
         ? { getAttribute: () => wordCountLabel }
-        : selector === '#navigationTab3-panel'
-          ? panel
-          : selector.startsWith('#PagesContainer')
-            ? editor
-            : null,
+        : selector === '#WACViewPanel_ClipboardElement'
+          ? nativeClipboardSurface
+            ? clipboard
+            : null
+          : selector === '#navigationTab3-panel'
+            ? panel
+            : selector.startsWith('#PagesContainer')
+              ? editor
+              : null,
   };
   const frame = {
     url: () => 'https://word-edit.officeapps.live.com/we/editor',
@@ -173,7 +188,23 @@ function wordFixture({
       if (arg?.clipboardTimeoutMs) state.materializationTimeouts.push(arg.clipboardTimeoutMs);
       return runInNewContext(`(${fn.toString()})(arg)`, {
         document,
-        navigator: { platform: 'Win32' },
+        navigator: {
+          platform: 'Win32',
+          clipboard: {
+            readText: async () => (nativeClipboardText ? state.text : ''),
+            write: nativeClipboardWrite
+              ? async (items) => {
+                  state.nativeClipboardValue = await items[0].items['text/plain'].text();
+                }
+              : undefined,
+          },
+        },
+        Blob,
+        ClipboardItem: class {
+          constructor(items) {
+            this.items = items;
+          }
+        },
         DataTransfer,
         ClipboardEvent,
         arg,
@@ -218,6 +249,13 @@ function wordFixture({
     url: frame.url,
     frames: () => [frame],
     bringToFront: async () => {},
+    browserContext: () => ({ overridePermissions: async () => {} }),
+    evaluate: async (fn) =>
+      runInNewContext(`(${fn.toString()})()`, {
+        navigator: {
+          clipboard: { readText: async () => (nativeClipboardText ? state.text : '') },
+        },
+      }),
     keyboard: {
       down: async () => {},
       up: async () => {},
@@ -229,12 +267,18 @@ function wordFixture({
           if (state.input) state[state.input] = '';
           else {
             state.selection = 'all';
-            if (clipboardSurface || clipboardSurfaceChild)
+            if (clipboardSurface || clipboardSurfaceChild || unexpectedFocusAfterSelect)
               setTimeout(() => {
-                document.activeElement = clipboardSurfaceChild ? clipboardChild : clipboard;
+                document.activeElement = unexpectedFocusAfterSelect
+                  ? unrelated
+                  : clipboardSurfaceChild
+                    ? clipboardChild
+                    : clipboard;
               }, clipboardSurfaceDelayMs);
           }
         }
+        if (key === 'c' && nativeClipboardSurface) document.activeElement = clipboard;
+        if (key === 'v' && nativeClipboardWrite) insert(state.nativeClipboardValue, true);
         if (key === 'Backspace') {
           if (state.input) state[state.input] = '';
           else insert('');
@@ -342,7 +386,7 @@ describe('Word mutation verification', () => {
     assert.equal(result.verification, 'full_document_text');
     assert.equal(state.text, 'new body');
     assert.equal(state.pastes, 1);
-    assert.deepEqual(state.keys, ['Home', 'a', 'Home', 'a', 'Home', 'a']);
+    assert.deepEqual(state.keys, ['Home', 'a', 'Home', 'a', 'Backspace', 'Home', 'a']);
   });
   it('waits for delayed rich content even when the paste event was not cancelled', async (t) => {
     const { page, state } = wordFixture({ text: 'old', pasteHandled: false, delayCopies: 2 });
@@ -366,6 +410,57 @@ describe('Word mutation verification', () => {
     assert.equal(result.verification, 'full_document_text');
     assert.equal(state.text, 'New');
   });
+  it('uses the editor when Word moves focus to another internal element', async (t) => {
+    const { page, state } = wordFixture({
+      text: 'old',
+      unexpectedFocusAfterSelect: true,
+      clipboardSurfaceDelayMs: 0,
+    });
+    const result = await finishWithTimers(t, () =>
+      updateDocumentContent(page, { html: '<h1>New</h1>', plainText: 'New' }),
+    );
+    assert.equal(result.accepted, true);
+    assert.equal(result.verification, 'full_document_text');
+    assert.equal(state.text, 'New');
+  });
+  it('falls back to native copy when Word ignores synthetic copy events', async () => {
+    const { page, state } = wordFixture({
+      text: 'old',
+      copyAvailable: false,
+      nativeClipboardSurface: true,
+    });
+    const result = await copyDocumentContent(page, { textOnly: true });
+    assert.equal(result.accepted, true);
+    assert.equal(result.nativeCopy, true);
+    assert.equal(result.text, 'old');
+    assert.deepEqual(state.keys, ['Home', 'a', 'Home', 'a', 'c']);
+  });
+  it('reads the native clipboard when Word has no materialized clipboard surface', async () => {
+    const { page, state } = wordFixture({
+      text: 'old',
+      copyAvailable: false,
+      nativeClipboardText: true,
+    });
+    const result = await copyDocumentContent(page, { textOnly: true });
+    assert.equal(result.accepted, true);
+    assert.equal(result.nativeCopy, true);
+    assert.equal(result.text, 'old');
+    assert.deepEqual(state.keys, ['Home', 'a', 'Home', 'a', 'c']);
+  });
+  it('falls back to native rich paste when Word rejects synthetic paste', async (t) => {
+    const { page, state } = wordFixture({
+      text: 'old',
+      throwSyntheticPaste: true,
+      nativeClipboardWrite: true,
+    });
+    const result = await finishWithTimers(t, () =>
+      updateDocumentContent(page, { html: '<h1>New</h1>', plainText: 'New' }),
+    );
+    assert.equal(result.accepted, true);
+    assert.equal(result.nativePaste, true);
+    assert.equal(result.verification, 'full_document_text');
+    assert.equal(state.text, 'New');
+  });
   it('does not claim success when a cancelled paste event writes nothing', async (t) => {
     const { page } = wordFixture({ text: 'old', pasteHandled: true, apply: false });
     const result = await finishWithTimers(t, () =>
@@ -376,10 +471,19 @@ describe('Word mutation verification', () => {
     assert.equal(result.pasteHandled, true);
     assert.match(mutationFailure(result).message, /may have changed/);
   });
-  it('refuses a mutation before dispatch if full text cannot be copied', async (t) => {
-    const { page, state } = wordFixture({ copyAvailable: false });
+  it('allows a verified replacement when the old full text cannot be copied', async (t) => {
+    const { page, state } = wordFixture({ copyAvailable: (copyEvent) => copyEvent > 1 });
     const result = await finishWithTimers(t, () =>
       updateDocumentContent(page, { plainText: 'new' }),
+    );
+    assert.equal(result.accepted, true);
+    assert.equal(result.verification, 'full_document_text');
+    assert.equal(state.text, 'new');
+  });
+  it('still refuses append when the old full text cannot be copied', async (t) => {
+    const { page, state } = wordFixture({ copyAvailable: false });
+    const result = await finishWithTimers(t, () =>
+      updateDocumentContent(page, { plainText: 'new', placement: 'end' }),
     );
     assert.equal(result.reason, 'document_snapshot_unavailable');
     assert.equal(result.changed, false);
@@ -538,12 +642,12 @@ describe('Word Markdown import verification', () => {
             params: { sourcePath, placement: 'replace' },
           });
           if (failSecondChunk) {
-            assert.match(result.message, /chunk 2 of 3/);
+            assert.match(result.message, /chunk 2 of \d+/);
             assert.match(result.message, /1 chunk\(s\) have verified/);
             assert.match(result.message, /outcome is unknown/);
             assert.equal(state.pastes, 2);
           } else {
-            assert.equal(result.data.chunksInserted, 3);
+            assert.ok(result.data.chunksInserted > 3);
             assert.equal(result.data.verification, 'full_document_text');
             assert.ok(state.text.includes('Paragraph 2199'));
             assert.equal((state.text.match(/Paragraph /g) || []).length, 2200);

@@ -13,6 +13,7 @@ export const MAX_TEXT_CHARACTERS = 100_000;
 export const MAX_READ_CHARACTERS = 100_000;
 const DEFAULT_CLIPBOARD_MATERIALIZATION_TIMEOUT = 3_000;
 const MAX_CLIPBOARD_MATERIALIZATION_TIMEOUT = 12_000;
+const NATIVE_COPY_SELECTION_SETTLE_TIMEOUT = 750;
 
 function mutationVerificationTiming(expectedCharacters) {
   const additionalSizeSteps = Math.max(0, Math.ceil(expectedCharacters / 50_000) - 1);
@@ -233,6 +234,15 @@ async function documentShortcut(page, context, key) {
   }
   // Word processes native selection commands asynchronously before the next key can target it.
   await new Promise((resolve) => setTimeout(resolve, 100));
+}
+
+async function allowWordClipboard(page, context) {
+  const browserContext = page.browserContext?.() || page.browser?.()?.defaultBrowserContext?.();
+  if (typeof browserContext?.overridePermissions !== 'function') return;
+  const origins = new Set([new URL(context.url()).origin, new URL(page.url()).origin]);
+  for (const origin of origins) {
+    await browserContext.overridePermissions(origin, ['clipboard-read', 'clipboard-write']);
+  }
 }
 
 async function waitForWordEditorContext(page, timeout = DEFAULT_NAVIGATION_TIMEOUT) {
@@ -555,10 +565,16 @@ export async function updateDocumentContent(
   }
 
   const context = await requireWordEditorContext(page);
-  const before = await copyDocumentContent(page, { textOnly: true });
-  if (!before.accepted) {
-    return { accepted: false, changed: false, reason: 'document_snapshot_unavailable' };
+  let before = await copyDocumentContent(page, { textOnly: true });
+  if (!before.accepted && placement !== 'replace') {
+    return {
+      accepted: false,
+      changed: false,
+      reason: 'document_snapshot_unavailable',
+      ...(before.reason ? { lastReadReason: before.reason } : {}),
+    };
   }
+  if (!before.accepted) before = { accepted: true, text: '', snapshotSkippedForReplace: true };
   const separator = html === undefined ? '' : '\n';
   const expected =
     placement === 'replace'
@@ -568,7 +584,12 @@ export async function updateDocumentContent(
         : before.text + separator + plainText;
   await focusWordEditor(page, context, EDITABLE_WORD_EDITOR_SELECTOR);
   await documentShortcut(page, context, placement === 'end' ? 'End' : 'Home');
-  if (placement === 'replace') await documentShortcut(page, context, 'a');
+  if (placement === 'replace') {
+    await documentShortcut(page, context, 'a');
+    await new Promise((resolve) => setTimeout(resolve, NATIVE_COPY_SELECTION_SETTLE_TIMEOUT));
+    await page.keyboard.press('Backspace');
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
 
   let result;
   try {
@@ -584,14 +605,12 @@ export async function updateDocumentContent(
             return { accepted: false, reason: 'read_only' };
           }
 
-          const target = document.activeElement;
-          const clipboardSurface = target?.closest?.('#WACViewPanel_ClipboardElement');
-          if (
-            !document.hasFocus() ||
-            (target !== editor && !clipboardSurface)
-          ) {
+          const activeElement = document.activeElement;
+          const clipboardSurface = activeElement?.closest?.('#WACViewPanel_ClipboardElement');
+          if (!document.hasFocus()) {
             return { accepted: false, reason: 'editor_not_focused' };
           }
+          const target = activeElement === editor || clipboardSurface ? activeElement : editor;
 
           const data = new DataTransfer();
           if (richHtml !== undefined) data.setData('text/html', richHtml);
@@ -647,7 +666,54 @@ export async function updateDocumentContent(
       verificationTiming.verificationTimeoutMs,
     );
     return { ...result, ...verified, operationId: randomUUID() };
-  } catch {
+  } catch (syntheticError) {
+    logger.warn(`Word synthetic paste failed: ${syntheticError.message}`);
+    try {
+      await allowWordClipboard(page, context);
+      await focusWordEditor(page, context, EDITABLE_WORD_EDITOR_SELECTOR);
+      await documentShortcut(page, context, placement === 'end' ? 'End' : 'Home');
+      if (placement === 'replace') {
+        await documentShortcut(page, context, 'a');
+        await new Promise((resolve) => setTimeout(resolve, NATIVE_COPY_SELECTION_SETTLE_TIMEOUT));
+        await page.keyboard.press('Backspace');
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      const copied = await context.evaluate(
+        async ({ richHtml, text }) => {
+          if (!navigator.clipboard?.write) return false;
+          const items = { 'text/plain': new Blob([text], { type: 'text/plain' }) };
+          if (richHtml !== undefined) {
+            items['text/html'] = new Blob([richHtml], { type: 'text/html' });
+          }
+          await navigator.clipboard.write([new ClipboardItem(items)]);
+          return true;
+        },
+        { richHtml: sanitized?.html, text: plainText },
+      );
+      if (!copied) throw new Error('clipboard_write_unavailable');
+      await documentShortcut(page, context, 'v');
+      const verificationTiming = mutationVerificationTiming(expected.length);
+      const verified = await verifyDocumentText(
+        () =>
+          copyDocumentContent(page, {
+            textOnly: true,
+            materializationTimeoutMs: verificationTiming.clipboardTimeoutMs,
+          }),
+        before.text,
+        expected,
+        verificationTiming.verificationTimeoutMs,
+      );
+      return {
+        format: html === undefined ? 'text' : 'html',
+        placement,
+        nativePaste: true,
+        ...verified,
+        operationId: randomUUID(),
+      };
+    } catch (nativeError) {
+      logger.warn(`Word native paste fallback failed: ${nativeError.message}`);
+      // Dispatch may already have reached Word. A thrown transport/read error is not a rejection.
+    }
     // Dispatch may already have reached Word. A thrown transport/read error is not a rejection.
     logger.warn('Word document mutation could not be verified; do not retry blindly');
     return {
@@ -661,26 +727,24 @@ export async function updateDocumentContent(
 
 export async function copyDocumentContent(
   page,
-  {
-    textOnly = false,
-    materializationTimeoutMs = DEFAULT_CLIPBOARD_MATERIALIZATION_TIMEOUT,
-  } = {},
+  { textOnly = false, materializationTimeoutMs = DEFAULT_CLIPBOARD_MATERIALIZATION_TIMEOUT } = {},
 ) {
   const context = await requireWordEditorContext(page);
   await focusWordEditor(page, context, WORD_EDITOR_SELECTOR);
   await documentShortcut(page, context, 'Home');
   await documentShortcut(page, context, 'a');
-  return context.evaluate(
+  const syntheticResult = await context.evaluate(
     async ({ selector, onlyText, clipboardTimeoutMs }) => {
       const editor = document.querySelector(selector);
       if (!editor) return { accepted: false, html: '', text: '', files: [] };
 
       // Native navigation can transfer focus to Word's hidden clipboard surface.
-      const target = document.activeElement;
-      const clipboardSurface = target?.closest?.('#WACViewPanel_ClipboardElement');
-      if (target !== editor && !clipboardSurface) {
+      const activeElement = document.activeElement;
+      const clipboardSurface = activeElement?.closest?.('#WACViewPanel_ClipboardElement');
+      if (!document.hasFocus()) {
         return { accepted: false, reason: 'editor_not_focused', html: '', text: '', files: [] };
       }
+      const target = activeElement === editor || clipboardSurface ? activeElement : editor;
       // Word materializes the native selection here, including offscreen document content.
       if (clipboardSurface?.querySelector('p, table')) {
         const text = clipboardSurface.innerText || clipboardSurface.textContent || '';
@@ -751,7 +815,8 @@ export async function copyDocumentContent(
 
       const html = data.getData('text/html');
       const text = data.getData('text/plain');
-      const accepted = Array.from(data.types).includes('text/plain') || Boolean(html || files.length);
+      const accepted =
+        Array.from(data.types).includes('text/plain') || Boolean(html || files.length);
       return {
         accepted,
         ...(accepted ? {} : { reason: 'clipboard_payload_unavailable' }),
@@ -766,6 +831,58 @@ export async function copyDocumentContent(
       clipboardTimeoutMs: materializationTimeoutMs,
     },
   );
+  if (syntheticResult.accepted) return syntheticResult;
+
+  await allowWordClipboard(page, context);
+  await focusWordEditor(page, context, WORD_EDITOR_SELECTOR);
+  await documentShortcut(page, context, 'Home');
+  await documentShortcut(page, context, 'a');
+  await new Promise((resolve) => setTimeout(resolve, NATIVE_COPY_SELECTION_SETTLE_TIMEOUT));
+  await documentShortcut(page, context, 'c');
+  const nativeResult = await context.evaluate(
+    async ({ onlyText, clipboardTimeoutMs, previousResult }) => {
+      const deadline = Date.now() + clipboardTimeoutMs;
+      do {
+        const clipboard = document.querySelector('#WACViewPanel_ClipboardElement');
+        if (clipboard?.querySelector('p, table')) {
+          const text = clipboard.innerText || clipboard.textContent || '';
+          return onlyText
+            ? { accepted: true, text, nativeCopy: true }
+            : {
+                accepted: true,
+                text,
+                html: clipboard.innerHTML,
+                files: [],
+                nativeCopy: true,
+              };
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      } while (Date.now() < deadline);
+      if (onlyText) {
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text) return { accepted: true, text, nativeCopy: true };
+        } catch {
+          // Clipboard permission and availability vary by Word host.
+        }
+      }
+      return previousResult;
+    },
+    {
+      onlyText: textOnly,
+      clipboardTimeoutMs: materializationTimeoutMs,
+      previousResult: syntheticResult,
+    },
+  );
+  if (nativeResult.accepted || !textOnly || typeof page.evaluate !== 'function')
+    return nativeResult;
+  try {
+    const text = await page.evaluate(() => navigator.clipboard.readText());
+    if (text) return { accepted: true, text, nativeCopy: true, topLevelClipboard: true };
+  } catch {
+    // The caller handles unavailable clipboard content conservatively.
+  }
+  return nativeResult;
 }
 
 async function openFindReplacePane(page) {
