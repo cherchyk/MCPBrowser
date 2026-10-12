@@ -31,7 +31,7 @@ class PluginListResponse extends MCPResponse {
   }
 }
 
-/** Response with plugin detail (action summaries + site context) */
+/** Response with plugin detail (full action catalog + site context) */
 class PluginInfoResponse extends MCPResponse {
   constructor(info, nextSteps) {
     super(nextSteps);
@@ -69,7 +69,7 @@ const PLUGIN_INFO_TOOL = {
   name: 'browser_plugin_info',
   title: 'Plugin Info',
   description:
-    'List available site-specific plugins and their actions. Use when: browser_fetch_webpage suggests a plugin in nextSteps, or you want to check what optimized actions are available for the current site. Call with no arguments to list all plugins, with a plugin name for compact action summaries, with compactOutput=false for the full catalog, or with a plugin and action name for parameters.',
+    'List available site-specific plugins and their actions. Use when: browser_fetch_webpage suggests a plugin in nextSteps, or you want to check what optimized actions are available for the current site. Call with no arguments to list all plugins, or with a plugin name for details.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -80,12 +80,6 @@ const PLUGIN_INFO_TOOL = {
       action: {
         type: 'string',
         description: 'Optional. Specific action name to get detailed info for.',
-      },
-      compactOutput: {
-        type: 'boolean',
-        description:
-          'Return action names and descriptions without parameter schemas. Defaults to true. Set to false for the full action catalog.',
-        default: true,
       },
     },
     additionalProperties: false,
@@ -126,10 +120,9 @@ export const PLUGIN_INFO_ACTION = new CoreAction({
  * @param {Object} params
  * @param {string} [params.plugin] - Plugin name (omit to list all)
  * @param {string} [params.action] - Action name (requires plugin)
- * @param {boolean} [params.compactOutput=true] - Omit action parameter schemas from plugin detail
  * @returns {MCPResponse}
  */
-function pluginInfo({ plugin, action, compactOutput = true } = {}) {
+function pluginInfo({ plugin, action } = {}) {
   logger.info(
     `browser_plugin_info called: plugin=${plugin || '(all)'} action=${action || '(all)'}`,
   );
@@ -191,28 +184,25 @@ function pluginInfo({ plugin, action, compactOutput = true } = {}) {
     ]);
   }
 
-  // Mode 2: Plugin detail with compact summaries by default
+  // Mode 2: Plugin detail with full action catalog
   const info = pluginInstance.getInfo();
   const pluginDetail = {
     name: plugin,
     description: info.description,
     targetPages: info.targetPages,
     ...(info.authFlow ? { authFlow: info.authFlow } : {}),
-    actions: compactOutput
-      ? (info.actions || []).map(({ name, description }) => ({ name, description }))
-      : info.actions || [],
+    actions: info.actions || [],
   };
 
-  const nextSteps = compactOutput
-    ? [
-        `Call browser_plugin_info({ plugin: '${plugin}', action: '<action>' }) to see its parameters, then use browser_plugin_action`,
-        `Call browser_plugin_info({ plugin: '${plugin}', compactOutput: false }) for the full action catalog`,
-        'Use browser_fetch_webpage to navigate to the target site first if not already there',
-      ]
-    : [
-        `Use browser_plugin_action({ plugin: '${plugin}', action: '<action>', params: { ... } }) to run an action`,
-        'Use browser_fetch_webpage to navigate to the target site first if not already there',
-      ];
+  const nextSteps = [
+    ...(info.actions || [])
+      .slice(0, 3)
+      .map(
+        (a) =>
+          `Use browser_plugin_action({ plugin: '${plugin}', action: '${a.name}' }) to ${a.description.toLowerCase()}`,
+      ),
+    'Use browser_fetch_webpage to navigate to the target site first if not already there',
+  ];
 
   return new PluginInfoResponse(pluginDetail, nextSteps);
 }

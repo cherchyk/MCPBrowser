@@ -72,7 +72,7 @@ test('[US2] browser_plugin_info: list all has nextSteps', () => {
 
 console.log('\n--- Plugin Detail ---');
 
-test('[US2] browser_plugin_info: valid plugin returns compact action catalog + site context', () => {
+test('[US2] browser_plugin_info: valid plugin returns action catalog + site context', () => {
   const result = pluginInfo({ plugin: loadedPluginName });
   assert.strictEqual(result.constructor.name, 'PluginInfoResponse');
   const mcpFormat = result.toMcpFormat();
@@ -89,7 +89,7 @@ test('[US2] browser_plugin_info: valid plugin returns compact action catalog + s
     assert.strictEqual(action.execute, undefined, 'Actions in getInfo should not have execute');
     assert.ok(action.name);
     assert.ok(action.description);
-    assert.strictEqual(action.params, undefined);
+    assert.ok(Array.isArray(action.params));
   }
 });
 
@@ -102,21 +102,12 @@ test('[US2] browser_plugin_info: plugin detail has nextSteps guiding to browser_
   );
 });
 
-test('[US2] browser_plugin_info: plugin catalog stays compact', () => {
+test('[US2] browser_plugin_info: Word catalog stays below 16 KiB', () => {
   const result = pluginInfo({ plugin: loadedPluginName });
   const payloadBytes = Buffer.byteLength(JSON.stringify(result.toJSON()), 'utf8');
-  assert.ok(payloadBytes < 8 * 1024, `Plugin info payload is ${payloadBytes} bytes`);
-  for (const action of result.pluginInfo.actions) {
-    assert.deepStrictEqual(Object.keys(action), ['name', 'description']);
-  }
-});
-
-test('[US2] browser_plugin_info: compactOutput=false returns full action catalog', () => {
-  const result = pluginInfo({ plugin: loadedPluginName, compactOutput: false });
-  assert.ok(result.pluginInfo.actions.length > 0);
+  assert.ok(payloadBytes < 16 * 1024, `Plugin info payload is ${payloadBytes} bytes`);
   for (const action of result.pluginInfo.actions) {
     assert.deepStrictEqual(Object.keys(action), ['name', 'description', 'params']);
-    assert.ok(Array.isArray(action.params));
   }
 });
 
@@ -129,12 +120,6 @@ test('[US2] browser_plugin_info: valid plugin + action returns single action det
   assert.strictEqual(result.action.name, loadedAction.name);
   assert.ok(typeof result.action.description === 'string');
   assert.ok(Array.isArray(result.action.params));
-});
-
-test('[US2] browser_plugin_info: plugin detail points to action parameter lookup', () => {
-  const result = pluginInfo({ plugin: loadedPluginName });
-  assert.ok(result.nextSteps[0].includes("action: '<action>'"));
-  assert.ok(result.nextSteps[1].includes('compactOutput: false'));
 });
 
 test('[US2] browser_plugin_info: unknown action returns ErrorResponse', () => {

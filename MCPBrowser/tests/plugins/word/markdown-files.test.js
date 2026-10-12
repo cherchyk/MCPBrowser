@@ -63,6 +63,16 @@ describe('Word Markdown files — import', () => {
 
     await assert.rejects(() => loadMarkdownForWord(markdownPath), /not allowed/);
   });
+
+  it('adds visible borders to imported Markdown tables', async () => {
+    const directory = await temporaryDirectory();
+    const markdownPath = path.join(directory, 'guide.md');
+    await writeFile(markdownPath, '| Name | Value |\n|---|---|\n| One | Two |\n');
+
+    const imported = await loadMarkdownForWord(markdownPath);
+
+    assert.match(imported.chunks[0].html, /<table border="1">/);
+  });
 });
 
 describe('Word Markdown files — export', () => {

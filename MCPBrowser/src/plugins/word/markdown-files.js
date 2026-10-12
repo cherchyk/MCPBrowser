@@ -119,7 +119,7 @@ export async function loadMarkdownForWord(sourcePath) {
   const imageState = { cache: new Map(), references: 0, totalBytes: 0 };
   const blocks = [];
   for (const token of tokens) {
-    const rendered = renderTokens([token], tokens.links);
+    const rendered = renderTokens([token], tokens.links).replaceAll('<table>', '<table border="1">');
     if (!rendered.trim()) continue;
     blocks.push(await embedImages(rendered, path.dirname(resolvedPath), imageState));
   }

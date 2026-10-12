@@ -86,7 +86,7 @@ Lightweight action description for `browser_plugin_info` responses (no `execute`
 | ------------- | ----------------- | -------- | ------------------------------ |
 | `name`        | string            | yes      | Action name.                   |
 | `description` | string            | yes      | What the action does.          |
-| `params`      | ParamDescriptor[] | no       | Parameters the action accepts; included for single-action detail or full-catalog output. |
+| `params`      | ParamDescriptor[] | yes      | Parameters the action accepts. |
 
 ### Plugin Registry
 

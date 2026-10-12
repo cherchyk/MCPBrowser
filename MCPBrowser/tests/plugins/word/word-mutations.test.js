@@ -39,6 +39,7 @@ function wordFixture({
   delayCopies = 0,
   copyAvailable = true,
   clipboardSurface = false,
+  clipboardSurfaceChild = false,
   clipboardSurfaceDelayMs = 100,
   pasteLimit = Infinity,
   wordCountLabel = '',
@@ -135,10 +136,16 @@ function wordFixture({
   state.pastes = 0;
   const clipboard = {
     id: 'WACViewPanel_ClipboardElement',
+    closest: (selector) => (selector === '#WACViewPanel_ClipboardElement' ? clipboard : null),
     querySelector: () => ({}),
     get innerText() {
       return state.text;
     },
+    dispatchEvent: editor.dispatchEvent,
+  };
+  const clipboardChild = {
+    id: '',
+    closest: (selector) => (selector === '#WACViewPanel_ClipboardElement' ? clipboard : null),
     dispatchEvent: editor.dispatchEvent,
   };
   const panel = {
@@ -222,9 +229,9 @@ function wordFixture({
           if (state.input) state[state.input] = '';
           else {
             state.selection = 'all';
-            if (clipboardSurface)
+            if (clipboardSurface || clipboardSurfaceChild)
               setTimeout(() => {
-                document.activeElement = clipboard;
+                document.activeElement = clipboardSurfaceChild ? clipboardChild : clipboard;
               }, clipboardSurfaceDelayMs);
           }
         }
@@ -345,6 +352,19 @@ describe('Word mutation verification', () => {
     assert.equal(result.accepted, true);
     assert.equal(result.pasteHandled, false);
     assert.equal(state.text, 'new');
+  });
+  it('accepts Word focus on a descendant of the hidden clipboard surface', async (t) => {
+    const { page, state } = wordFixture({
+      text: 'old',
+      clipboardSurfaceChild: true,
+      clipboardSurfaceDelayMs: 0,
+    });
+    const result = await finishWithTimers(t, () =>
+      updateDocumentContent(page, { html: '<h1>New</h1>', plainText: 'New' }),
+    );
+    assert.equal(result.accepted, true);
+    assert.equal(result.verification, 'full_document_text');
+    assert.equal(state.text, 'New');
   });
   it('does not claim success when a cancelled paste event writes nothing', async (t) => {
     const { page } = wordFixture({ text: 'old', pasteHandled: true, apply: false });

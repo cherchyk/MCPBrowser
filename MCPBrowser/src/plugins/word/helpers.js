@@ -585,9 +585,10 @@ export async function updateDocumentContent(
           }
 
           const target = document.activeElement;
+          const clipboardSurface = target?.closest?.('#WACViewPanel_ClipboardElement');
           if (
             !document.hasFocus() ||
-            (target !== editor && target?.id !== 'WACViewPanel_ClipboardElement')
+            (target !== editor && !clipboardSurface)
           ) {
             return { accepted: false, reason: 'editor_not_focused' };
           }
@@ -676,15 +677,16 @@ export async function copyDocumentContent(
 
       // Native navigation can transfer focus to Word's hidden clipboard surface.
       const target = document.activeElement;
-      if (target !== editor && target?.id !== 'WACViewPanel_ClipboardElement') {
+      const clipboardSurface = target?.closest?.('#WACViewPanel_ClipboardElement');
+      if (target !== editor && !clipboardSurface) {
         return { accepted: false, reason: 'editor_not_focused', html: '', text: '', files: [] };
       }
       // Word materializes the native selection here, including offscreen document content.
-      if (target?.id === 'WACViewPanel_ClipboardElement' && target.querySelector('p, table')) {
-        const text = target.innerText || target.textContent || '';
+      if (clipboardSurface?.querySelector('p, table')) {
+        const text = clipboardSurface.innerText || clipboardSurface.textContent || '';
         return onlyText
           ? { accepted: true, text }
-          : { accepted: true, text, html: target.innerHTML, files: [] };
+          : { accepted: true, text, html: clipboardSurface.innerHTML, files: [] };
       }
 
       const data = new DataTransfer();
@@ -698,11 +700,8 @@ export async function copyDocumentContent(
       if (!Array.from(data.types).includes('text/plain')) {
         const deadline = Date.now() + clipboardTimeoutMs;
         do {
-          const clipboard = document.activeElement;
-          if (
-            clipboard?.id === 'WACViewPanel_ClipboardElement' &&
-            clipboard.querySelector('p, table')
-          ) {
+          const clipboard = document.activeElement?.closest?.('#WACViewPanel_ClipboardElement');
+          if (clipboard?.querySelector('p, table')) {
             const text = clipboard.innerText || clipboard.textContent || '';
             return onlyText
               ? { accepted: true, text }

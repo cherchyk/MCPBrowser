@@ -8,7 +8,7 @@
 {
   name: "browser_plugin_info",
   title: "Plugin Info",
-  description: "Get information about installed site plugins, compact action summaries, full action catalogs, and individual action parameters. Call this after a plugin is detected (recommended in nextSteps) to discover what actions you can perform via browser_plugin_action. You can also call with no arguments to list all loaded plugins.",
+  description: "Get information about an installed site plugin — its available actions, parameters, and site context. Call this after a plugin is detected (recommended in nextSteps) to discover what actions you can perform via browser_plugin_action. You can also call with no arguments to list all loaded plugins.",
   inputSchema: {
     type: "object",
     properties: {
@@ -19,11 +19,6 @@
       action: {
         type: "string",
         description: "Optional. Specific action name to get detailed info for."
-      },
-      compactOutput: {
-        type: "boolean",
-        description: "Return action names and descriptions without parameter schemas. Defaults to true. Set to false for the full action catalog.",
-        default: true
       }
     },
     additionalProperties: false
@@ -64,7 +59,7 @@ Returns summary of all loaded plugins.
 
 ### Plugin Detail (with `plugin` parameter)
 
-Returns compact action summaries + high-level site context by default. Set `compactOutput: false` to include parameter schemas for every action, or request a specific action to retrieve only its parameters.
+Returns full action catalog + high-level site context.
 
 ```javascript
 {
@@ -75,16 +70,22 @@ Returns compact action summaries + high-level site context by default. Set `comp
   actions: [
     {
       name: "list_emails",
-      description: "List emails in a folder"
+      description: "List emails in a folder",
+      params: [
+        { name: "folder", type: "string", description: "Folder to list", required: false, default: "inbox" },
+        { name: "limit", type: "number", description: "Max emails to return", required: false, default: 20 }
+      ]
     },
     {
       name: "read_email",
-      description: "Read full content of a specific email"
+      description: "Read full content of a specific email",
+      params: [
+        { name: "emailId", type: "string", description: "Email identifier", required: true }
+      ]
     }
   ],
   nextSteps: [
-    "Call browser_plugin_info({ plugin: 'gmail', action: '<action>' }) to see its parameters, then use browser_plugin_action",
-    "Call browser_plugin_info({ plugin: 'gmail', compactOutput: false }) for the full action catalog",
+    "Use browser_plugin_action({ plugin: 'gmail', action: 'list_emails' }) to list inbox emails",
     "Use browser_fetch_webpage to navigate to mail.google.com first if not already there"
   ]
 }
