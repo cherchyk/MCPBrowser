@@ -12,6 +12,7 @@ const documentUrl = process.env.WORD_E2E_URL || DEFAULT_WORD_E2E_URL;
 const browserType = process.argv[2] || 'chrome';
 const pluginAction = CORE_ACTIONS.find((action) => action.id === 'browser_plugin_action');
 const marker = `MCPBrowserE2E${randomUUID().replaceAll('-', '')}`;
+const staleMarkerPattern = /^MCPBrowserE2E[0-9a-f]{32}$/;
 
 function assertSuccessfulResponse(response, actionName) {
   assert.ok(
@@ -44,6 +45,18 @@ async function openDocument() {
 
 async function readDocument() {
   return runWordAction('read_document', { maxCharacters: 100_000 });
+}
+
+async function ensureEmptyFixture() {
+  let current = await readDocument();
+  if (staleMarkerPattern.test(current.data.text)) {
+    const cleared = await runWordAction('replace_document_text', { text: '' });
+    assert.strictEqual(cleared.data.accepted, true);
+    await runWordAction('wait_for_save', { timeoutMs: 60_000 });
+    current = await readDocument();
+    console.log('Cleanup: removed a stale E2E marker before the test');
+  }
+  return current;
 }
 
 async function reconnectAndRead() {
@@ -109,7 +122,7 @@ try {
   await closeFixtureTabs();
   await openDocument();
 
-  const initial = await readDocument();
+  const initial = await ensureEmptyFixture();
   assert.strictEqual(initial.data.hasMore, false, 'The fixture must fit in one read operation');
   assert.strictEqual(initial.data.text, '', 'The dedicated Word E2E fixture must be empty');
 

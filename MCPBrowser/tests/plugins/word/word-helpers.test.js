@@ -254,7 +254,7 @@ describe('Word helpers — embedded editor context', () => {
     });
 
     assert.ok(calls > 3);
-    assert.deepEqual(keys, ['Home', 'a', 'Home', 'a', 'Home', 'a']);
+    assert.deepEqual(keys, ['Home', 'a', 'Home', 'a', 'Backspace', 'Home', 'a']);
     assert.equal(result.accepted, true);
     assert.equal(result.format, 'text');
     assert.equal(result.verification, 'full_document_text');

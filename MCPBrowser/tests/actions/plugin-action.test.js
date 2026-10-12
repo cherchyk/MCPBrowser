@@ -11,7 +11,7 @@ import { ErrorResponse, MCPResponse } from '../../src/core/responses.js';
 import { ACTIONS as CORE_ACTIONS } from '../../src/actions/index.js';
 import { resolvePluginPage } from '../../src/core/plugin-page.js';
 import { WORD_PLUGIN } from '../../src/plugins/word/index.js';
-import { createMissingPluginPageResponse } from '../../src/actions/plugin-action.js';
+import { createMissingPluginPageResponse } from '../../src/actions/plugin-action-response.js';
 
 const PLUGIN_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_plugin_action');
 

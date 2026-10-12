@@ -7,6 +7,7 @@
 import { domainPages } from '../../src/core/browser.js';
 import { ErrorResponse } from '../../src/core/responses.js';
 import { runWithBrowsers } from '../browsers/browser-runner.js';
+import { startHttpTestServer } from '../browsers/http-test-server.js';
 import { ACTIONS as CORE_ACTIONS } from '../../src/actions/index.js';
 
 const CLOSE_TAB_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_close_tab');
@@ -228,13 +229,13 @@ async function testDomainExtraction(browserType) {
 /**
  * Test: Fresh session after closing tab
  */
-async function testFreshSessionAfterClose(browserType) {
+async function testFreshSessionAfterClose(browserType, fixtureOrigin) {
   console.log(`\n=== Test: Fresh session after closing tab (${browserType}) ===`);
 
   try {
     // Load page first time
     const firstLoad = await fetchPage({
-      url: 'https://httpbin.org/html',
+      url: `${fixtureOrigin}/html`,
       browser: browserType,
       removeUnnecessaryHTML: false,
     });
@@ -246,10 +247,10 @@ async function testFreshSessionAfterClose(browserType) {
     console.log('✓ First load successful');
 
     // Get page reference
-    const firstPage = domainPages.get('httpbin.org');
+    const firstPage = domainPages.get('127.0.0.1');
 
     // Close tab
-    const closeResult = await closeTab({ url: 'https://httpbin.org' });
+    const closeResult = await closeTab({ url: fixtureOrigin });
 
     if (closeResult instanceof ErrorResponse) {
       throw new Error('Close failed');
@@ -259,7 +260,7 @@ async function testFreshSessionAfterClose(browserType) {
 
     // Load again - should create new page
     const secondLoad = await fetchPage({
-      url: 'https://httpbin.org/html',
+      url: `${fixtureOrigin}/html`,
       browser: browserType,
       removeUnnecessaryHTML: false,
     });
@@ -271,7 +272,7 @@ async function testFreshSessionAfterClose(browserType) {
     console.log('✓ Second load successful');
 
     // Get new page reference
-    const secondPage = domainPages.get('httpbin.org');
+    const secondPage = domainPages.get('127.0.0.1');
 
     // Verify it's a different page instance
     if (firstPage === secondPage) {
@@ -281,7 +282,7 @@ async function testFreshSessionAfterClose(browserType) {
     console.log('✓ New page instance created (fresh session)');
 
     // Clean up
-    await closeTab({ url: 'https://httpbin.org' });
+    await closeTab({ url: fixtureOrigin });
 
     console.log(`✅ Test passed: Fresh session after close (${browserType})`);
     return true;
@@ -294,13 +295,13 @@ async function testFreshSessionAfterClose(browserType) {
 /**
  * Test: Close tab after redirect using final URL
  */
-async function testCloseAfterRedirect(browserType) {
+async function testCloseAfterRedirect(browserType, fixtureOrigin) {
   console.log(`\n=== Test: Close tab after redirect using final URL (${browserType}) ===`);
 
   try {
-    // Load a page that redirects (httpbin redirects)
+    // Load a page that redirects.
     const fetchResult = await fetchPage({
-      url: 'https://httpbin.org/redirect-to?url=https%3A%2F%2Fhttpbin.org%2Fhtml',
+      url: `${fixtureOrigin}/redirect`,
       browser: browserType,
       removeUnnecessaryHTML: false,
     });
@@ -309,15 +310,15 @@ async function testCloseAfterRedirect(browserType) {
       throw new Error('Failed to load page');
     }
 
-    const finalUrl = fetchResult.currentUrl;
+    const finalUrl = fetchResult.currentUrl ?? fetchResult.url;
     console.log(`✓ Page loaded: ${finalUrl}`);
 
     // Tab is stored under original hostname
-    if (!domainPages.has('httpbin.org')) {
+    if (!domainPages.has('127.0.0.1')) {
       throw new Error('Tab not found under original hostname');
     }
 
-    console.log('✓ Tab stored under original hostname: httpbin.org');
+    console.log('✓ Tab stored under original hostname: 127.0.0.1');
 
     // Close using final URL (should still work via URL search)
     const closeResult = await closeTab({ url: finalUrl });
@@ -326,10 +327,10 @@ async function testCloseAfterRedirect(browserType) {
       throw new Error(`Close failed: ${closeResult.message}`);
     }
 
-    console.log(`✓ Closed tab using final URL: ${fetchResult.currentUrl}`);
+    console.log(`✓ Closed tab using final URL: ${finalUrl}`);
 
     // Verify tab is removed
-    if (domainPages.has('httpbin.org')) {
+    if (domainPages.has('127.0.0.1')) {
       throw new Error('Tab still exists after close');
     }
 
@@ -347,17 +348,32 @@ async function testCloseAfterRedirect(browserType) {
  */
 async function runAllTests() {
   const results = [];
+  const fixture = await startHttpTestServer((request, response) => {
+    if (request.url === '/redirect') {
+      response.writeHead(302, { Location: '/html' });
+      response.end();
+      return;
+    }
+    response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    response.end(
+      '<!doctype html><html><body><main><h1>Browser fixture</h1><p>Deterministic local close-tab integration fixture.</p></main></body></html>',
+    );
+  });
 
-  // Run tests across all available browsers
-  await runWithBrowsers(async (browserType) => {
-    results.push(await testCloseLoadedTab(browserType));
-    results.push(await testCloseNonExistentTab(browserType));
-    results.push(await testCloseSameDomainTwice(browserType));
-    results.push(await testInvalidUrl(browserType));
-    results.push(await testDomainExtraction(browserType));
-    results.push(await testFreshSessionAfterClose(browserType));
-    results.push(await testCloseAfterRedirect(browserType));
-  }, browserParam);
+  try {
+    // Run tests across all available browsers
+    await runWithBrowsers(async (browserType) => {
+      results.push(await testCloseLoadedTab(browserType));
+      results.push(await testCloseNonExistentTab(browserType));
+      results.push(await testCloseSameDomainTwice(browserType));
+      results.push(await testInvalidUrl(browserType));
+      results.push(await testDomainExtraction(browserType));
+      results.push(await testFreshSessionAfterClose(browserType, fixture.origin));
+      results.push(await testCloseAfterRedirect(browserType, fixture.origin));
+    }, browserParam);
+  } finally {
+    await fixture.close();
+  }
 
   const passed = results.filter((r) => r).length;
   const total = results.length;
