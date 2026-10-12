@@ -6,7 +6,7 @@ const osNative = require('os');
 const path = require('path');
 
 describe('Extension Tests', () => {
-  const TEST_VERSION = '0.4.8';
+  const TEST_VERSION = '0.4.9';
   let extension;
   let fsStub;
   let execPromiseStub;
