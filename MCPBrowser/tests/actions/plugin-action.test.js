@@ -11,6 +11,7 @@ import { ErrorResponse, MCPResponse } from '../../src/core/responses.js';
 import { ACTIONS as CORE_ACTIONS } from '../../src/actions/index.js';
 import { resolvePluginPage } from '../../src/core/plugin-page.js';
 import { WORD_PLUGIN } from '../../src/plugins/word/index.js';
+import { createMissingPluginPageResponse } from '../../src/actions/plugin-action.js';
 
 const PLUGIN_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_plugin_action');
 
@@ -82,6 +83,37 @@ await test('[US2] pluginAction: response has toMcpFormat (MCPResponse conformanc
   const mcpFormat = result.toMcpFormat();
   assert.ok(mcpFormat.content, 'Must have content array');
   assert.ok(typeof mcpFormat.isError === 'boolean', 'Must have isError boolean');
+});
+
+await test('[US2] pluginAction: missing page explains URL cannot create the first tab', () => {
+  const result = createMissingPluginPageResponse(
+    'word',
+    'open_document',
+    'word.cloud.microsoft, sharepoint.com',
+    { url: 'https://contoso.sharepoint.com/document.docx' },
+  );
+  const mcpFormat = result.toMcpFormat();
+  const text = mcpFormat.content[0].text;
+
+  assert.strictEqual(mcpFormat.isError, true);
+  assert.ok(text.includes("Plugin 'word' action 'open_document' cannot run"));
+  assert.ok(text.includes('params.url'));
+  assert.ok(text.includes('cannot create the first tab'));
+  assert.ok(text.includes('First call browser_fetch_webpage with the same URL'));
+  assert.ok(text.includes("retry browser_plugin_action for 'word/open_document'"));
+});
+
+await test('[US2] pluginAction: missing page without URL identifies accepted sites', () => {
+  const result = createMissingPluginPageResponse(
+    'gmail',
+    'list_emails',
+    'mail.google.com',
+    {},
+  );
+  const text = result.toMcpFormat().content[0].text;
+
+  assert.ok(text.includes('First call browser_fetch_webpage with a URL matching: mail.google.com'));
+  assert.ok(!text.includes('params.url'));
 });
 
 // ============================================================================

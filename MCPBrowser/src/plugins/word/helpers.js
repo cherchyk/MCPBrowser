@@ -11,6 +11,20 @@ export const DEFAULT_STATE_TIMEOUT = 60_000;
 export const MAX_HTML_BYTES = 200_000;
 export const MAX_TEXT_CHARACTERS = 100_000;
 export const MAX_READ_CHARACTERS = 100_000;
+const DEFAULT_CLIPBOARD_MATERIALIZATION_TIMEOUT = 3_000;
+const MAX_CLIPBOARD_MATERIALIZATION_TIMEOUT = 12_000;
+
+function mutationVerificationTiming(expectedCharacters) {
+  const additionalSizeSteps = Math.max(0, Math.ceil(expectedCharacters / 50_000) - 1);
+  const clipboardTimeoutMs = Math.min(
+    MAX_CLIPBOARD_MATERIALIZATION_TIMEOUT,
+    DEFAULT_CLIPBOARD_MATERIALIZATION_TIMEOUT + additionalSizeSteps * 1_500,
+  );
+  return {
+    clipboardTimeoutMs,
+    verificationTimeoutMs: Math.max(5_000, clipboardTimeoutMs * 2 + 2_000),
+  };
+}
 
 const WORD_HOSTS = new Set(['word.cloud.microsoft', 'word.office.com', 'onedrive.live.com']);
 const wordEditorFrameAffinities = new WeakMap();
@@ -620,10 +634,16 @@ export async function updateDocumentContent(
       );
     }
     if (result.reason) return { ...result, changed: false };
+    const verificationTiming = mutationVerificationTiming(expected.length);
     const verified = await verifyDocumentText(
-      () => copyDocumentContent(page, { textOnly: true }),
+      () =>
+        copyDocumentContent(page, {
+          textOnly: true,
+          materializationTimeoutMs: verificationTiming.clipboardTimeoutMs,
+        }),
       before.text,
       expected,
+      verificationTiming.verificationTimeoutMs,
     );
     return { ...result, ...verified, operationId: randomUUID() };
   } catch {
@@ -638,13 +658,19 @@ export async function updateDocumentContent(
   }
 }
 
-export async function copyDocumentContent(page, { textOnly = false } = {}) {
+export async function copyDocumentContent(
+  page,
+  {
+    textOnly = false,
+    materializationTimeoutMs = DEFAULT_CLIPBOARD_MATERIALIZATION_TIMEOUT,
+  } = {},
+) {
   const context = await requireWordEditorContext(page);
   await focusWordEditor(page, context, WORD_EDITOR_SELECTOR);
   await documentShortcut(page, context, 'Home');
   await documentShortcut(page, context, 'a');
   return context.evaluate(
-    async ({ selector, onlyText }) => {
+    async ({ selector, onlyText, clipboardTimeoutMs }) => {
       const editor = document.querySelector(selector);
       if (!editor) return { accepted: false, html: '', text: '', files: [] };
 
@@ -670,7 +696,7 @@ export async function copyDocumentContent(page, { textOnly = false } = {}) {
       target.dispatchEvent(copy);
 
       if (!Array.from(data.types).includes('text/plain')) {
-        const deadline = Date.now() + 1_500;
+        const deadline = Date.now() + clipboardTimeoutMs;
         do {
           const clipboard = document.activeElement;
           if (
@@ -703,8 +729,10 @@ export async function copyDocumentContent(page, { textOnly = false } = {}) {
       }
 
       if (onlyText) {
+        const accepted = Array.from(data.types).includes('text/plain');
         return {
-          accepted: Array.from(data.types).includes('text/plain'),
+          accepted,
+          ...(accepted ? {} : { reason: 'clipboard_payload_unavailable' }),
           text: data.getData('text/plain'),
         };
       }
@@ -724,14 +752,20 @@ export async function copyDocumentContent(page, { textOnly = false } = {}) {
 
       const html = data.getData('text/html');
       const text = data.getData('text/plain');
+      const accepted = Array.from(data.types).includes('text/plain') || Boolean(html || files.length);
       return {
-        accepted: Array.from(data.types).includes('text/plain') || Boolean(html || files.length),
+        accepted,
+        ...(accepted ? {} : { reason: 'clipboard_payload_unavailable' }),
         html,
         text,
         files,
       };
     },
-    { selector: WORD_EDITOR_SELECTOR, onlyText: textOnly },
+    {
+      selector: WORD_EDITOR_SELECTOR,
+      onlyText: textOnly,
+      clipboardTimeoutMs: materializationTimeoutMs,
+    },
   );
 }
 
@@ -965,10 +999,16 @@ export async function replaceDocumentTextSurgically(page, options) {
   let verified;
   try {
     await context.click(options?.replaceAll === true ? '#ReplaceAllButton' : '#ReplaceButton');
+    const verificationTiming = mutationVerificationTiming(expected.length);
     verified = await verifyDocumentText(
-      () => copyDocumentContent(page, { textOnly: true }),
+      () =>
+        copyDocumentContent(page, {
+          textOnly: true,
+          materializationTimeoutMs: verificationTiming.clipboardTimeoutMs,
+        }),
       before.text,
       expected,
+      verificationTiming.verificationTimeoutMs,
     );
   } catch {
     logger.warn('Word text replacement could not be verified; do not retry blindly');

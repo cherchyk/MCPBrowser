@@ -39,6 +39,7 @@ function wordFixture({
   delayCopies = 0,
   copyAvailable = true,
   clipboardSurface = false,
+  clipboardSurfaceDelayMs = 100,
   pasteLimit = Infinity,
   wordCountLabel = '',
 } = {}) {
@@ -54,6 +55,7 @@ function wordFixture({
     keys: [],
     insertions: [],
     clicks: [],
+    materializationTimeouts: [],
   };
   class DataTransfer {
     constructor() {
@@ -160,8 +162,9 @@ function wordFixture({
   };
   const frame = {
     url: () => 'https://word-edit.officeapps.live.com/we/editor',
-    evaluate: (fn, arg) =>
-      runInNewContext(`(${fn.toString()})(arg)`, {
+    evaluate: (fn, arg) => {
+      if (arg?.clipboardTimeoutMs) state.materializationTimeouts.push(arg.clipboardTimeoutMs);
+      return runInNewContext(`(${fn.toString()})(arg)`, {
         document,
         navigator: { platform: 'Win32' },
         DataTransfer,
@@ -169,7 +172,8 @@ function wordFixture({
         arg,
         setTimeout,
         Date,
-      }),
+      });
+    },
     $eval: async () => true,
     $$: async () =>
       ['Match case', 'Whole words only'].map((label) => ({
@@ -221,7 +225,7 @@ function wordFixture({
             if (clipboardSurface)
               setTimeout(() => {
                 document.activeElement = clipboard;
-              }, 100);
+              }, clipboardSurfaceDelayMs);
           }
         }
         if (key === 'Backspace') {
@@ -300,9 +304,15 @@ describe('Word mutation verification', () => {
   });
   it('does not interpret persistently unavailable copies as an empty document', async (t) => {
     const result = await finishWithTimers(t, () =>
-      verifyDocumentText(async () => ({ accepted: false, text: '' }), 'old', ''),
+      verifyDocumentText(
+        async () => ({ accepted: false, reason: 'clipboard_payload_unavailable', text: '' }),
+        'old',
+        '',
+      ),
     );
     assert.equal(result.reason, 'verification_unavailable');
+    assert.equal(result.lastReadReason, 'clipboard_payload_unavailable');
+    assert.ok(result.attempts > 1);
   });
   it('does not accept an ignored whitespace-only change', async (t) => {
     const result = await finishWithTimers(t, () =>
@@ -391,6 +401,27 @@ describe('Word mutation verification', () => {
         (result) => result.accepted && result.text === 'model text including offscreen content',
       ),
     );
+  });
+  it('allows a longer clipboard materialization wait for large Word documents', async (t) => {
+    const { page } = wordFixture({
+      text: 'large document text',
+      copyAvailable: false,
+      clipboardSurface: true,
+      clipboardSurfaceDelayMs: 4_000,
+    });
+    const result = await finishWithTimers(t, () =>
+      copyDocumentContent(page, { textOnly: true, materializationTimeoutMs: 5_000 }),
+    );
+    assert.equal(result.accepted, true);
+    assert.equal(result.text, 'large document text');
+  });
+  it('scales post-mutation clipboard waits with expected document size', async (t) => {
+    const { page, state } = wordFixture();
+    const result = await finishWithTimers(t, () =>
+      updateDocumentContent(page, { plainText: 'x'.repeat(100_000) }),
+    );
+    assert.equal(result.accepted, true);
+    assert.deepEqual(state.materializationTimeouts, [3_000, 4_500]);
   });
   it('verifies a surgical edit while preserving independent text and other occurrences', async (t) => {
     const { page, state } = wordFixture({

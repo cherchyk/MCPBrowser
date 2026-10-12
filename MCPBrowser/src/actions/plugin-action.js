@@ -45,7 +45,7 @@ const PLUGIN_ACTION_TOOL = {
   name: 'browser_plugin_action',
   title: 'Plugin Action',
   description:
-    'Execute a site-specific plugin action. Call browser_plugin_info first to discover available plugins and their actions.',
+    'Execute a site-specific plugin action on an already-open matching browser tab. Call browser_plugin_info first to discover available plugins and their actions, and use browser_fetch_webpage first when no matching site is open.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -94,6 +94,21 @@ export const PLUGIN_ACTION = new CoreAction({
   handler: pluginAction,
 });
 
+export function createMissingPluginPageResponse(pluginName, actionName, targetPatterns, params) {
+  const hasUrl = typeof params?.url === 'string' && params.url.length > 0;
+  const urlExplanation = hasUrl
+    ? ' The URL in params.url is passed to the plugin only after MCPBrowser selects a matching tab, so it cannot create the first tab.'
+    : '';
+  const firstStep = hasUrl
+    ? 'First call browser_fetch_webpage with the same URL from params.url to create or reuse the required tab'
+    : `First call browser_fetch_webpage with a URL matching: ${targetPatterns}`;
+
+  return new ErrorResponse(
+    `Plugin '${pluginName}' action '${actionName}' cannot run because no matching browser tab is open. This plugin operates on: ${targetPatterns}.${urlExplanation} ${firstStep}, then retry browser_plugin_action.`,
+    [firstStep, `Then retry browser_plugin_action for '${pluginName}/${actionName}'`],
+  );
+}
+
 // ============================================================================
 // ACTION FUNCTION
 // ============================================================================
@@ -141,12 +156,11 @@ async function pluginAction({ plugin: pluginName, action: actionName, params = {
 
     if (!matchedPage) {
       const targetPatterns = pluginInstance.manifest.urlPatterns.join(', ');
-      return new ErrorResponse(
-        `Plugin '${pluginName}' requires ${targetPatterns} but no matching page is open. Use browser_fetch_webpage to navigate to the correct site first.`,
-        [
-          `Use MCPBrowser's browser_fetch_webpage to navigate to a page matching: ${targetPatterns}`,
-          `Then retry browser_plugin_action`,
-        ],
+      return createMissingPluginPageResponse(
+        pluginName,
+        actionName,
+        targetPatterns,
+        params,
       );
     }
 

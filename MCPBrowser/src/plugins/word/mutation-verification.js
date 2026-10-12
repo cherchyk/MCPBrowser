@@ -33,8 +33,11 @@ export async function verifyDocumentText(readText, before, expected, timeoutMs =
   const normalizedExpected = normalizeDocumentText(expected);
   let observedChange = false;
   let observedReadableText = false;
+  let attempts = 0;
+  let lastReadReason = null;
   do {
     const current = await readText();
+    attempts++;
     if (current.accepted && typeof current.text === 'string') {
       observedReadableText = true;
       const normalized = normalizeDocumentText(current.text);
@@ -50,6 +53,8 @@ export async function verifyDocumentText(readText, before, expected, timeoutMs =
           verification: 'full_document_text',
         };
       }
+    } else {
+      lastReadReason = current.reason || 'clipboard_payload_unavailable';
     }
     if (Date.now() >= deadline) break;
     await new Promise((resolve) => setTimeout(resolve, 250));
@@ -59,5 +64,7 @@ export async function verifyDocumentText(readText, before, expected, timeoutMs =
     changed: null,
     reason: observedReadableText ? 'content_not_verified' : 'verification_unavailable',
     observedChange,
+    attempts,
+    ...(observedReadableText ? {} : { lastReadReason }),
   };
 }

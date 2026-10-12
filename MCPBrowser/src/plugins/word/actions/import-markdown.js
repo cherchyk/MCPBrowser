@@ -42,7 +42,9 @@ async function importMarkdown({ page, params }) {
     }
     if (!result.accepted) {
       return new ErrorResponse(
-        `Markdown import stopped at chunk ${index + 1} of ${chunks.length} (${result.reason}). ` +
+        `Markdown import stopped at chunk ${index + 1} of ${chunks.length} (${result.reason}${
+          result.lastReadReason ? `: ${result.lastReadReason}` : ''
+        }). ` +
           `${index} chunk(s) have verified document text. ` +
           (result.changed === null
             ? 'The current chunk may have changed Word; its outcome is unknown.'
