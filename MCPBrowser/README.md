@@ -449,6 +449,36 @@ Closes the browser tab for the given URL's hostname. Removes the page from the t
 - Free up browser memory
 - Reset to fresh state before new login
 
+## Microsoft Excel Online Plugin
+
+**Development status:** Cell-write persistence has not passed the native reopen check. `write_cell` remains experimental; use only a dedicated test workbook, not production data.
+
+The enabled `excel` plugin uses standard Excel Online editor controls in the existing signed-in browser. It does not require Copilot, an Office add-in, Microsoft Graph permissions, or an installed desktop version of Excel. First open a workbook with `browser_fetch_webpage`, then use `browser_plugin_info({ plugin: "excel" })` and `browser_plugin_action`.
+
+| Action             | Purpose                                                                           |
+| ------------------ | --------------------------------------------------------------------------------- |
+| `open_workbook`    | Open a specific workbook and report its editor mode and worksheet tabs            |
+| `list_worksheets`  | List exposed worksheet tabs and identify the active worksheet                     |
+| `select_worksheet` | Navigate to an existing worksheet by exact name and confirm its active tab        |
+| `create_worksheet` | Create a worksheet with a unique `name` and confirm save                          |
+| `rename_worksheet` | Rename an existing `sheet` to a unique `name` and confirm save                    |
+| `delete_worksheet` | Permanently delete a named sheet with explicit confirmation and confirm save      |
+| `read_cell`        | Read one cell's native input or formula without submitting a change               |
+| `write_cell`       | Replace one cell's native input, verify the text/formula source, and confirm save |
+| `wait_for_save`    | Require a stable saved indicator; fail if persistence cannot be confirmed         |
+
+For example, call `browser_plugin_action({ plugin: "excel", action: "read_cell", params: { sheet: "Sheet1", cell: "B2" } })`. The result contains `sheet`, `cell`, and `input`. Input is the exposed native formula-bar source string, such as `=SUM(A1:A3)`, not the calculated result or formatted display value. Empty cells return `input: ""`. The `sheet` parameter defaults to the active worksheet. Use `list_worksheets` to discover exact names, then `browser_plugin_action({ plugin: "excel", action: "select_worksheet", params: { sheet: "Sheet2" } })` to navigate explicitly. Reads and edits also switch to their requested `sheet` before selecting a cell; unknown names fail without changing sheets. References must identify one A1 cell without a sheet name; rectangular, whole-column, whole-row, named, and multi-area reads are deferred. Hidden worksheet tabs are not enumerated. Reads select the cell without entering editing mode and fail if its formula-bar source is unavailable.
+
+Use the `read_cell` input as `expectedInput` for guarded edits, rather than the displayed result of a formula. For example, `browser_plugin_action({ plugin: "excel", action: "write_cell", params: { sheet: "Sheet1", cell: "B2", input: "=SUM(A1:A3)", expectedInput: "" } })` writes a formula only if B2 is empty. Input follows native Excel interpretation: text, numeric strings, booleans, and formulas starting with `=`; prefix literal text with an apostrophe when needed. An empty input clears one cell without requesting a formatting change. Inputs are limited to 32,767 characters. The action reads the actual cell editor source before and after replacing it, allows Excel's case normalization of formula identifiers while preserving string literals, and requires a stable saved icon before reporting success. The returned `input` is the actual saved source. An unrecognized native input normalization or unavailable save signal is reported as unverified, not as a successful edit; inspect the cell before retrying.
+
+Create a worksheet with `browser_plugin_action({ plugin: "excel", action: "create_worksheet", params: { name: "Quarter 2" } })`, or rename it with `browser_plugin_action({ plugin: "excel", action: "rename_worksheet", params: { sheet: "Quarter 2", name: "Results" } })`. Names must contain 1–31 characters, cannot contain `\ / : ? * [ ]` or control characters, and cannot begin or end with an apostrophe. Exposed existing names are checked case-insensitively. Hidden-name conflicts and other native Excel restrictions are reported rather than bypassed. Creation and renaming preserve other exposed worksheet names and require a confirmed save.
+
+Deletion permanently removes a worksheet and its contents. Only after the user explicitly approves that named sheet's deletion, call `browser_plugin_action({ plugin: "excel", action: "delete_worksheet", params: { sheet: "Results", confirmDelete: true } })`. The action refuses the last visible worksheet and any preexisting dialog. It recognizes the English native sheet-deletion confirmation only; an unexpected or translated confirmation is left for the user to resolve, not accepted blindly. The action confirms removal of the requested tab, preservation of the other exposed tabs, and save before reporting success. Worksheet changes can complete asynchronously, so verification waits up to 30 seconds without repeating the command or confirmation. After an unverified change or timeout, inspect worksheet names and save state before retrying. Partial creation may leave a newly inserted worksheet; it is not automatically deleted.
+
+Supported entry points are HTTPS Excel, SharePoint, OneDrive, and Office Online workbook links. Sign-in, MFA, and consent remain browser interactions for the user. Actions move selection and focus but do not read or overwrite the system clipboard. Run actions sequentially and avoid concurrent human edits, generic browser actions, or other MCPBrowser processes while they execute. Rectangular reads, local `.xlsx` file manipulation, formatting, charts, hiding/unhiding, reordering, and copying worksheets are outside this version's scope.
+
+Run the opt-in browser check with `EXCEL_E2E_URL` set to a dedicated, empty, editable test workbook and `node tests\plugins\excel\excel-e2e.test.js` from the `MCPBrowser` folder. It checks cell source reads, values, formulas, literal text, guarded edits, save, and reload persistence, then clears only its known test inputs. It does not require an add-in or Copilot license and is not included in CI-safe unit tests.
+
 ## Microsoft Word Online Plugin
 
 The enabled `word` plugin reads and replaces content in authenticated Word Online documents hosted by SharePoint or OneDrive. Open the document with `browser_fetch_webpage`, then discover or run actions through `browser_plugin_info` and `browser_plugin_action`.

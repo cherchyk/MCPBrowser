@@ -88,7 +88,7 @@ describe('plugin registry', () => {
   it('exports CorePlugin objects with unique names', () => {
     assert.deepEqual(
       PLUGINS.map((plugin) => plugin.id),
-      ['word'],
+      ['word', 'excel'],
     );
     assert.ok(PLUGINS.every((plugin) => plugin instanceof CorePlugin));
     assert.equal(new Set(PLUGINS.map((plugin) => plugin.id)).size, PLUGINS.length);
