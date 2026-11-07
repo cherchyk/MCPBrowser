@@ -460,9 +460,9 @@ The enabled `excel` plugin uses standard Excel Online editor controls in the exi
 | `open_workbook`    | Open a specific workbook and report its editor mode and worksheet tabs            |
 | `list_worksheets`  | List exposed worksheet tabs and identify the active worksheet                     |
 | `select_worksheet` | Navigate to an existing worksheet by exact name and confirm its active tab        |
-| `create_worksheet` | Create a worksheet with a unique `name` and confirm save                         |
+| `create_worksheet` | Create a worksheet with a unique `name` and confirm save                          |
 | `rename_worksheet` | Rename an existing `sheet` to a unique `name` and confirm save                    |
-| `delete_worksheet` | Permanently delete a named sheet with explicit confirmation and confirm save     |
+| `delete_worksheet` | Permanently delete a named sheet with explicit confirmation and confirm save      |
 | `read_cell`        | Read one cell's native input or formula without submitting a change               |
 | `write_cell`       | Replace one cell's native input, verify the text/formula source, and confirm save |
 | `wait_for_save`    | Require a stable saved indicator; fail if persistence cannot be confirmed         |
