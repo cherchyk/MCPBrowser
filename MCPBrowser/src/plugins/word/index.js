@@ -1,6 +1,7 @@
 import { ACTIONS } from './actions/index.js';
 import { matchesWordUrl } from './helpers.js';
 import { CorePlugin } from '../../core/plugins.js';
+import { isExcelDocumentUrl } from '../../core/office-urls.js';
 
 const manifest = {
   name: 'word',
@@ -20,6 +21,8 @@ const manifest = {
 
 function matchesPage(url, html) {
   try {
+    if (isExcelDocumentUrl(url) || html?.includes('FormulaBar-NameBox-input'))
+      return { matched: false };
     if (matchesWordUrl(url)) {
       const hostname = new URL(url).hostname;
       if (hostname === 'officeapps.live.com' || hostname.endsWith('.officeapps.live.com')) {

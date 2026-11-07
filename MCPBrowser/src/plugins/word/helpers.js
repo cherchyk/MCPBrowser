@@ -3,6 +3,13 @@ import { MCPResponse } from '../../core/responses.js';
 import * as sel from './selectors.js';
 import { planTextReplacement, verifyDocumentText } from './mutation-verification.js';
 import logger from '../../core/logger.js';
+import {
+  isOfficeEditorHost,
+  isSharePointHost,
+  isAuthenticationUrl,
+} from '../../core/office-urls.js';
+
+export { isOfficeEditorHost, isSharePointHost, isAuthenticationUrl };
 
 export const WORD_EDITOR_SELECTOR = sel.WORD_EDITOR;
 export const EDITABLE_WORD_EDITOR_SELECTOR = sel.EDITABLE_WORD_EDITOR;
@@ -46,14 +53,6 @@ export class WordActionResponse extends MCPResponse {
   }
 }
 
-export function isOfficeEditorHost(hostname) {
-  return hostname === 'officeapps.live.com' || hostname.endsWith('.officeapps.live.com');
-}
-
-export function isSharePointHost(hostname) {
-  return hostname === 'sharepoint.com' || hostname.endsWith('.sharepoint.com');
-}
-
 export function isAllowedWordUrl(value) {
   try {
     const url = new URL(value);
@@ -62,20 +61,6 @@ export function isAllowedWordUrl(value) {
       (WORD_HOSTS.has(url.hostname) ||
         isSharePointHost(url.hostname) ||
         isOfficeEditorHost(url.hostname))
-    );
-  } catch {
-    return false;
-  }
-}
-
-export function isAuthenticationUrl(value) {
-  try {
-    const hostname = new URL(value).hostname;
-    return (
-      hostname === 'login.microsoftonline.com' ||
-      hostname.endsWith('.login.microsoftonline.com') ||
-      hostname === 'login.live.com' ||
-      hostname === 'account.live.com'
     );
   } catch {
     return false;

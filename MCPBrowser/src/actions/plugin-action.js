@@ -83,7 +83,7 @@ const PLUGIN_ACTION_TOOL = {
   annotations: {
     title: 'Plugin Action',
     readOnlyHint: false,
-    destructiveHint: false,
+    destructiveHint: true,
     idempotentHint: false,
     openWorldHint: true,
   },

@@ -56,7 +56,7 @@ test('[US2] browser_plugin_info: no params lists all plugins', () => {
   const result = pluginInfo({});
   assert.strictEqual(result.constructor.name, 'PluginListResponse');
   assert.ok(Array.isArray(result.plugins));
-  assert.strictEqual(result.plugins.length, 1);
+  assert.strictEqual(result.plugins.length, getLoadedPlugins().size);
   assert.strictEqual(result.plugins[0].name, loadedPluginName);
   assert.ok(typeof result.plugins[0].description === 'string');
   assert.ok(typeof result.plugins[0].actionCount === 'number');

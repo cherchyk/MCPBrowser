@@ -25,6 +25,8 @@ const parallelTests = [
   'plugins/word/word-helpers.test.js', // Word plugin URL and payload validation
   'plugins/word/word-mutations.test.js', // Verified native Word mutations and action coordination
   'plugins/word/markdown-files.test.js', // File-based Word Markdown import/export
+  'plugins/excel/excel-plugin.test.js', // Native Excel plugin contracts and range handling
+  'plugins/excel/excel-mutations.test.js', // Verified single-cell edits and save confirmation
   'plugins/example/example-plugin.test.js', // Example plugin structure and contract
   // Browser tests: see run-browser.js
 ];
