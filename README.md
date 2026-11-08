@@ -255,6 +255,8 @@ Alternatively, create or edit the configuration file `~/.copilot/mcp-config.json
 
 For more information, see the [Copilot CLI documentation](https://docs.github.com/en/copilot/concepts/agents/about-copilot-cli).
 
+**Copilot plugin:** The [MCPBrowser plugin bundle](plugins/mcpbrowser/README.md) combines a version-pinned server configuration with a browser workflow skill. After the bundle is published and its pinned npm version is available, install with `copilot plugin install cherchyk/MCPBrowser:plugins/mcpbrowser` instead of configuring the same server manually. Marketplace listing requires a separate submission and GitHub approval.
+
 ---
 
 ### Cursor
@@ -814,6 +816,14 @@ npm run test:extension
 pnpm build   # Creates the MCP server .tgz and VS Code extension .vsix
 pnpm format  # Formats the entire workspace
 ```
+
+### MCP Registry publication
+
+The release workflow publishes npm first, then calls the **Publish to MCP Registry** workflow with the same commit's `server.json`. The npm package's `mcpName` must match `server.json.name`, and both package versions must match.
+
+If registry publication fails after npm succeeds, rerun only the registry job. You can also run **Publish to MCP Registry** manually from GitHub Actions, selecting a ref that contains this workflow and the intended release's metadata. This retries metadata publication without republishing npm or the extensions. If the registry reports that the npm version is missing, verify the exact version is publicly available before retrying; repeated retries do not prove availability.
+
+Publication to the [MCP Community Registry](https://registry.modelcontextprotocol.io) is distinct from inclusion in GitHub's curated catalog or Copilot's Recommended list. GitHub's [registry guide](https://github.blog/ai-and-ml/generative-ai/how-to-find-install-and-manage-mcp-servers-with-the-github-mcp-registry/) directs authors to request inclusion by emailing `partnerships@github.com` after publication. Listing and recommendation are not guaranteed.
 
 ## Links
 

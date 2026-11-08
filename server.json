@@ -14,12 +14,12 @@
     "source": "github",
     "subfolder": "MCPBrowser"
   },
-  "version": "1.10.109",
+  "version": "1.10.110",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "mcpbrowser",
-      "version": "1.10.109",
+      "version": "1.10.110",
       "transport": {
         "type": "stdio"
       }

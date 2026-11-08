@@ -1,13 +1,14 @@
 {
   "name": "mcpbrowser-workspace",
-  "version": "1.10.109",
+  "version": "1.10.110",
   "private": true,
   "description": "MCPBrowser workspace — MCP server and VS Code extension providing a real browser with full JavaScript execution and login/authentication support for AI agents",
   "scripts": {
     "install:all": "npm ci && cd MCPBrowser && npm ci && cd ../VSCodeExtension && npm ci && cd ..",
     "build": "npm pack ./MCPBrowser && npm --prefix VSCodeExtension run package -- --no-dependencies",
-    "test": "cd MCPBrowser && npm test && cd ../VSCodeExtension && npm test",
-    "test:ci": "cd MCPBrowser && npm run test:unit && cd ../VSCodeExtension && npm test",
+    "test": "npm run test:plugin && cd MCPBrowser && npm test && cd ../VSCodeExtension && npm test",
+    "test:ci": "npm run test:plugin && cd MCPBrowser && npm run test:unit && cd ../VSCodeExtension && npm test",
+    "test:plugin": "node --test tests/copilot-plugin.test.mjs",
     "test:unit": "cd MCPBrowser && npm run test:unit",
     "test:mcp": "cd MCPBrowser && npm test",
     "test:extension": "cd VSCodeExtension && npm test",
