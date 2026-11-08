@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "mcpbrowser": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcpbrowser@1.10.110"]
+    }
+  }
+}

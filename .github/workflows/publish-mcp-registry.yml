@@ -1,0 +1,65 @@
+name: Publish to MCP Registry
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify registry package metadata
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const server = JSON.parse(readFileSync('server.json', 'utf8'));
+          const npm = JSON.parse(readFileSync('MCPBrowser/package.json', 'utf8'));
+          assert.equal(server.name, npm.mcpName, 'Registry name must match npm ownership metadata');
+          assert.equal(server.version, npm.version, 'Registry and npm versions must match');
+          assert.equal(server.packages.length, 1);
+          assert.equal(server.packages[0].registryType, 'npm');
+          assert.equal(server.packages[0].identifier, npm.name);
+          assert.equal(server.packages[0].version, npm.version);
+          NODE
+
+      - name: Download MCP publisher
+        run: |
+          curl --fail --location --silent --show-error "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+
+      - name: Validate and authenticate
+        run: |
+          ./mcp-publisher validate
+          ./mcp-publisher login github-oidc
+
+      - name: Publish metadata
+        run: |
+          for attempt in {1..6}; do
+            set +e
+            output=$(./mcp-publisher publish 2>&1)
+            status=$?
+            set -e
+            printf '%s\n' "$output"
+
+            if [ "$status" -eq 0 ]; then
+              exit 0
+            fi
+
+            if ! grep -q "newly published release can take a moment" <<< "$output"; then
+              exit "$status"
+            fi
+
+            if [ "$attempt" -eq 6 ]; then
+              echo "::error::The npm version is still unavailable to the MCP Registry. Verify it on npm, then rerun this registry-only workflow; do not republish the npm package."
+              exit "$status"
+            fi
+
+            echo "npm propagation is pending; retrying in 20 seconds..."
+            sleep 20
+          done

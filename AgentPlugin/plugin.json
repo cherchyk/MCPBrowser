@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "mcpbrowser",
+  "version": "1.10.110",
+  "description": "Browse and interact with authenticated websites using a real Chromium browser, with MCP tools and a focused browser workflow skill.",
+  "author": {
+    "name": "cherchyk",
+    "url": "https://github.com/cherchyk"
+  },
+  "homepage": "https://github.com/cherchyk/MCPBrowser",
+  "repository": "https://github.com/cherchyk/MCPBrowser",
+  "license": "MIT",
+  "keywords": ["browser", "mcp", "web-automation", "authentication", "github-copilot"]
+}
