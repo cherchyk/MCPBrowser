@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { test } from 'node:test';
 
 const root = new URL('../', import.meta.url);
-const pluginRoot = new URL('plugins/mcpbrowser/', root);
+const pluginRoot = new URL('AgentPlugin/', root);
 const readJson = (path, base = root) => JSON.parse(readFileSync(new URL(path, base), 'utf8'));
 const manifest = readJson('plugin.json', pluginRoot);
 const config = readJson('mcp.json', pluginRoot);

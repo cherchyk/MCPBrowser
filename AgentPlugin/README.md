@@ -2,20 +2,20 @@
 
 This [Agent Plugins 1.0.0](https://agent-plugins.org/specification) bundle combines the MCPBrowser stdio server with a focused browser workflow skill. It requires Node.js 18+ and a local Chrome, Edge, or Brave browser. The npm server version is pinned to the plugin version; no credentials or hosted service are bundled.
 
-**Privacy:** Browser content is passed to your AI agent and its LLM provider. Review the [security notice](../../README.md) before accessing private websites. The skill preserves user confirmation for consequential actions and directs users to complete login, MFA, and CAPTCHAs themselves.
+**Privacy:** Browser content is passed to your AI agent and its LLM provider. Review the [privacy note](../README.md) before accessing private websites. The skill preserves user confirmation for consequential actions and directs users to complete login, MFA, and CAPTCHAs themselves.
 
 ## Install
 
 After this plugin directory is published to the repository and its pinned npm version is publicly available, install directly with Copilot CLI:
 
 ```sh
-copilot plugin install cherchyk/MCPBrowser:plugins/mcpbrowser
+copilot plugin install cherchyk/MCPBrowser:AgentPlugin
 ```
 
 For local development, load the directory without persisting an installation:
 
 ```powershell
-copilot --plugin-dir .\plugins\mcpbrowser plugin list --json
+copilot --plugin-dir .\AgentPlugin plugin list --json
 ```
 
 Start a new Copilot session to use the plugin. Do not configure a second copy of the MCPBrowser server if it is already enabled manually. In the Copilot app, use **Customize > Plugins** to browse available marketplace plugins; this bundle is not listed there until GitHub accepts its submission.
@@ -31,7 +31,7 @@ Once the plugin is published at an immutable commit or release tag, open an [ext
 | Plugin name                       | `mcpbrowser`                                                                                                                                                                                                                       |
 | Short description                 | Use the description from `plugin.json`.                                                                                                                                                                                            |
 | GitHub repository                 | `cherchyk/MCPBrowser`                                                                                                                                                                                                              |
-| Plugin path inside the repository | `plugins/mcpbrowser`                                                                                                                                                                                                               |
+| Plugin path inside the repository | `AgentPlugin`                                                                                                                                                                                                                      |
 | Ref / commit SHA to review        | A published release tag containing this directory, a full 40-character commit SHA, or both resolving to the same commit. Do not use a branch or an older tag without the plugin.                                                   |
 | Version                           | Use `plugin.json.version`; the pinned npm version must already be available.                                                                                                                                                       |
 | License identifier                | `MIT`                                                                                                                                                                                                                              |
@@ -44,4 +44,4 @@ Check the issue's public-repository, immutable-source, policy-compliance, and no
 
 ## Release maintenance
 
-Keep `plugin.json.version`, the `mcpbrowser@VERSION` argument in `mcp.json`, and the repository's npm/server versions synchronized. The existing version-bump tool updates matching version strings across the repository; `npm run test:plugin` catches drift. Publish the npm version before inviting users to install that plugin release. Registry recovery and GitHub MCP catalog nomination are documented in the [root README](../../README.md#mcp-registry-publication).
+Keep `plugin.json.version`, the `mcpbrowser@VERSION` argument in `mcp.json`, and the repository's npm/server versions synchronized. The existing version-bump tool updates matching version strings across the repository; `npm run test:plugin` catches drift. Publish the npm version before inviting users to install that plugin release. Registry recovery and GitHub MCP catalog nomination are documented in the [root README](../README.md#mcp-registry-publication).
