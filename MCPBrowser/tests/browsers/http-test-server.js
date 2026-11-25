@@ -15,6 +15,8 @@ export async function startHttpTestServer(handler) {
     close: () =>
       new Promise((resolve, reject) => {
         server.close((error) => (error ? reject(error) : resolve()));
+        // Browsers may leave speculative connections open without sending a request.
+        server.closeAllConnections();
       }),
   };
 }

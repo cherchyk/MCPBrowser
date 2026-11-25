@@ -20,6 +20,8 @@ const parallelTests = [
   'core/auth.test.js', // Auth flows with mock pages
   'actions/plugin-info.test.js', // Compact plugin metadata and action discovery
   'actions/plugin-action.test.js', // Plugin dispatch and tracked-page affinity
+  'actions/upload-files.test.js', // Local file upload argument validation
+  'actions/download-file.test.js', // Download destination and argument validation
   'validate-schema-compatibility.test.js', // MCP tool schema cross-client compatibility
   'plugins/word/word-plugin.test.js', // Word plugin manifest and action catalog
   'plugins/word/word-helpers.test.js', // Word plugin URL and payload validation

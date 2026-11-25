@@ -35,6 +35,8 @@ Example workflow for AI assistant to use MCPBrowser
   - [browser_execute_javascript](#browser_execute_javascript)
   - [browser_click_element](#browser_click_element)
   - [browser_type_text](#browser_type_text)
+  - [browser_upload_files](#browser_upload_files)
+  - [browser_download_file](#browser_download_file)
   - [browser_get_current_html](#browser_get_current_html)
   - [browser_scroll_page](#browser_scroll_page)
   - [browser_take_screenshot](#browser_take_screenshot)
@@ -185,6 +187,45 @@ Clicks on any clickable element (buttons, links, divs with onclick handlers, etc
 ```
 
 **Fallback behavior:** If the native click times out after locating the element, MCPBrowser automatically retries with a JavaScript-based click. The response includes `fallbackUsed`, `nativeAttempt`, and `fallbackAttempt` metadata. If both attempts fail, the response lists both errors so you can choose another strategy.
+
+---
+
+### `browser_download_file`
+
+Click an observed download control in the signed-in browser, wait for a single download to complete, and save it locally without overwriting existing files. Load the page with `browser_fetch_webpage` first.
+
+```json
+{
+  "url": "https://example.com/reports",
+  "selector": "#download-report",
+  "outputPath": "C:\\Users\\me\\Downloads\\report.pdf",
+  "timeoutMs": 30000
+}
+```
+
+`url`, `selector`, and `outputPath` are required. The destination must be an absolute new file path in an existing writable directory. `timeoutMs` is the wait for completion after the click (default 30000, maximum 120000). A loopback browser connection is required; WSL destinations must be on `/mnt/<drive>/`. The destination filesystem must support hard links, used to publish the completed file atomically without overwriting a concurrently created file.
+
+The tool returns `status: "completed"`, `outputPath`, the server's `suggestedFilename`, and verified byte `size`, never file contents. HTTP attachments and generated blob downloads are supported. The first download from a frame already in the current page is captured; downloads in new tabs, new frames, and OS Save As dialogs are unsupported. The page is brought to the front for the click, which is not retried automatically.
+
+**Shared-session limitation:** Download capture temporarily changes the download folder for the entire browser context and restores browser-default behavior afterward, not an unknown override from another automation client. Avoid other downloads during capture. Other captured downloads and any remaining staging files are preserved with a warning containing their location; files in staging use browser GUID filenames. Only one MCPBrowser download capture can run at a time. Timeouts attempt to cancel the captured download; inspect browser/page state before retrying because the click may already have had side effects. Browser safety checks still apply; downloaded files are untrusted and are never executed automatically.
+
+---
+
+### `browser_upload_files`
+
+Select local files in a standard `input[type="file"]`, including visually hidden inputs. Load the page with `browser_fetch_webpage` first.
+
+```json
+{
+  "url": "https://example.com/attachments",
+  "selector": "input[type=\"file\"]",
+  "filePaths": ["C:\\Users\\me\\Documents\\report.pdf"]
+}
+```
+
+`url`, `selector`, and `filePaths` are required. Paths must be absolute and identify readable regular files accessible to the browser on the same machine. Multiple paths require an input with the `multiple` attribute. In WSL, use `/mnt/<drive>/` paths shared with the Windows browser. A loopback browser connection is required; remote browser connections are rejected because file transport is not supported.
+
+The response reports `status: "selected"` and filenames with byte sizes, never file contents. Selection replaces the input's existing files and may immediately send files to the website: authorize the files and destination before calling. Selection does not verify server acceptance or upload completion; inspect the page before retrying, and submit the form separately if needed. Directory uploads, drag-and-drop-only controls, and OS file pickers are not supported.
 
 ---
 

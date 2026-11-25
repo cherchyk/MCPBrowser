@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "mcpbrowser",
-  "version": "1.10.111",
+  "version": "1.10.112",
   "description": "Browse and interact with authenticated websites using a real Chromium browser, with MCP tools and a focused browser workflow skill.",
   "author": {
     "name": "cherchyk",

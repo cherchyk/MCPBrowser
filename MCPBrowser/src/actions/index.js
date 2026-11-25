@@ -11,6 +11,8 @@ import { PLUGIN_INFO_ACTION } from './plugin-info.js';
 import { SCROLL_PAGE_ACTION } from './scroll-page.js';
 import { TAKE_SCREENSHOT_ACTION } from './take-screenshot.js';
 import { TYPE_TEXT_ACTION } from './type-text.js';
+import { UPLOAD_FILES_ACTION } from './upload-files.js';
+import { DOWNLOAD_FILE_ACTION } from './download-file.js';
 
 export const ACTIONS = [
   ACCEPT_EULA_ACTION,
@@ -18,6 +20,8 @@ export const ACTIONS = [
   EXECUTE_JAVASCRIPT_ACTION,
   CLICK_ELEMENT_ACTION,
   TYPE_TEXT_ACTION,
+  UPLOAD_FILES_ACTION,
+  DOWNLOAD_FILE_ACTION,
   CLOSE_TAB_ACTION,
   GET_CURRENT_HTML_ACTION,
   TAKE_SCREENSHOT_ACTION,

@@ -14,6 +14,8 @@ const browserTests = [
   'actions/browser.click-element.test.js',
   'actions/browser.execute-javascript.test.js',
   'actions/browser.type-text.test.js',
+  'actions/browser.upload-files.test.js',
+  'actions/browser.download-file.test.js',
   'actions/browser.close-tab.test.js',
   'actions/browser.get-current-html.test.js',
   'actions/browser.fetch-page.test.js',
