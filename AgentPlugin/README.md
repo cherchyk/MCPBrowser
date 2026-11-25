@@ -2,6 +2,8 @@
 
 This [Agent Plugins 1.0.0](https://agent-plugins.org/specification) bundle combines the MCPBrowser stdio server with a focused browser workflow skill. It requires Node.js 18+ and a local Chrome, Edge, or Brave browser. The npm server version is pinned to the plugin version; no credentials or hosted service are bundled.
 
+The launcher passes `--allow-remote=all` to npm so registries that serve package tarballs from a different host can install the server under npm 12. This permission applies only to the launcher invocation; it does not change global npm settings.
+
 **Privacy:** Browser content is passed to your AI agent and its LLM provider. Review the [privacy note](../README.md) before accessing private websites. The skill preserves user confirmation for consequential actions and directs users to complete login, MFA, and CAPTCHAs themselves.
 
 ## Install

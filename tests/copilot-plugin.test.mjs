@@ -44,7 +44,7 @@ test('portable MCP configuration launches exactly the reviewed npm version', () 
       mcpbrowser: {
         type: 'stdio',
         command: 'npx',
-        args: ['-y', `mcpbrowser@${manifest.version}`],
+        args: ['--allow-remote=all', '-y', `mcpbrowser@${manifest.version}`],
       },
     },
   });
