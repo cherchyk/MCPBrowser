@@ -60,6 +60,7 @@ const ACCEPT_EULA_ACTION = CORE_ACTIONS.find((action) => action.id === 'accept_e
 const FETCH_WEBPAGE_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_fetch_webpage');
 const CLICK_ELEMENT_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_click_element');
 const TYPE_TEXT_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_type_text');
+const UPLOAD_FILES_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_upload_files');
 const CLOSE_TAB_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_close_tab');
 const GET_CURRENT_HTML_ACTION = CORE_ACTIONS.find(
   (action) => action.id === 'browser_get_current_html',
@@ -99,6 +100,8 @@ const ALL_TOOLS = [
   FETCH_WEBPAGE_TOOL,
   CLICK_ELEMENT_TOOL,
   TYPE_TEXT_TOOL,
+  UPLOAD_FILES_ACTION.tool,
+  CORE_ACTIONS.find((action) => action.id === 'browser_download_file').tool,
   CLOSE_TAB_TOOL,
   GET_CURRENT_HTML_TOOL,
   TAKE_SCREENSHOT_TOOL,

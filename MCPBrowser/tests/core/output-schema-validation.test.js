@@ -36,6 +36,7 @@ const TAKE_SCREENSHOT_ACTION = CORE_ACTIONS.find(
   (action) => action.id === 'browser_take_screenshot',
 );
 const TYPE_TEXT_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_type_text');
+const UPLOAD_FILES_ACTION = CORE_ACTIONS.find((action) => action.id === 'browser_upload_files');
 
 const FetchPageSuccessResponse = FETCH_WEBPAGE_ACTION.response;
 const FETCH_WEBPAGE_TOOL = FETCH_WEBPAGE_ACTION.tool;
@@ -404,6 +405,35 @@ test('browser_type_text: has all required fields', () => {
     'next',
   ]).toMcpFormat().structuredContent;
   for (const f of TYPE_TEXT_TOOL.outputSchema.required) assert.ok(f in sc, 'missing: ' + f);
+});
+
+test('browser_download_file: completion response matches outputSchema', () => {
+  const action = CORE_ACTIONS.find((entry) => entry.id === 'browser_download_file');
+  const result = new action.response(
+    'https://example.com',
+    'destination.bin',
+    'server.bin',
+    5,
+  ).toMcpFormat();
+  assert.strictEqual(result.isError, false);
+  validateAgainstSchema(result.structuredContent, action.tool.outputSchema, action.id);
+  assert.strictEqual(result.structuredContent.status, 'completed');
+});
+
+test('browser_upload_files: selection response matches outputSchema', () => {
+  const response = new UPLOAD_FILES_ACTION.response('https://example.com', '#attachment', [
+    { name: 'report.pdf', size: 1024 },
+  ]);
+  const result = response.toMcpFormat();
+  assert.strictEqual(result.isError, false);
+  validateAgainstSchema(
+    result.structuredContent,
+    UPLOAD_FILES_ACTION.tool.outputSchema,
+    'browser_upload_files',
+  );
+  assert.deepStrictEqual(result.structuredContent.files, [{ name: 'report.pdf', size: 1024 }]);
+  assert.strictEqual(result.structuredContent.status, 'selected');
+  assert.match(result.content[0].text, /completion have not been verified/);
 });
 
 // Cross-cutting: non-success responses omit structuredContent

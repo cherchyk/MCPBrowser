@@ -181,6 +181,12 @@ await test('Should respond to tools/list request', async () => {
     assert.ok(fetchTool, 'Should have browser_fetch_webpage tool');
     assert.ok(fetchTool.description, 'Tool should have description');
     assert.ok(fetchTool.inputSchema, 'Tool should have input schema');
+    const uploadTool = response.result.tools.find((t) => t.name === 'browser_upload_files');
+    assert.ok(uploadTool, 'Should expose browser_upload_files through MCP discovery');
+    assert.deepStrictEqual(uploadTool.inputSchema.required, ['url', 'selector', 'filePaths']);
+    const downloadTool = response.result.tools.find((t) => t.name === 'browser_download_file');
+    assert.ok(downloadTool, 'Should expose browser_download_file through MCP discovery');
+    assert.deepStrictEqual(downloadTool.inputSchema.required, ['url', 'selector', 'outputPath']);
   } finally {
     mcpProcess.kill();
   }

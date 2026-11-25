@@ -4,7 +4,7 @@
     "mcpbrowser": {
       "type": "stdio",
       "command": "npx",
-      "args": ["--allow-remote=all", "-y", "mcpbrowser@1.10.111"]
+      "args": ["--allow-remote=all", "-y", "mcpbrowser@1.10.112"]
     }
   }
 }
